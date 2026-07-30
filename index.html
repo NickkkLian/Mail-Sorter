@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>邮件分拣台 · Mail Sorter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0d0f12; --panel:#14171c; --panel2:#1a1e25;
+    --ink:#e6e9ee; --muted:#8a92a0; --line:#262b34;
+    --acc:#7c9cc4; --acc-dim:#4a5f7d; --green:#7fae6a; --red:#c9695a; --amber:#e0aa3e;
+    --mono:'IBM Plex Mono','Noto Sans SC',monospace; --sans:'IBM Plex Sans','Noto Sans SC',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink); font-family:var(--sans);
+    font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased; min-height:100vh;
+    background-image:radial-gradient(1100px 500px at 85% -10%, rgba(124,156,196,.08), transparent 60%);
+  }
+  a{color:var(--acc)}
+  .wrap{max-width:920px;margin:0 auto;padding:0 18px}
+
+  header{border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20;
+    background:rgba(13,15,18,.92);backdrop-filter:blur(8px)}
+  .top{display:flex;align-items:center;justify-content:space-between;padding:15px 0;gap:12px;flex-wrap:wrap}
+  .brand{font-weight:600;font-size:21px;letter-spacing:.3px;display:flex;align-items:baseline;gap:9px}
+  .brand .mark{color:var(--acc)}
+  .brand small{font-family:var(--mono);font-size:10.5px;color:var(--muted);letter-spacing:2px;text-transform:uppercase}
+  .tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+  .iconbtn{background:none;border:1px solid var(--line);color:var(--muted);font-family:var(--mono);
+    font-size:11px;padding:5px 10px;border-radius:6px;cursor:pointer;letter-spacing:.5px}
+  .iconbtn:hover{color:var(--ink);border-color:var(--acc-dim)}
+
+  main{padding:24px 0 70px}
+  .meta{font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:10px}
+
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:13px 15px}
+  .stat .k{font-family:var(--mono);font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+  .stat .v{font-size:24px;font-weight:600;margin-top:3px}
+
+  .filterbar{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+  .filterbar button{font-family:var(--mono);font-size:11px;background:var(--panel);border:1px solid var(--line);
+    color:var(--muted);padding:5px 11px;border-radius:6px;cursor:pointer}
+  .filterbar button.on{color:var(--bg);background:var(--acc);border-color:var(--acc)}
+
+  .chip{border:1px solid var(--line);padding:2px 7px;border-radius:4px;font-family:var(--mono);font-size:10px;color:var(--muted)}
+  .mailrow .subj{color:var(--ink);text-decoration:none;font-weight:600;font-size:14.5px}
+  .mailrow .subj:hover{color:var(--acc)}
+
+  .setup{color:var(--muted);font-size:13px;line-height:1.85}
+  .setup b{color:var(--ink)}
+  .setup code{background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:1px 6px;font-size:12px}
+
+  .settings{display:none;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px}
+  .settings.show{display:block}
+  .settings .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  input{background:#0a0c0f;border:1px solid var(--line);color:var(--ink);font-family:var(--sans);
+    font-size:13.5px;padding:8px 10px;border-radius:6px;flex:1;min-width:220px}
+  input:focus{outline:none;border-color:var(--acc-dim)}
+  .btn{background:var(--acc);color:#0d1117;border:none;font-family:var(--mono);font-size:12px;font-weight:600;
+    padding:8px 15px;border-radius:7px;cursor:pointer}
+  .btn:hover{filter:brightness(1.1)}
+  .hint{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:6px;line-height:1.6}
+
+  .empty{color:var(--muted);font-family:var(--mono);font-size:12.5px;text-align:center;padding:36px 0;
+    border:1px dashed var(--line);border-radius:10px}
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(80px);
+    background:var(--panel2);border:1px solid var(--acc-dim);color:var(--ink);font-family:var(--mono);
+    font-size:12.5px;padding:10px 17px;border-radius:8px;z-index:60;transition:transform .3s ease}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+  .toast.err{border-color:var(--red)}
+  footer{border-top:1px solid var(--line);padding:16px 0 26px;color:var(--muted);font-family:var(--mono);font-size:11px;text-align:center}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap top">
+    <div class="brand">📮 <span data-i18n="brand">邮件分拣台</span><span class="mark">.</span><small>MAIL SORTER</small></div>
+    <div class="tools">
+      <span id="updated">—</span>
+      <button class="iconbtn" id="togBtn" onclick="toggleEnabled()" data-i18n-title="togT" title="开/关每日自动分类（GitHub Actions 每天早上给 Gmail 新邮件打 AI/xx 标签）">分类: —</button>
+      <button class="iconbtn" onclick="loadAll()" data-i18n="refresh">刷新</button>
+      <button class="iconbtn" id="langBtn" onclick="toggleLang()">EN</button>
+      <button class="iconbtn" onclick="toggleSettings()">⚙</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="settings" id="settings">
+    <div class="hint" data-i18n-html="setHint">连接你的私有数据仓库（与导航站共享 <code>pha-config</code>，只存本机浏览器）。Token 需要对 <b>Database</b> 仓库有 Contents 读写权限。</div>
+    <div class="row">
+      <input id="tokenInput" type="password" placeholder="github_pat_…" autocomplete="off">
+      <button class="btn" onclick="saveToken()" data-i18n="saveConnect">保存并连接</button>
+    </div>
+    <div class="hint" id="setStatus"></div>
+  </div>
+
+  <div class="card setup" id="setupBox" style="display:none">
+    <b data-i18n="setupT">还没配置 —— 三步开通（一次性，约 5 分钟）：</b><br>
+    <span data-i18n-html="setupB">
+    ① Google 账号 → 安全 → 开启两步验证 → 搜「应用专用密码 App passwords」→ 生成一个（16 位）。<br>
+    ② GitHub 打开 <b>Database</b> 仓库 → Settings → Secrets and variables → Actions → 添加两条 Secret：<code>GMAIL_USER</code>=Gmail 地址、<code>GMAIL_APP_PASSWORD</code>=那 16 位密码。<br>
+    ③ Database 仓库 → Actions → 「Mail Classify」→ Run workflow：想把<b>现有收件箱</b>一次整理完，在 backfill_days 填天数（如 365）；留空只处理最近 7 天。之后每天早上自动分拣新邮件。</span>
+  </div>
+
+  <div class="stats" id="stats"></div>
+  <div class="filterbar" id="filter"></div>
+  <div id="list"></div>
+</main>
+
+<footer data-i18n="foot">只加标签，绝不删信/标已读/动收件箱 · AI 只看发件人+主题，不看正文 · 摘要存私有仓库</footer>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ 状态与共享配置（pha-config：全家应用同源共享 owner/repo/token） ============ */
+const PHA_KEY='pha-config';
+const DEFAULTS={owner:'NickkkLian',repo:'Database',token:''};
+let MAIL=null, CONF=null, SHA_CONF=null;
+let filter='all';
+
+function cfg(){ try{ const c=JSON.parse(localStorage.getItem(PHA_KEY)||'null'); return Object.assign({},DEFAULTS,c||{}); }catch(e){ return Object.assign({},DEFAULTS); } }
+function configured(){ const c=cfg(); return Boolean(c.owner&&c.token); }
+
+/* ============ 双语（pha-lang 共享） ============ */
+let lang=(()=>{ try{ return localStorage.getItem('pha-lang')==='en'?'en':'zh'; }catch(e){ return 'zh'; } })();
+const T=(zh,en)=>lang==='en'?en:zh;
+const I18N={
+  brand:{zh:'邮件分拣台',en:'Mail Sorter'},
+  refresh:{zh:'刷新',en:'Refresh'},
+  togT:{zh:'开/关每日自动分类（GitHub Actions 每天早上给 Gmail 新邮件打 AI/xx 标签）',en:'Toggle daily auto-classification (labels new Gmail as AI/xx every morning)'},
+  setHint:{zh:'连接你的私有数据仓库（与导航站共享 <code>pha-config</code>，只存本机浏览器）。Token 需要对 <b>Database</b> 仓库有 Contents 读写权限。',en:'Connect your private data repo (shares <code>pha-config</code> with the portal; stored only in this browser). The token needs Contents read/write on the <b>Database</b> repo.'},
+  saveConnect:{zh:'保存并连接',en:'Save & connect'},
+  setupT:{zh:'还没配置 —— 三步开通（一次性，约 5 分钟）：',en:'Not set up yet — three one-time steps (~5 min):'},
+  setupB:{zh:'① Google 账号 → 安全 → 开启两步验证 → 搜「应用专用密码 App passwords」→ 生成一个（16 位）。<br>② GitHub 打开 <b>Database</b> 仓库 → Settings → Secrets and variables → Actions → 添加两条 Secret：<code>GMAIL_USER</code>=Gmail 地址、<code>GMAIL_APP_PASSWORD</code>=那 16 位密码。<br>③ Database 仓库 → Actions → 「Mail Classify」→ Run workflow：想把<b>现有收件箱</b>一次整理完，在 backfill_days 填天数（如 365）；留空只处理最近 7 天。之后每天早上自动分拣新邮件。',en:'① Google Account → Security → turn on 2-Step Verification → search “App passwords” → create one (16 chars).<br>② In the <b>Database</b> repo → Settings → Secrets and variables → Actions → add <code>GMAIL_USER</code> = your Gmail and <code>GMAIL_APP_PASSWORD</code> = that password.<br>③ Database repo → Actions → “Mail Classify” → Run workflow: set backfill_days (e.g. 365) to organize the <b>existing inbox</b> in one go; leave empty for the last 7 days. New mail is then sorted automatically every morning.'},
+  foot:{zh:'只加标签，绝不删信/标已读/动收件箱 · AI 只看发件人+主题，不看正文 · 摘要存私有仓库',en:'Labels only — never deletes / marks read / moves mail · AI sees sender+subject only, never bodies · digest lives in your private repo'},
+  langBtn:{zh:'EN',en:'中'},
+};
+const Ls=k=>(I18N[k]||{zh:k,en:k})[lang];
+function applyStatic(){
+  document.documentElement.lang=lang==='en'?'en':'zh-CN';
+  document.title=lang==='en'?'Mail Sorter':'邮件分拣台 · Mail Sorter';
+  document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent=Ls(el.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-html]').forEach(el=>{ el.innerHTML=Ls(el.dataset.i18nHtml); });
+  document.querySelectorAll('[data-i18n-title]').forEach(el=>{ el.title=Ls(el.dataset.i18nTitle); });
+  const lb=document.getElementById('langBtn'); if(lb) lb.textContent=Ls('langBtn');
+}
+function toggleLang(){ lang=lang==='en'?'zh':'en'; try{localStorage.setItem('pha-lang',lang);}catch(e){} applyStatic(); render(); }
+
+/* ============ 工具 ============ */
+const $=id=>document.getElementById(id);
+const esc=s=>(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function toast(msg,isErr){ const t=$('toast'); t.textContent=msg; t.className='toast show'+(isErr?' err':''); setTimeout(()=>t.className='toast'+(isErr?' err':''),3000); }
+function b64decode(b64){ const bin=atob(String(b64).replace(/\s/g,'')); const bytes=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i); return new TextDecoder().decode(bytes); }
+function b64encode(str){ const bytes=new TextEncoder().encode(str); let bin=''; bytes.forEach(b=>bin+=String.fromCharCode(b)); return btoa(bin); }
+
+async function ghGet(path){
+  const c=cfg();
+  const r=await fetch(`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${path}`,
+    {headers:{Authorization:`Bearer ${c.token}`,Accept:'application/vnd.github+json'}});
+  if(r.status===404) return {data:null,sha:null};
+  if(r.status===401||r.status===403) throw new Error(T('令牌无效或权限不足','Token invalid or insufficient permissions'));
+  if(!r.ok) throw new Error('GitHub '+r.status);
+  const j=await r.json();
+  return {data:JSON.parse(b64decode(j.content)),sha:j.sha};
+}
+async function ghPut(path,obj,sha,message){
+  const c=cfg();
+  const body={message,content:b64encode(JSON.stringify(obj,null,2))};
+  if(sha) body.sha=sha;
+  let r=await fetch(`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${path}`,
+    {method:'PUT',headers:{Authorization:`Bearer ${c.token}`,Accept:'application/vnd.github+json','Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(r.status===409){ const cur=await ghGet(path); body.sha=cur.sha;
+    r=await fetch(`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${path}`,
+      {method:'PUT',headers:{Authorization:`Bearer ${c.token}`,Accept:'application/vnd.github+json','Content-Type':'application/json'},body:JSON.stringify(body)}); }
+  if(!r.ok) throw new Error('GitHub '+r.status);
+  return (await r.json()).content.sha;
+}
+
+/* ============ 设置 ============ */
+function toggleSettings(){ $('settings').classList.toggle('show'); }
+async function saveToken(){
+  const token=$('tokenInput').value.trim();
+  if(!token){ $('setStatus').textContent=T('请输入令牌','Enter a token'); return; }
+  const cur=cfg(); const next=Object.assign({},JSON.parse(localStorage.getItem(PHA_KEY)||'{}'),{owner:cur.owner||DEFAULTS.owner,repo:cur.repo||DEFAULTS.repo,token});
+  localStorage.setItem(PHA_KEY,JSON.stringify(next));
+  $('tokenInput').value='';
+  $('setStatus').textContent=T('已保存，加载中…','Saved, loading…');
+  await loadAll();
+  $('setStatus').textContent=T('✓ 已连接','✓ Connected');
+}
+
+/* ============ 加载与渲染 ============ */
+async function loadAll(){
+  if(!configured()){ $('setupBox').style.display='none'; $('settings').classList.add('show'); $('setStatus').textContent=T('先粘贴 GitHub 令牌（或从导航站进入自动共享）','Paste a GitHub token (or come via the portal to share it automatically)'); return; }
+  try{
+    const [m,c]=await Promise.all([ ghGet('mail/mail.json').catch(()=>({data:null,sha:null})), ghGet('mail/config.json').catch(()=>({data:null,sha:null})) ]);
+    MAIL=m.data; CONF=c.data; SHA_CONF=c.sha;
+    render();
+  }catch(e){ toast(T('加载失败: ','Load failed: ')+e.message,true); }
+}
+
+function catLabel(key){
+  const cats=(CONF&&CONF.categories)||[];
+  const c=cats.find(x=>x.key===key);
+  return c?c.label:key;
+}
+async function toggleEnabled(){
+  if(!CONF){ toast(T('仓库里还没有 mail/config.json','No mail/config.json in the repo yet'),true); return; }
+  const next=!(CONF.enabled!==false);
+  CONF.enabled=next; render();
+  try{ SHA_CONF=await ghPut('mail/config.json',CONF,SHA_CONF,`mail: classify ${next?'ON':'OFF'}`);
+    toast(next?T('已开启每日自动分类','Daily classification ON'):T('已关闭（定时任务将直接跳过）','OFF — the scheduled job skips itself')); }
+  catch(e){ CONF.enabled=!next; render(); toast(T('切换失败: ','Toggle failed: ')+e.message,true); }
+}
+function setFilter(c,el){ filter=c; document.querySelectorAll('#filter button').forEach(b=>b.classList.toggle('on',b===el)); renderList(); }
+
+function render(){
+  const b=$('togBtn');
+  if(!CONF){ b.textContent=T('分类: —','Classify: —'); b.style.color=''; }
+  else{ const on=CONF.enabled!==false;
+    b.textContent=on?T('⏻ 分类: 开','⏻ Classify: ON'):T('⏻ 分类: 关','⏻ Classify: OFF');
+    b.style.color=on?'var(--green)':'var(--red)'; }
+  $('setupBox').style.display = (configured()&&!MAIL)?'block':'none';
+  const m=MAIL||{items:[]};
+  $('updated').textContent=m.updated_at?T('更新 ','Updated ')+m.updated_at.slice(0,16).replace('T',' '):T('尚未运行','Not run yet');
+  const items=m.items||[];
+  const now=Date.now(),dayMs=864e5;
+  // 「已分类」以前直接显示 items.length，而摘要被 keep_items 封顶（默认 500），
+  // 一过上限就永远显示 500，看着像卡住（真实发生过的现象）。
+  // 现在拆成两个：摘要窗口（受封顶，超了显示 500/500）＋ 累计已分类（脚本记账，只增不减）。
+  const total=Number(m.total_classified||0), floor=!!m.total_is_floor;
+  const keep=Number(m.keep_items||500);   // 脚本用的是 config.json 的 keep_items，这里只用于显示分母
+  const today=items.filter(i=>now-new Date(i.date).getTime()<dayMs).length;
+  const week=items.filter(i=>now-new Date(i.date).getTime()<7*dayMs).length;
+  const action=items.filter(i=>i.action).length;
+  $('stats').innerHTML=items.length?`
+    <div class="stat"><div class="k">${T('24 小时','Last 24h')}</div><div class="v">${today}</div></div>
+    <div class="stat"><div class="k">${T('近 7 天','Last 7d')}</div><div class="v">${week}</div></div>
+    <div class="stat"><div class="k">${T('⚡ 待办','⚡ Action')}</div><div class="v" style="color:${action?'var(--amber)':'var(--ink)'}">${action}</div></div>
+    <div class="stat" title="${T(
+      '摘要只保留最近 '+keep+' 封（config.json 的 keep_items）——不封顶的话 mail.json 会无限膨胀，App 打开变慢。',
+      'The digest keeps only the latest '+keep+' emails (keep_items in config.json) to stop mail.json growing without bound.'
+    )}"><div class="k">${T('摘要窗口','In digest')}</div><div class="v">${items.length}${items.length>=keep?`<span style="font-size:.6em;opacity:.55"> /${keep}</span>`:''}</div></div>
+    <div class="stat" title="${T(
+      total ? '分类脚本累计处理过的邮件数，不受摘要窗口封顶影响。'+(floor?'首次记账时早期数据已不可考，所以这是下限。':'') : '还没有累计数据——下一次定时任务跑完就有了。',
+      total ? 'Total emails the classifier has processed, unaffected by the digest cap.'+(floor?' Seeded from the window at first bookkeeping, so it is a lower bound.':'') : 'No cumulative figure yet — appears after the next scheduled run.'
+    )}"><div class="k">${T('累计已分类','Classified')}</div><div class="v">${total?(floor?'≥':'')+total:'—'}</div></div>`:'';
+  const counts={};
+  items.forEach(i=>{ counts[i.category]=(counts[i.category]||0)+1; });
+  const chips=[`<button class="${filter==='all'?'on':''}" onclick="setFilter('all',this)">${T('全部','All')} ${items.length}</button>`,
+    `<button class="${filter==='__action'?'on':''}" onclick="setFilter('__action',this)">⚡ ${T('待办','Action')} ${action}</button>`]
+    .concat(Object.keys(counts).sort((a,b)=>counts[b]-counts[a]).map(k=>
+      `<button class="${filter===k?'on':''}" onclick="setFilter('${k}',this)">${esc(catLabel(k))} ${counts[k]}</button>`));
+  $('filter').innerHTML=items.length?chips.join(''):'';
+  renderList();
+}
+function renderList(){
+  const m=MAIL||{items:[]};
+  let items=m.items||[];
+  if(filter==='__action') items=items.filter(i=>i.action);
+  else if(filter!=='all') items=items.filter(i=>i.category===filter);
+  if(!items.length){ $('list').innerHTML=(m.items||[]).length?`<div class="empty">${T('此类别暂无邮件','No mail in this category')}</div>`:''; return; }
+  $('list').innerHTML=items.slice(0,150).map(i=>{
+    const gurl=i.msgid?`https://mail.google.com/mail/u/0/#search/rfc822msgid:${encodeURIComponent(i.msgid)}`:'https://mail.google.com';
+    return `<div class="card mailrow">
+      <div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap">
+        ${i.action?'<span title="'+T('需要处理','Action needed')+'">⚡</span>':''}
+        <a class="subj" href="${gurl}" target="_blank" rel="noopener">${esc(i.subject)}</a>
+        <span class="chip">${esc(catLabel(i.category))}</span>
+      </div>
+      <div class="meta" style="margin-top:4px">${esc(i.from)} · ${esc((i.date||'').slice(0,16).replace('T',' '))}${i.reason?` · ${esc(i.reason)}`:''}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ============ 启动 ============ */
+applyStatic();
+loadAll();
+</script>
+</body>
+</html>
