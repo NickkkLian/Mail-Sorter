@@ -75,6 +75,19 @@
   .toast.show{transform:translateX(-50%) translateY(0)}
   .toast.err{border-color:var(--red)}
   footer{border-top:1px solid var(--line);padding:16px 0 26px;color:var(--muted);font-family:var(--mono);font-size:11px;text-align:center}
+
+/* ===== 移动端与无障碍基线（2026-07-31 统一注入；规则源：web-interface-guidelines）===== */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{
+    animation-duration:.01ms!important;animation-iteration-count:1!important;
+    transition-duration:.01ms!important;scroll-behavior:auto!important;
+  }
+}
+button,a,summary,label,[role="button"],[onclick]{
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+}
+:focus-visible{outline:2px solid currentColor;outline-offset:2px}
 </style>
 </head>
 <body>
