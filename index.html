@@ -1538,6 +1538,13 @@ const PHA_KEY='pha-config';
 const DEFAULTS={owner:'',repo:'',token:''};
 let MAIL=null, CONF=null, SHA_CONF=null;
 let filter='all', query='';
+// Filter and search live in the address, so a filtered board survives a reload and can be shared (?demo=1 is kept).
+try{ const p0=new URLSearchParams(location.search); filter=p0.get('filter')||'all'; const q0=p0.get('q')||''; query=q0.trim().toLowerCase();
+  if(q0) document.addEventListener('DOMContentLoaded',()=>{ const b=document.getElementById('q'); if(b) b.value=q0; }); }catch(e){}
+function syncURL(raw){ try{ const u=new URL(location.href);
+  if(filter==='all') u.searchParams.delete('filter'); else u.searchParams.set('filter',filter);
+  const q=raw!==undefined?raw.trim():(document.getElementById('q')||{value:''}).value.trim(); if(q) u.searchParams.set('q',q); else u.searchParams.delete('q');
+  history.replaceState(null,'',u); }catch(e){} }
 
 function cfg(){ try{ const c=JSON.parse(localStorage.getItem(PHA_KEY)||'null'); return Object.assign({},DEFAULTS,c||{}); }catch(e){ return Object.assign({},DEFAULTS); } }
 function configured(){ const c=cfg(); return Boolean(c.owner&&c.token); }
@@ -1668,8 +1675,8 @@ async function toggleEnabled(){
     toast(next?T('已开启定时自动分类','Scheduled classification ON'):T('已关闭（定时任务将直接跳过）','OFF — the scheduled job skips itself')); }
   catch(e){ CONF.enabled=!next; render(); toast(T('切换失败: ','Toggle failed: ')+e.message,true); }
 }
-function setFilter(c){ filter=c; render(); }
-function onSearch(v){ query=v.trim().toLowerCase(); renderList(); }
+function setFilter(c){ filter=c; syncURL(); render(); }
+function onSearch(v){ query=v.trim().toLowerCase(); syncURL(v); renderList(); }
 const fmtDay=d=>d.toLocaleDateString(lang==='en'?'en-CA':'zh-CN',{month:'short',day:'numeric'});
 function render(){
   const on=CONF?CONF.enabled!==false:false;
@@ -1715,7 +1722,7 @@ function render(){
 }
 function renderList(){
   const m=MAIL||{items:[]}; let items=m.items||[];
-  if(!(m.items||[]).length){ $('list').innerHTML=DEMO||configured()?`<div class="empty"><h3>${T('摘要还是空的','The digest is empty')}</h3><p>${T('定时任务跑完第一次后这里会出现邮件。','Emails appear here after the first scheduled run.')}</p></div>`:''; return; }
+  if(!(m.items||[]).length){ $('list').innerHTML=DEMO||configured()?`<div class="empty"><h3>${T('摘要还是空的','The digest is empty')}</h3><p>${T('定时任务跑完第一次后这里会出现邮件。','Emails appear here after the first scheduled run.')}</p><button class="btn btn-sm" onclick="loadAll()">${T('刷新','Refresh')}</button></div>`:''; return; }
   if(filter==='__action') items=items.filter(i=>i.action); else if(filter!=='all') items=items.filter(i=>i.category===filter);
   if(query) items=items.filter(i=>(i.subject+' '+i.from).toLowerCase().includes(query));
   if(!items.length){ $('list').innerHTML=`<div class="empty"><h3>${T('没有匹配的邮件','No mail matches')}</h3><p>${T('换个类别或清空搜索。','Pick another category or clear the search.')}</p><button class="btn btn-sm" onclick="query='';document.getElementById('q').value='';setFilter('all')">${T('清除筛选','Clear filters')}</button></div>`; return; }
