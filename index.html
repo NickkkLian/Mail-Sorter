@@ -1250,7 +1250,10 @@ main{width:100%;flex:1 0 auto}
   <section class="plate" id="digestPlate" aria-labelledby="digestT" hidden>
     <div class="plate-in">
       <div>
-        <span class="eyebrow" id="digestEyebrow"></span>
+        <div class="plate-head">
+          <span class="eyebrow" id="digestEyebrow"></span>
+          <button class="btn btn-primary" id="actionBtn" type="button" onclick="showAction()" hidden></button>
+        </div>
         <h1 class="display" id="digestT" data-i18n="digestT">Where the digest went</h1>
         <p class="lede" data-i18n="digestLede">Every email in the digest, split by the label the classifier gave it. Only the envelope was read: sender and subject.</p>
         <div class="rule" aria-hidden="true"></div>
@@ -1676,6 +1679,7 @@ async function toggleEnabled(){
   catch(e){ CONF.enabled=!next; render(); toast(T('切换失败: ','Toggle failed: ')+e.message,true); }
 }
 function setFilter(c){ filter=c; syncURL(); render(); }
+function showAction(){ setFilter('__action'); const first=document.querySelector('#list .mail a.subj'); if(first) first.focus(); }
 function onSearch(v){ query=v.trim().toLowerCase(); syncURL(v); renderList(); }
 const fmtDay=d=>d.toLocaleDateString(lang==='en'?'en-CA':'zh-CN',{month:'short',day:'numeric'});
 function render(){
@@ -1706,7 +1710,9 @@ function render(){
   if(items.length){ const seq=['--viz-seq-600','--viz-seq-500','--viz-seq-450','--viz-seq-400','--viz-seq-350','--viz-seq-300','--viz-seq-250','--viz-seq-200','--viz-seq-150'];
     $('sumBar').innerHTML=cats.map((k,i)=>`<span style="width:${counts[k]/items.length*100}%;background:var(${seq[Math.min(i,seq.length-1)]})"></span>`).join('');
     $('sumLegend').innerHTML=cats.map((k,i)=>`<span><i style="background:var(${seq[Math.min(i,seq.length-1)]})"></i>${esc(catLabel(k))} <b class="mono">${counts[k]}</b></span>`).join('');
-    $('sumEq').textContent=cats.map(k=>counts[k]).join(' + ')+' = '+items.length+' '+T('封在摘要里','in the digest')+' · '+action+' '+T('待处理','need action')+' ✓'; }
+    $('sumEq').textContent=cats.map(k=>counts[k]).join(' + ')+' = '+items.length+' '+T('封在摘要里','in the digest')+' · '+action+' '+T('待处理','need action');
+    // the board's main next step: the mail marked as needing action (hidden when there is none)
+    const ab=$('actionBtn'); ab.hidden=!action; ab.textContent=T('只看待处理（'+action+'）','Show what needs action ('+action+')'); }
   // 7-day trend
   $('trendCard').hidden=!items.length;
   if(items.length){ const days=[...Array(7)].map((_,i)=>{ const d=new Date(now-(6-i)*dayMs); d.setHours(0,0,0,0); return d; });
