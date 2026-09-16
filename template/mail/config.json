@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "keep_items": 500,
+  "primary_only": true,
+  "archive_categories": [],
+  "categories": [
+    { "key": "work", "label": "Work" },
+    { "key": "finance", "label": "Finance" },
+    { "key": "life", "label": "Life" },
+    { "key": "travel", "label": "Travel" },
+    { "key": "logistics", "label": "Shipping" },
+    { "key": "account", "label": "Accounts" },
+    { "key": "promo", "label": "Promotions" },
+    { "key": "reading", "label": "Reading" }
+  ]
+}

@@ -1,0 +1,256 @@
+{
+  "note": "Synthetic sender+subject pairs for evaluating the envelope-only classifier. All domains use the reserved .example TLD; no real sender or person.",
+  "categories": [
+    "work",
+    "finance",
+    "life",
+    "travel",
+    "logistics",
+    "account",
+    "promo",
+    "reading"
+  ],
+  "pass_threshold": 0.8,
+  "items": [
+    {
+      "id": "h01",
+      "from": "statements@bank.example",
+      "subject": "Your September statement is ready",
+      "expected": "finance"
+    },
+    {
+      "id": "h02",
+      "from": "billing@utility.example",
+      "subject": "Invoice 88213 due in 5 days",
+      "expected": "finance"
+    },
+    {
+      "id": "h03",
+      "from": "noreply@tax-office.example",
+      "subject": "Action required: confirm your tax residency by Sep 15",
+      "expected": "finance"
+    },
+    {
+      "id": "h04",
+      "from": "payroll@corp.example",
+      "subject": "Your payslip for August",
+      "expected": "finance"
+    },
+    {
+      "id": "h05",
+      "from": "alerts@card.example",
+      "subject": "A payment of 245.00 was declined",
+      "expected": "finance"
+    },
+    {
+      "id": "h06",
+      "from": "pm@studio.example",
+      "subject": "Design review \u2014 Thursday 14:00, please confirm",
+      "expected": "work"
+    },
+    {
+      "id": "h07",
+      "from": "hr@corp.example",
+      "subject": "Q3 objectives: draft due Friday",
+      "expected": "work"
+    },
+    {
+      "id": "h08",
+      "from": "ci@build.example",
+      "subject": "Build #4471 failed on main",
+      "expected": "work"
+    },
+    {
+      "id": "h09",
+      "from": "calendar@corp.example",
+      "subject": "Updated invitation: sprint planning",
+      "expected": "work"
+    },
+    {
+      "id": "h10",
+      "from": "legal@corp.example",
+      "subject": "Contract redlines for your review",
+      "expected": "work"
+    },
+    {
+      "id": "h11",
+      "from": "landlord@rent.example",
+      "subject": "Re: apartment viewing on Saturday",
+      "expected": "life"
+    },
+    {
+      "id": "h12",
+      "from": "clinic@dentist.example",
+      "subject": "Reminder: your appointment is tomorrow at 9:30",
+      "expected": "life"
+    },
+    {
+      "id": "h13",
+      "from": "library@campus.example",
+      "subject": "Overdue: book due 3 days ago",
+      "expected": "life"
+    },
+    {
+      "id": "h14",
+      "from": "coach@gym.example",
+      "subject": "Your membership renews next week",
+      "expected": "life"
+    },
+    {
+      "id": "h15",
+      "from": "school@district.example",
+      "subject": "Parent-teacher conference sign-up",
+      "expected": "life"
+    },
+    {
+      "id": "h16",
+      "from": "noreply@air.example",
+      "subject": "Your flight is now boarding at gate C48",
+      "expected": "travel"
+    },
+    {
+      "id": "h17",
+      "from": "stay@hotel.example",
+      "subject": "Booking confirmed: 2 nights, check-in Friday",
+      "expected": "travel"
+    },
+    {
+      "id": "h18",
+      "from": "rail@train.example",
+      "subject": "E-ticket for Saturday 08:15",
+      "expected": "travel"
+    },
+    {
+      "id": "h19",
+      "from": "rent@cars.example",
+      "subject": "Pick-up instructions for your rental",
+      "expected": "travel"
+    },
+    {
+      "id": "h20",
+      "from": "visa@embassy.example",
+      "subject": "Appointment confirmation: biometrics",
+      "expected": "travel"
+    },
+    {
+      "id": "h21",
+      "from": "ship@parcel.example",
+      "subject": "Your package has shipped \u2014 tracking 1Z9X",
+      "expected": "logistics"
+    },
+    {
+      "id": "h22",
+      "from": "delivery@courier.example",
+      "subject": "Out for delivery today between 2\u20134pm",
+      "expected": "logistics"
+    },
+    {
+      "id": "h23",
+      "from": "orders@shop.example",
+      "subject": "Your order 5512 has been dispatched",
+      "expected": "logistics"
+    },
+    {
+      "id": "h24",
+      "from": "returns@shop.example",
+      "subject": "Return label for order 5512",
+      "expected": "logistics"
+    },
+    {
+      "id": "h25",
+      "from": "customs@post.example",
+      "subject": "A parcel is awaiting duty payment",
+      "expected": "logistics"
+    },
+    {
+      "id": "h26",
+      "from": "security@account.example",
+      "subject": "Security alert: new sign-in from Chrome on macOS",
+      "expected": "account"
+    },
+    {
+      "id": "h27",
+      "from": "noreply@id.example",
+      "subject": "Your verification code is 482913",
+      "expected": "account"
+    },
+    {
+      "id": "h28",
+      "from": "support@saas.example",
+      "subject": "Password changed successfully",
+      "expected": "account"
+    },
+    {
+      "id": "h29",
+      "from": "admin@cloud.example",
+      "subject": "Your storage is 90% full",
+      "expected": "account"
+    },
+    {
+      "id": "h30",
+      "from": "team@app.example",
+      "subject": "We've updated our terms of service",
+      "expected": "account"
+    },
+    {
+      "id": "h31",
+      "from": "deals@shop.example",
+      "subject": "70% off everything \u2014 48 hours only",
+      "expected": "promo"
+    },
+    {
+      "id": "h32",
+      "from": "news@brand.example",
+      "subject": "New arrivals you'll love",
+      "expected": "promo"
+    },
+    {
+      "id": "h33",
+      "from": "offers@airline.example",
+      "subject": "Flash sale: fares from 89",
+      "expected": "promo"
+    },
+    {
+      "id": "h34",
+      "from": "club@grocer.example",
+      "subject": "Your weekly coupons are here",
+      "expected": "promo"
+    },
+    {
+      "id": "h35",
+      "from": "promo@app.example",
+      "subject": "Upgrade now and save 30%",
+      "expected": "promo"
+    },
+    {
+      "id": "h36",
+      "from": "digest@papers.example",
+      "subject": "Weekly digest: 12 new papers in your feed",
+      "expected": "reading"
+    },
+    {
+      "id": "h37",
+      "from": "newsletter@blog.example",
+      "subject": "Issue #142: on writing less",
+      "expected": "reading"
+    },
+    {
+      "id": "h38",
+      "from": "editor@magazine.example",
+      "subject": "This week's long reads",
+      "expected": "reading"
+    },
+    {
+      "id": "h39",
+      "from": "updates@forum.example",
+      "subject": "Top posts you missed this week",
+      "expected": "reading"
+    },
+    {
+      "id": "h40",
+      "from": "author@substack.example",
+      "subject": "New post: what I learned shipping v2",
+      "expected": "reading"
+    }
+  ]
+}

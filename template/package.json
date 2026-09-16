@@ -1,0 +1,16 @@
+{
+  "name": "headersort-template",
+  "private": true,
+  "type": "module",
+  "description": "Scheduled Gmail triage that reads only sender + subject and only adds labels. Copy into your private data repo.",
+  "scripts": {
+    "classify": "node mail/scripts/classify.mjs",
+    "check": "node check.mjs"
+  },
+  "dependencies": {
+    "imapflow": "^1.0.160"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

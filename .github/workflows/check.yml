@@ -1,0 +1,40 @@
+name: Check
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  template:
+    # The classifier template runs on 20 synthetic emails with mock adapters: envelope-only input, labels-only output,
+    # the enabled switch, the keep_items cap, a DRY_RUN smoke of the CLI, and a negative control.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node template/check.mjs
+      - name: model path for Claude, OpenAI, Gemini and OpenAI-compatible against a local mock
+        run: node template/check-llm.mjs
+  eval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node eval/score.mjs --break
+      - run: |
+          if [ -f eval/llm-cache.json ]; then node eval/score.mjs; else echo "no eval/llm-cache.json yet — eval not run"; fi
+  board:
+    # The board is one static file: no external scripts, demo addresses only on the reserved .example TLD,
+    # and the data-layer functions the private deployment depends on are present and unchanged in shape.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          test "$(grep -c '<script src="http' index.html)" = 0
+          test "$(grep -oiE '[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}' index.html | grep -vc '\.example')" = 0
+          for f in "function cfg()" "function configured()" "async function ghGet(path)" "async function ghPut(path,obj,sha,message)" "ghGet('mail/mail.json')" "ghGet('mail/config.json')" "ghPut('mail/config.json'" "localStorage.getItem('pha-lang')"; do grep -qF "$f" index.html || { echo "missing: $f"; exit 1; }; done
+          echo "board checks passed"

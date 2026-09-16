@@ -2,178 +2,1585 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>邮件分拣台 · Mail Sorter</title>
+<script>/* appearance boot — runs before any stylesheet so the stored palette and light/dark apply on the first paint */(function(){try{var d=document.documentElement,L=window.localStorage,t=L.getItem('nl-theme'),s=L.getItem('nl-scheme');if(s===null){var o=L.getItem('theme')||L.getItem('qm-theme');if(o==='dark'||o==='light')s=o;}if(t==='paper'||t==='ink')d.setAttribute('data-theme',t);if(s==='dark'||s==='light')d.setAttribute('data-scheme',s);}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Headersort: Gmail triage that reads only the envelope — sender and subject — and only adds labels. A scheduled Action writes a capped digest to your private repo; this board reads it.">
+<meta name="theme-color" content="#faece9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#12110c" media="(prefers-color-scheme: dark)">
+<title>Headersort</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Crect x='2.5' y='2.5' width='19' height='19' rx='5' stroke='%231e1d17' stroke-width='2'/%3E%3Crect x='14' y='6' width='4' height='4' rx='1' fill='%23ba954e'/%3E%3Cpath d='M6 10l6 4 6-4M6 13v3h12v-3' stroke='%231e1d17' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500..600;1,9..144,400&family=Inter:wght@400..600&family=Space+Mono:wght@400;700&display=swap">
 <style>
-  :root{
-    --bg:#0d0f12; --panel:#14171c; --panel2:#1a1e25;
-    --ink:#e6e9ee; --muted:#8a92a0; --line:#262b34;
-    --acc:#7c9cc4; --acc-dim:#4a5f7d; --green:#7fae6a; --red:#c9695a; --amber:#e0aa3e;
-    --mono:'IBM Plex Mono','Noto Sans SC',monospace; --sans:'IBM Plex Sans','Noto Sans SC',sans-serif;
-  }
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{
-    background:var(--bg); color:var(--ink); font-family:var(--sans);
-    font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased; min-height:100vh;
-    background-image:radial-gradient(1100px 500px at 85% -10%, rgba(124,156,196,.08), transparent 60%);
-  }
-  a{color:var(--acc)}
-  .wrap{max-width:920px;margin:0 auto;padding:0 18px}
+/* ---- design tokens (shared across the product family; inlined because this app is one file) ---- */
+/* Design tokens — the only source of colour, type, spacing and motion values for this app.
+   Three palettes: Plaster (default), <html data-theme="paper">, <html data-theme="ink">.
+   Light/dark: follows the OS unless <html data-scheme="light|dark"> is set (appearance.js stores the choice).
+   Pages consume semantic tokens (--bg, --surface, --text, --accent …), never raw values. */
+/* ------------------------------------------------------------------
+   THEMES.  data-theme picks the palette, data-scheme picks light/dark.
 
-  header{border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20;
-    background:rgba(13,15,18,.92);backdrop-filter:blur(8px)}
-  .top{display:flex;align-items:center;justify-content:space-between;padding:15px 0;gap:12px;flex-wrap:wrap}
-  .brand{font-weight:600;font-size:21px;letter-spacing:.3px;display:flex;align-items:baseline;gap:9px}
-  .brand .mark{color:var(--acc)}
-  .brand small{font-family:var(--mono);font-size:10.5px;color:var(--muted);letter-spacing:2px;text-transform:uppercase}
-  .tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-family:var(--mono);font-size:11.5px;color:var(--muted)}
-  .iconbtn{background:none;border:1px solid var(--line);color:var(--muted);font-family:var(--mono);
-    font-size:11px;padding:5px 10px;border-radius:6px;cursor:pointer;letter-spacing:.5px}
-  .iconbtn:hover{color:var(--ink);border-color:var(--acc-dim)}
+     <html>                                        Plaster, follows the OS
+     <html data-theme="paper">                     Paper, follows the OS
+     <html data-theme="ink" data-scheme="dark">    Ink, forced dark
 
-  main{padding:24px 0 70px}
-  .meta{font-family:var(--mono);font-size:11px;color:var(--muted)}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:10px}
+   Plaster and "follow the system" are the DEFAULTS and write no attribute
+   at all - the attribute being present means the user chose something.
 
-  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px}
-  .stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:13px 15px}
-  .stat .k{font-family:var(--mono);font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
-  .stat .v{font-size:24px;font-weight:600;margin-top:3px}
+   data-theme="dark" / "light" is a LEGACY alias. Every shipped product has
+   moved to data-scheme; the one remaining consumer is tools/retoken.py,
+   which locates the dark values by matching ^:root[data-theme="dark"]{ at
+   the start of a line. Keep this block standalone and line-start until that
+   tool stops parsing for it.
 
-  .filterbar{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
-  .filterbar button{font-family:var(--mono);font-size:11px;background:var(--panel);border:1px solid var(--line);
-    color:var(--muted);padding:5px 11px;border-radius:6px;cursor:pointer}
-  .filterbar button.on{color:var(--bg);background:var(--acc);border-color:var(--acc)}
+   Each palette is declared twice: once on :root, once on a bare
+   [data-theme] so a nested element can preview a theme (used by the theme
+   picker) without the page hardcoding any colour.
 
-  .chip{border:1px solid var(--line);padding:2px 7px;border-radius:4px;font-family:var(--mono);font-size:10px;color:var(--muted)}
-  .mailrow .subj{color:var(--ink);text-decoration:none;font-weight:600;font-size:14.5px}
-  .mailrow .subj:hover{color:var(--acc)}
+   A palette block overrides colour only. Spacing, type scale, radius,
+   shadow geometry and motion are declared once on :root and shared.
+   ------------------------------------------------------------------ */
 
-  .setup{color:var(--muted);font-size:13px;line-height:1.85}
-  .setup b{color:var(--ink)}
-  .setup code{background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:1px 6px;font-size:12px}
+:root {
 
-  .settings{display:none;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px}
-  .settings.show{display:block}
-  .settings .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-  input{background:#0a0c0f;border:1px solid var(--line);color:var(--ink);font-family:var(--sans);
-    font-size:13.5px;padding:8px 10px;border-radius:6px;flex:1;min-width:220px}
-  input:focus{outline:none;border-color:var(--acc-dim)}
-  .btn{background:var(--acc);color:#0d1117;border:none;font-family:var(--mono);font-size:12px;font-weight:600;
-    padding:8px 15px;border-radius:7px;cursor:pointer}
-  .btn:hover{filter:brightness(1.1)}
-  .hint{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:6px;line-height:1.6}
+  color-scheme: light;
 
-  .empty{color:var(--muted);font-family:var(--mono);font-size:12.5px;text-align:center;padding:36px 0;
-    border:1px dashed var(--line);border-radius:10px}
-  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(80px);
-    background:var(--panel2);border:1px solid var(--acc-dim);color:var(--ink);font-family:var(--mono);
-    font-size:12.5px;padding:10px 17px;border-radius:8px;z-index:60;transition:transform .3s ease}
-  .toast.show{transform:translateX(-50%) translateY(0)}
-  .toast.err{border-color:var(--red)}
-  footer{border-top:1px solid var(--line);padding:16px 0 26px;color:var(--muted);font-family:var(--mono);font-size:11px;text-align:center}
+  /* ---- 1. Surfaces: four levels (OKLCH L noted per line) ---- */
+  --paper:          #fefaf9;   /* L .988 - cards, table body, inputs */
+  --surface:        var(--paper); /* v2 name kept: --surface is the card surface */
+  --bg:             #faece9;   /* L .953 - canvas, one step below paper */
+  --surface-2:      #d8e6d8;   /* L .910 - sunken: nav, table head, code */
+  --surface-raised: #fefcfb;   /* menus, popovers (pair with --shadow-2) */
+  --surface-hover:  #fef2f0;
 
-/* ===== 移动端与无障碍基线（2026-07-31 统一注入；规则源：web-interface-guidelines）===== */
-@media (prefers-reduced-motion: reduce){
-  *,*::before,*::after{
-    animation-duration:.01ms!important;animation-iteration-count:1!important;
-    transition-duration:.01ms!important;scroll-behavior:auto!important;
-  }
+  /* ---- 2. Anchor: the weight of the page. Top bar / signature panel / footer / primary button ---- */
+  --anchor:         #1e3424;
+  --anchor-2:       #132819;   /* hover + active step */
+  --anchor-line:    #445849;   /* rules drawn on the anchor surface */
+  --on-anchor:      #f7f0ef;
+  --on-anchor-2:    #c8bcbb;
+
+  /* ---- 3. Point colour: brass. Under 1.5% of page area. Seal, signature rule, one chart key ---- */
+  --point:          #ba954e;
+  --point-text:     #7e5b06;   /* use this step when it has to be text */
+  --point-tint:     #f4e4c7;
+  --point-tint-text:#624400;
+
+  /* ---- 4. Text and borders ---- */
+  --text:           #1e1d17;
+  --text-2:         #4f4d47;
+  --text-3:         #63615b;
+  --text-inverse:   #f7f0ef;
+  --text-disabled:  #93928d;   /* below 4.5 on purpose: disabled is exempt */
+  --neutral-tint:   #fef2f0;
+  --neutral-tint-text: #4f4d47;
+
+  --border:         #dcdad2;        /* component edge, 1px */
+  --border-strong:  #c3c1b8;
+  --border-input:   #7c7b73;  /* control edge, >=3:1 on every surface */
+  --hairline:       rgb(30 29 23 / 0.11); /* second, lighter rule weight for inside a component */
+  --border-width:   1px;
+  --border-focus-width: 2px;
+
+  /* ---- 5. Structural roles: which surface carries the band and the nav ----
+     The band is the top bar, the signature panel and the footer taken together.
+     These four pairs are what make the same markup read as three different
+     schemes, so a page should consume them rather than picking surfaces itself. */
+  --band:          #1e3424;
+  --on-band:       #f7f0ef;
+  --on-band-2:     #c8bcbb;
+  --band-line:     #445849;
+  --nav-surface:   #d8e6d8;
+  --on-nav:        #1e1d17;
+  --on-nav-2:      #63615b;
+  --nav-line:      #dcdad2;
+  --nav-selected:  #fefaf9;
+
+  /* ---- 6. Accent and semantic colours ---- */
+  --accent:        #1e3424;
+  --accent-hover:  #132819;
+  --accent-active: #132819;
+  --on-accent:     #f7f0ef;
+  --accent-text:   #944c44;   /* links, icons, focus ring */
+  --accent-tint:   #f7e4e1;   /* selected row (plus a 3px leading bar) */
+  --accent-tint-text: #783831;
+
+  --brand-rose:    #bc8a83;   /* decoration only: seal, charts, illustration. Never text */
+  --brand-sage:    #6c856b;
+  --sage-tint:     #dbe7da;   /* classification tint, never a status */
+  --sage-tint-text:#2c512c;
+  --sage-text:     #50794f;   /* decorative small labels only, never a status or link */
+
+  --success:       #006e55;  --success-tint: #c0f5e1;  --success-tint-text: #005743;
+  --warning:       #835900;  --warning-tint: #fee5bf;  --warning-tint-text: #664500;
+  --danger:        #ab393d;  --danger-hover: #9b2830;
+  --danger-tint:   #ffe0de;  --danger-tint-text: #901d27;  --on-danger: #ffffff;
+
+  --info: var(--accent-text); --info-tint: var(--accent-tint); --info-tint-text: var(--accent-tint-text);
+  --focus:         #944c44;
+  --overlay:       rgb(30 29 23 / 0.52);
+  --selection-bg:  var(--accent-tint);
+
+  /* ---- 7. Paper grain: the only non-flat surface treatment ----
+     Inline SVG noise, no network request. Put it on a fixed layer BEHIND content
+     (z-index 0, content z-index 1) so cards and text sit on top of it: the texture
+     shows only where the canvas is bare, and contrast is untouched.
+     Never give that layer z-index:-1 - it lands behind the body background. */
+  --grain-opacity: 0.030;
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+
+  /* ---- 8. Data visualisation. Fixed order, assigned in sequence, never cycled ---- */
+  --viz-1: #de7669;  --viz-2: #447838;  --viz-3: #a25089;  --viz-4: #ca9d33;
+  --viz-5: #3c7ebe;  --viz-6: #ab2e45;  --viz-7: #14938d;  --viz-8: #7860b5;
+  --viz-seq-100: #ffe4e0; --viz-seq-150: #fbd1cb; --viz-seq-200: #f4bcb4;
+  --viz-seq-250: #eca69d; --viz-seq-300: #e09187; --viz-seq-350: #d47d72;
+  --viz-seq-400: #c56a5f; --viz-seq-450: #b5574d; --viz-seq-500: #a4453c;
+  --viz-seq-550: #91352d; --viz-seq-600: #7c2822; --viz-seq-650: #651e19;
+  --viz-seq-700: #4d1510;
+  --viz-div-neg: var(--viz-5); --viz-div-mid: #dcdad2; --viz-div-pos: var(--viz-1);
+  --viz-grid: var(--border); --viz-axis: var(--text-3);
+  --viz-unknown: repeating-linear-gradient(135deg, #c3c1b8 0 3px, transparent 3px 7px);
+
+  /* ---- 9. Type ---- */
+  --font-display: "Fraunces", "Fraunces Fallback", Georgia, "Noto Serif SC", "Songti SC", serif;
+  --font-sans:    "Inter", "Inter Fallback", system-ui, -apple-system, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  --font-mono:    "Space Mono", "Space Mono Fallback", ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --display-weight: 600;
+  --caption-style:  italic;
+  /* Fraunces optical size, named per role. v2 used auto only, so headings were
+     body-serif scaled up rather than a display cut. */
+  --opsz-display: 144;   /* page title at 28px and above */
+  --opsz-title:    28;   /* panel titles, 16-24px */
+  --opsz-caption:  11;   /* italic captions - low opsz is what looks engraved */
+
+  --text-2xs: 0.6875rem; --text-xs: 0.75rem;  --text-sm: 0.8125rem; --text-md: 0.875rem;
+  --text-lg:  1rem;      --text-xl: 1.25rem;  --text-2xl: 1.5rem;   --text-3xl: 2rem;
+  --text-4xl: 2.5rem;    /* page title, Fraunces at opsz 144 */
+  /* Leading tracks size inversely: tight on display, normal on body, looser on small text. */
+  --leading-tight: 1.14; --leading-lede: 1.45; --leading-normal: 1.5; --leading-relaxed: 1.65;
+  --weight-regular: 400; --weight-medium: 500; --weight-semibold: 600;
+  --tracking-caps:    0.09em;
+  --tracking-display: -0.021em;  /* large Fraunces has to be tightened */
+  --tracking-title:   -0.009em;
+  --measure: 66ch;               /* prose line length */
+
+  /* ---- 10. Space / radius / shadow / motion / layers / layout ---- */
+  --space-0-5: 0.125rem; --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem; --space-4: 1rem;
+  --space-5: 1.25rem; --space-6: 1.5rem; --space-8: 2rem; --space-10: 2.5rem; --space-12: 3rem; --space-16: 4rem;
+  --gutter: var(--space-4);
+  /* One radius per role: xs chips, sm controls, md cards, lg panels and bubbles */
+  --radius-xs: 3px; --radius-sm: 5px; --radius-md: 8px; --radius-lg: 12px; --radius-full: 999px;
+  /* Shadows are tinted with the ink hue, not grey, and the light comes from the
+     top left, so every offset is +x +y. */
+  --shadow-1: 1px 1px 2px rgb(30 29 23 / 0.05),
+              2px 3px 8px -2px rgb(30 29 23 / 0.08);
+  --shadow-2: 2px 3px 8px rgb(30 29 23 / 0.09),
+              6px 14px 34px -10px rgb(30 29 23 / 0.20);
+  --dur-fast: 120ms; --dur-base: 200ms; --dur-slow: 300ms; --dur-exit: 150ms;
+  /* Named curves, not ranges. --ease-out is the strong ease-out for entering/exiting UI;
+     --ease-soft is the iOS drawer curve for sheets and drawers; --ease-in-out for on-screen
+     movement. Never ease-in on UI: it delays the first frame, exactly where the eye is. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1); --ease-soft: cubic-bezier(0.32, 0.72, 0, 1); --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --press-scale: 0.97;   /* pressable elements scale to this on :active */
+  --motion-distance: 8px; --flash-dur: 600ms;
+  --z-sticky: 10; --z-drawer: 20; --z-overlay: 30; --z-modal: 40; --z-toast: 50;
+  --topbar-h: 52px; --nav-w: 232px; --nav-w-min: 56px; --inspector-w: 360px; --content-max: 1440px;
+  --control-h: 32px; --row-h: 38px; --touch-min: 44px;
 }
-button,a,summary,label,[role="button"],[onclick]{
-  touch-action:manipulation;
-  -webkit-tap-highlight-color:transparent;
+
+/* Nested preview of the default theme. */
+[data-theme="plaster"] {
+  --paper: #fefaf9;
+  --surface: var(--paper);
+  --bg: #faece9;
+  --surface-2: #d8e6d8;
+  --point: #ba954e;
+  --text: #1e1d17;
+  --text-2: #4f4d47;
+  --border: #dcdad2;
+  --band: #1e3424;
+  --on-band: #f7f0ef;
+  --band-line: #445849;
+  --accent: #1e3424;
+  --on-accent: #f7f0ef;
+  --accent-text: #944c44;
 }
-:focus-visible{outline:2px solid currentColor;outline-offset:2px}
+
+/* --- Paper, light (70 colour tokens differ from the default) --- */
+:root[data-theme="paper"], [data-theme="paper"] {
+  --paper: #fffefe;
+  --bg: #fffbfb;
+  --surface-2: #f5fdf6;
+  --surface-raised: #fffffe;
+  --surface-hover: #fffdfc;
+  --anchor: #251f18;
+  --anchor-2: #1b150e;
+  --anchor-line: #49423c;
+  --point: #bb534d;
+  --point-text: #b65049;
+  --point-tint: #ffddd9;
+  --point-tint-text: #832b28;
+  --text: #211c17;
+  --text-2: #605b55;
+  --text-3: #746f6a;
+  --text-disabled: #95918d;
+  --neutral-tint: #fffdfc;
+  --neutral-tint-text: #605b55;
+  --border: #dfd9d2;
+  --border-strong: #c6c0b8;
+  --border-input: #908a84;
+  --hairline: rgb(33 28 23 / 0.11);
+  --band: #fffefe;
+  --on-band: #211c17;
+  --on-band-2: #605b55;
+  --band-line: #dfd9d2;
+  --nav-surface: #fffbfb;
+  --on-nav: #211c17;
+  --on-nav-2: #746f6a;
+  --nav-line: #dfd9d2;
+  --nav-selected: #fffefe;
+  --accent: #bb534d;
+  --accent-hover: #aa443f;
+  --accent-active: #aa443f;
+  --on-accent: #ffffff;
+  --accent-text: #a55b55;
+  --accent-tint-text: #783834;
+  --brand-rose: #bc8a84;
+  --brand-sage: #69866e;
+  --sage-tint: #dae7dc;
+  --sage-tint-text: #255130;
+  --sage-text: #4c7c56;
+  --success: #287e50;
+  --success-tint: #c8f4d7;
+  --success-tint-text: #005831;
+  --warning: #966700;
+  --danger: #8d1934;
+  --danger-hover: #7d0028;
+  --danger-tint: #ffe0e1;
+  --danger-tint-text: #8f1c36;
+  --focus: #a55b55;
+  --overlay: rgb(33 28 23 / 0.52);
+  --viz-1: #de756d;
+  --viz-seq-100: #ffe4e1;
+  --viz-seq-150: #fbd1cc;
+  --viz-seq-200: #f5bcb6;
+  --viz-seq-250: #eca69e;
+  --viz-seq-300: #e09189;
+  --viz-seq-350: #d47c74;
+  --viz-seq-400: #c56961;
+  --viz-seq-450: #b55750;
+  --viz-seq-500: #a4453f;
+  --viz-seq-550: #913531;
+  --viz-seq-600: #7d2825;
+  --viz-seq-650: #661e1b;
+  --viz-seq-700: #4d1412;
+  --viz-div-mid: #dfd9d2;
+  --viz-unknown: repeating-linear-gradient(135deg, #c6c0b8 0 3px, transparent 3px 7px);
+  --shadow-1: 1px 1px 2px rgb(33 28 23 / 0.05), 2px 3px 8px -2px rgb(33 28 23 / 0.08);
+  --shadow-2: 2px 3px 8px rgb(33 28 23 / 0.09), 6px 14px 34px -10px rgb(33 28 23 / 0.20);
+}
+
+/* --- Ink, light (74 colour tokens differ from the default) --- */
+:root[data-theme="ink"], [data-theme="ink"] {
+  --paper: #fbfdfc;
+  --bg: #ecf7f3;
+  --surface-2: #f5e5e7;
+  --surface-raised: #fdfefe;
+  --surface-hover: #f2fbf7;
+  --anchor: #0f2323;
+  --anchor-2: #051818;
+  --anchor-line: #334646;
+  --on-anchor: #edf4f1;
+  --on-anchor-2: #b8c2be;
+  --point: #c74e33;
+  --point-text: #b33c21;
+  --point-tint: #ffded5;
+  --point-tint-text: #8b2309;
+  --text: #161f1f;
+  --text-2: #4a5353;
+  --text-3: #5e6666;
+  --text-inverse: #edf4f1;
+  --text-disabled: #8d9494;
+  --neutral-tint: #f2fbf7;
+  --neutral-tint-text: #4a5353;
+  --border: #d2dcdc;
+  --border-strong: #b8c4c3;
+  --border-input: #778181;
+  --hairline: rgb(22 31 31 / 0.11);
+  --band: #0f2323;
+  --on-band: #edf4f1;
+  --on-band-2: #b8c2be;
+  --band-line: #334646;
+  --nav-surface: #0f2323;
+  --on-nav: #edf4f1;
+  --on-nav-2: #b8c2be;
+  --nav-line: #334646;
+  --nav-selected: #051818;
+  --accent: #0f2323;
+  --accent-hover: #051818;
+  --accent-active: #051818;
+  --on-accent: #edf4f1;
+  --accent-text: #974f5e;
+  --accent-tint: #f7e3e6;
+  --accent-tint-text: #763745;
+  --brand-rose: #bb8991;
+  --brand-sage: #618779;
+  --sage-tint: #d6e8e1;
+  --sage-tint-text: #095341;
+  --sage-text: #377d67;
+  --success: #2e723c;
+  --success-tint: #cdf3d1;
+  --success-tint-text: #0d5823;
+  --warning: #875d00;
+  --danger: #a8375c;
+  --danger-hover: #97274f;
+  --danger-tint: #ffdfe6;
+  --danger-tint-text: #8d1c47;
+  --focus: #974f5e;
+  --overlay: rgb(22 31 31 / 0.52);
+  --viz-1: #de7476;
+  --viz-seq-100: #ffe4e3;
+  --viz-seq-150: #fbd0cf;
+  --viz-seq-200: #f5bcba;
+  --viz-seq-250: #eca5a4;
+  --viz-seq-300: #e09090;
+  --viz-seq-350: #d47b7c;
+  --viz-seq-400: #c5686a;
+  --viz-seq-450: #b55658;
+  --viz-seq-500: #a44448;
+  --viz-seq-550: #91343a;
+  --viz-seq-600: #7c272d;
+  --viz-seq-650: #651d22;
+  --viz-seq-700: #4d1418;
+  --viz-div-mid: #d2dcdc;
+  --viz-unknown: repeating-linear-gradient(135deg, #b8c4c3 0 3px, transparent 3px 7px);
+  --shadow-1: 1px 1px 2px rgb(22 31 31 / 0.05), 2px 3px 8px -2px rgb(22 31 31 / 0.08);
+  --shadow-2: 2px 3px 8px rgb(22 31 31 / 0.09), 6px 14px 34px -10px rgb(22 31 31 / 0.20);
+}
+
+@media (prefers-color-scheme: dark) {
+:root:not([data-scheme="light"]):not([data-theme="light"]) {
+    --paper: #22211c;
+    --surface: var(--paper);
+    --bg: #12110c;
+    --surface-2: #0c1e0c;
+    --surface-raised: #2c2b25;
+    --surface-hover: #322320;
+    --anchor: #223427;
+    --anchor-2: #2d4032;
+    --anchor-line: #425346;
+    --on-anchor: #ede4e2;
+    --on-anchor-2: #b0a5a3;
+    --point: #d9b97e;
+    --point-text: #b19257;
+    --point-tint: #342812;
+    --point-tint-text: #d0b27b;
+    --text: #ece4e3;
+    --text-2: #b1b0a8;
+    --text-3: #97968f;
+    --text-inverse: #12110c;
+    --text-disabled: #595853;
+    --neutral-tint: #322320;
+    --neutral-tint-text: #b1b0a8;
+    --border: #34332d;
+    --border-strong: #4a4840;
+    --border-input: #7b7a72;
+    --hairline: rgb(236 228 227 / 0.15);
+    --band: #223427;
+    --on-band: #ede4e2;
+    --on-band-2: #b0a5a3;
+    --band-line: #425346;
+    --nav-surface: #0c1e0c;
+    --on-nav: #ece4e3;
+    --on-nav-2: #97968f;
+    --nav-line: #34332d;
+    --nav-selected: #22211c;
+    --accent: #afd8b9;
+    --accent-hover: #c6e6cd;
+    --accent-active: #d9b97e;
+    --on-accent: #13120e;
+    --accent-text: #c5867d;
+    --accent-tint: #342320;
+    --accent-tint-text: #e1a49b;
+    --brand-rose: #cf9c95;
+    --brand-sage: #819480;
+    --sage-tint: #222a22;
+    --sage-tint-text: #97be96;
+    --sage-text: #6d966c;
+    --success: #28a986;
+    --success-tint: #003024;
+    --success-tint-text: #52c9a5;
+    --warning: #ba8f46;
+    --warning-tint: #362507;
+    --warning-tint-text: #daad64;
+    --danger: #db7b78;
+    --danger-hover: #ec8a87;
+    --danger-tint: #3d1f1e;
+    --danger-tint-text: #fb9895;
+    --on-danger: #0e0d09;
+    --info: var(--accent-text);
+    --info-tint: var(--accent-tint);
+    --info-tint-text: var(--accent-tint-text);
+    --focus: #c5867d;
+    --overlay: rgb(0 0 0 / 0.66);
+    --selection-bg: var(--accent-tint);
+    --grain-opacity: 0.042;
+    --viz-1: #d67266;
+    --viz-2: #3c7030;
+    --viz-3: #b25e98;
+    --viz-4: #b3880f;
+    --viz-5: #488acb;
+    --viz-6: #b84455;
+    --viz-7: #169d97;
+    --viz-8: #866ec5;
+    --viz-div-mid: #34332d;
+    --viz-grid: var(--border);
+    --viz-axis: var(--text-3);
+    --viz-unknown: repeating-linear-gradient(135deg, #4a4840 0 3px, transparent 3px 7px);
+    --shadow-1: 1px 1px 2px rgb(0 0 0 / 0.45), 2px 3px 8px -2px rgb(0 0 0 / 0.42);
+    --shadow-2: 2px 3px 10px rgb(0 0 0 / 0.5), 6px 16px 38px -10px rgb(0 0 0 / 0.66);
+}
+[data-theme="plaster"]:not([data-scheme="light"]) {
+    --paper: #22211c;
+    --surface: var(--paper);
+    --bg: #12110c;
+    --surface-2: #0c1e0c;
+    --point: #d9b97e;
+    --text: #ece4e3;
+    --text-2: #b1b0a8;
+    --border: #34332d;
+    --band: #223427;
+    --on-band: #ede4e2;
+    --band-line: #425346;
+    --accent: #afd8b9;
+    --on-accent: #13120e;
+    --accent-text: #c5867d;
+}
+:root[data-theme="paper"]:not([data-scheme="light"]) {
+    --paper: #24201c;
+    --surface: var(--paper);
+    --bg: #13100c;
+    --surface-2: #091f0f;
+    --surface-raised: #2e2a25;
+    --surface-hover: #322221;
+    --anchor: #3a2c1c;
+    --anchor-2: #463827;
+    --anchor-line: #594c3d;
+    --on-anchor: #ede4e3;
+    --on-anchor-2: #b0a5a3;
+    --point: #ffa097;
+    --point-text: #d87c74;
+    --point-tint: #411f1c;
+    --point-tint-text: #f79d95;
+    --text: #ece4e3;
+    --text-2: #b4aea8;
+    --text-3: #9a958f;
+    --text-inverse: #13100c;
+    --text-disabled: #5b5753;
+    --neutral-tint: #322221;
+    --neutral-tint-text: #b4aea8;
+    --border: #37322d;
+    --border-strong: #4c4740;
+    --border-input: #7e7972;
+    --hairline: rgb(236 228 227 / 0.15);
+    --band: #3a2c1c;
+    --on-band: #ede4e3;
+    --on-band-2: #b0a5a3;
+    --band-line: #594c3d;
+    --nav-surface: #13100c;
+    --on-nav: #ece4e3;
+    --on-nav-2: #9a958f;
+    --nav-line: #37322d;
+    --nav-selected: #24201c;
+    --accent: #f2bdb7;
+    --accent-hover: #fbd1cc;
+    --accent-active: #ffa097;
+    --on-accent: #14110e;
+    --accent-text: #c5867f;
+    --accent-tint: #342321;
+    --accent-tint-text: #e2a49d;
+    --brand-rose: #cf9c97;
+    --brand-sage: #7f9482;
+    --sage-tint: #212b23;
+    --sage-tint-text: #93bf9b;
+    --sage-text: #689771;
+    --success: #49a771;
+    --success-tint: #0b301c;
+    --success-tint-text: #6bc891;
+    --warning: #ba8f46;
+    --warning-tint: #362507;
+    --warning-tint-text: #daad64;
+    --danger: #da7984;
+    --danger-hover: #eb8993;
+    --danger-tint: #3c1f22;
+    --danger-tint-text: #fa97a0;
+    --on-danger: #100d0a;
+    --info: var(--accent-text);
+    --info-tint: var(--accent-tint);
+    --info-tint-text: var(--accent-tint-text);
+    --focus: #c5867f;
+    --overlay: rgb(0 0 0 / 0.66);
+    --selection-bg: var(--accent-tint);
+    --grain-opacity: 0.042;
+    --viz-1: #d67169;
+    --viz-2: #3c7030;
+    --viz-3: #b25e98;
+    --viz-4: #b3880f;
+    --viz-5: #488acb;
+    --viz-6: #b84455;
+    --viz-7: #169d97;
+    --viz-8: #866ec5;
+    --viz-div-mid: #37322d;
+    --viz-grid: var(--border);
+    --viz-axis: var(--text-3);
+    --viz-unknown: repeating-linear-gradient(135deg, #4c4740 0 3px, transparent 3px 7px);
+    --shadow-1: 1px 1px 2px rgb(0 0 0 / 0.45), 2px 3px 8px -2px rgb(0 0 0 / 0.42);
+    --shadow-2: 2px 3px 10px rgb(0 0 0 / 0.5), 6px 16px 38px -10px rgb(0 0 0 / 0.66);
+}
+[data-theme="paper"]:not([data-scheme="light"]) {
+    --paper: #24201c;
+    --surface: var(--paper);
+    --bg: #13100c;
+    --surface-2: #091f0f;
+    --point: #ffa097;
+    --text: #ece4e3;
+    --text-2: #b4aea8;
+    --border: #37322d;
+    --band: #3a2c1c;
+    --on-band: #ede4e3;
+    --band-line: #594c3d;
+    --accent: #f2bdb7;
+    --on-accent: #14110e;
+    --accent-text: #c5867f;
+}
+:root[data-theme="ink"]:not([data-scheme="light"]) {
+    --paper: #1c2323;
+    --surface: var(--paper);
+    --bg: #0c1212;
+    --surface-2: #291016;
+    --surface-raised: #252d2d;
+    --surface-hover: #1b2b25;
+    --anchor: #183435;
+    --anchor-2: #244040;
+    --anchor-line: #3b5454;
+    --on-anchor: #e0e8e5;
+    --on-anchor-2: #a0aba6;
+    --point: #ffa28c;
+    --point-text: #e27960;
+    --point-tint: #441d14;
+    --point-tint-text: #ff9a82;
+    --text: #e1e8e5;
+    --text-2: #a8b2b1;
+    --text-3: #909998;
+    --text-inverse: #0c1212;
+    --text-disabled: #535959;
+    --neutral-tint: #1b2b25;
+    --neutral-tint-text: #a8b2b1;
+    --border: #2d3535;
+    --border-strong: #404a4a;
+    --border-input: #727d7c;
+    --hairline: rgb(225 232 229 / 0.15);
+    --band: #183435;
+    --on-band: #e0e8e5;
+    --on-band-2: #a0aba6;
+    --band-line: #3b5454;
+    --nav-surface: #183435;
+    --on-nav: #e0e8e5;
+    --on-nav-2: #a0aba6;
+    --nav-line: #3b5454;
+    --nav-selected: #244040;
+    --accent: #9cd9d9;
+    --accent-hover: #b8e7e7;
+    --accent-active: #ffa28c;
+    --on-accent: #0e1313;
+    --accent-text: #c58590;
+    --accent-tint: #342225;
+    --accent-tint-text: #e0a2ac;
+    --brand-rose: #ce9ba3;
+    --brand-sage: #79958a;
+    --sage-tint: #1f2b26;
+    --sage-tint-text: #84c1ab;
+    --sage-text: #589983;
+    --success: #5aa767;
+    --success-tint: #122f17;
+    --success-tint-text: #79c685;
+    --warning: #bb8f47;
+    --warning-tint: #362507;
+    --warning-tint-text: #daad64;
+    --danger: #d97a93;
+    --danger-hover: #ea89a2;
+    --danger-tint: #3c1f26;
+    --danger-tint-text: #f897af;
+    --on-danger: #090e0e;
+    --info: var(--accent-text);
+    --info-tint: var(--accent-tint);
+    --info-tint-text: var(--accent-tint-text);
+    --focus: #c58590;
+    --overlay: rgb(0 0 0 / 0.66);
+    --selection-bg: var(--accent-tint);
+    --grain-opacity: 0.042;
+    --viz-1: #d67072;
+    --viz-2: #3c7030;
+    --viz-3: #b25e98;
+    --viz-4: #b3880f;
+    --viz-5: #488acb;
+    --viz-6: #b84455;
+    --viz-7: #169d97;
+    --viz-8: #866ec5;
+    --viz-div-mid: #2d3535;
+    --viz-grid: var(--border);
+    --viz-axis: var(--text-3);
+    --viz-unknown: repeating-linear-gradient(135deg, #404a4a 0 3px, transparent 3px 7px);
+    --shadow-1: 1px 1px 2px rgb(0 0 0 / 0.45), 2px 3px 8px -2px rgb(0 0 0 / 0.42);
+    --shadow-2: 2px 3px 10px rgb(0 0 0 / 0.5), 6px 16px 38px -10px rgb(0 0 0 / 0.66);
+}
+[data-theme="ink"]:not([data-scheme="light"]) {
+    --paper: #1c2323;
+    --surface: var(--paper);
+    --bg: #0c1212;
+    --surface-2: #291016;
+    --point: #ffa28c;
+    --text: #e1e8e5;
+    --text-2: #a8b2b1;
+    --border: #2d3535;
+    --band: #183435;
+    --on-band: #e0e8e5;
+    --band-line: #3b5454;
+    --accent: #9cd9d9;
+    --on-accent: #0e1313;
+    --accent-text: #c58590;
+}
+}
+
+/* Legacy alias. Must stay a standalone, line-start block: tools/retoken.py locates
+   the dark values with ^:root\[data-theme="dark"\]\s*\{ and would silently read
+   light values as dark if this were folded into a selector list. */
+:root[data-theme="dark"] {
+  --paper: #22211c;
+  --surface: var(--paper);
+  --bg: #12110c;
+  --surface-2: #0c1e0c;
+  --surface-raised: #2c2b25;
+  --surface-hover: #322320;
+  --anchor: #223427;
+  --anchor-2: #2d4032;
+  --anchor-line: #425346;
+  --on-anchor: #ede4e2;
+  --on-anchor-2: #b0a5a3;
+  --point: #d9b97e;
+  --point-text: #b19257;
+  --point-tint: #342812;
+  --point-tint-text: #d0b27b;
+  --text: #ece4e3;
+  --text-2: #b1b0a8;
+  --text-3: #97968f;
+  --text-inverse: #12110c;
+  --text-disabled: #595853;
+  --neutral-tint: #322320;
+  --neutral-tint-text: #b1b0a8;
+  --border: #34332d;
+  --border-strong: #4a4840;
+  --border-input: #7b7a72;
+  --hairline: rgb(236 228 227 / 0.15);
+  --band: #223427;
+  --on-band: #ede4e2;
+  --on-band-2: #b0a5a3;
+  --band-line: #425346;
+  --nav-surface: #0c1e0c;
+  --on-nav: #ece4e3;
+  --on-nav-2: #97968f;
+  --nav-line: #34332d;
+  --nav-selected: #22211c;
+  --accent: #afd8b9;
+  --accent-hover: #c6e6cd;
+  --accent-active: #d9b97e;
+  --on-accent: #13120e;
+  --accent-text: #c5867d;
+  --accent-tint: #342320;
+  --accent-tint-text: #e1a49b;
+  --brand-rose: #cf9c95;
+  --brand-sage: #819480;
+  --sage-tint: #222a22;
+  --sage-tint-text: #97be96;
+  --sage-text: #6d966c;
+  --success: #28a986;
+  --success-tint: #003024;
+  --success-tint-text: #52c9a5;
+  --warning: #ba8f46;
+  --warning-tint: #362507;
+  --warning-tint-text: #daad64;
+  --danger: #db7b78;
+  --danger-hover: #ec8a87;
+  --danger-tint: #3d1f1e;
+  --danger-tint-text: #fb9895;
+  --on-danger: #0e0d09;
+  --info: var(--accent-text);
+  --info-tint: var(--accent-tint);
+  --info-tint-text: var(--accent-tint-text);
+  --focus: #c5867d;
+  --overlay: rgb(0 0 0 / 0.66);
+  --selection-bg: var(--accent-tint);
+  --grain-opacity: 0.042;
+  --viz-1: #d67266;
+  --viz-2: #3c7030;
+  --viz-3: #b25e98;
+  --viz-4: #b3880f;
+  --viz-5: #488acb;
+  --viz-6: #b84455;
+  --viz-7: #169d97;
+  --viz-8: #866ec5;
+  --viz-div-mid: #34332d;
+  --viz-grid: var(--border);
+  --viz-axis: var(--text-3);
+  --viz-unknown: repeating-linear-gradient(135deg, #4a4840 0 3px, transparent 3px 7px);
+  --shadow-1: 1px 1px 2px rgb(0 0 0 / 0.45), 2px 3px 8px -2px rgb(0 0 0 / 0.42);
+  --shadow-2: 2px 3px 10px rgb(0 0 0 / 0.5), 6px 16px 38px -10px rgb(0 0 0 / 0.66);
+}
+
+:root[data-scheme="dark"] {
+  --paper: #22211c;
+  --surface: var(--paper);
+  --bg: #12110c;
+  --surface-2: #0c1e0c;
+  --surface-raised: #2c2b25;
+  --surface-hover: #322320;
+  --anchor: #223427;
+  --anchor-2: #2d4032;
+  --anchor-line: #425346;
+  --on-anchor: #ede4e2;
+  --on-anchor-2: #b0a5a3;
+  --point: #d9b97e;
+  --point-text: #b19257;
+  --point-tint: #342812;
+  --point-tint-text: #d0b27b;
+  --text: #ece4e3;
+  --text-2: #b1b0a8;
+  --text-3: #97968f;
+  --text-inverse: #12110c;
+  --text-disabled: #595853;
+  --neutral-tint: #322320;
+  --neutral-tint-text: #b1b0a8;
+  --border: #34332d;
+  --border-strong: #4a4840;
+  --border-input: #7b7a72;
+  --hairline: rgb(236 228 227 / 0.15);
+  --band: #223427;
+  --on-band: #ede4e2;
+  --on-band-2: #b0a5a3;
+  --band-line: #425346;
+  --nav-surface: #0c1e0c;
+  --on-nav: #ece4e3;
+  --on-nav-2: #97968f;
+  --nav-line: #34332d;
+  --nav-selected: #22211c;
+  --accent: #afd8b9;
+  --accent-hover: #c6e6cd;
+  --accent-active: #d9b97e;
+  --on-accent: #13120e;
+  --accent-text: #c5867d;
+  --accent-tint: #342320;
+  --accent-tint-text: #e1a49b;
+  --brand-rose: #cf9c95;
+  --brand-sage: #819480;
+  --sage-tint: #222a22;
+  --sage-tint-text: #97be96;
+  --sage-text: #6d966c;
+  --success: #28a986;
+  --success-tint: #003024;
+  --success-tint-text: #52c9a5;
+  --warning: #ba8f46;
+  --warning-tint: #362507;
+  --warning-tint-text: #daad64;
+  --danger: #db7b78;
+  --danger-hover: #ec8a87;
+  --danger-tint: #3d1f1e;
+  --danger-tint-text: #fb9895;
+  --on-danger: #0e0d09;
+  --info: var(--accent-text);
+  --info-tint: var(--accent-tint);
+  --info-tint-text: var(--accent-tint-text);
+  --focus: #c5867d;
+  --overlay: rgb(0 0 0 / 0.66);
+  --selection-bg: var(--accent-tint);
+  --grain-opacity: 0.042;
+  --viz-1: #d67266;
+  --viz-2: #3c7030;
+  --viz-3: #b25e98;
+  --viz-4: #b3880f;
+  --viz-5: #488acb;
+  --viz-6: #b84455;
+  --viz-7: #169d97;
+  --viz-8: #866ec5;
+  --viz-div-mid: #34332d;
+  --viz-grid: var(--border);
+  --viz-axis: var(--text-3);
+  --viz-unknown: repeating-linear-gradient(135deg, #4a4840 0 3px, transparent 3px 7px);
+  --shadow-1: 1px 1px 2px rgb(0 0 0 / 0.45), 2px 3px 8px -2px rgb(0 0 0 / 0.42);
+  --shadow-2: 2px 3px 10px rgb(0 0 0 / 0.5), 6px 16px 38px -10px rgb(0 0 0 / 0.66);
+}
+
+[data-theme="plaster"][data-scheme="dark"] {
+  --paper: #22211c;
+  --surface: var(--paper);
+  --bg: #12110c;
+  --surface-2: #0c1e0c;
+  --point: #d9b97e;
+  --text: #ece4e3;
+  --text-2: #b1b0a8;
+  --border: #34332d;
+  --band: #223427;
+  --on-band: #ede4e2;
+  --band-line: #425346;
+  --accent: #afd8b9;
+  --on-accent: #13120e;
+  --accent-text: #c5867d;
+}
+
+:root[data-theme="paper"][data-scheme="dark"], [data-theme="paper"][data-scheme="dark"] {
+  --paper: #24201c;
+  --surface: var(--paper);
+  --bg: #13100c;
+  --surface-2: #091f0f;
+  --surface-raised: #2e2a25;
+  --surface-hover: #322221;
+  --anchor: #3a2c1c;
+  --anchor-2: #463827;
+  --anchor-line: #594c3d;
+  --on-anchor: #ede4e3;
+  --on-anchor-2: #b0a5a3;
+  --point: #ffa097;
+  --point-text: #d87c74;
+  --point-tint: #411f1c;
+  --point-tint-text: #f79d95;
+  --text: #ece4e3;
+  --text-2: #b4aea8;
+  --text-3: #9a958f;
+  --text-inverse: #13100c;
+  --text-disabled: #5b5753;
+  --neutral-tint: #322221;
+  --neutral-tint-text: #b4aea8;
+  --border: #37322d;
+  --border-strong: #4c4740;
+  --border-input: #7e7972;
+  --hairline: rgb(236 228 227 / 0.15);
+  --band: #3a2c1c;
+  --on-band: #ede4e3;
+  --on-band-2: #b0a5a3;
+  --band-line: #594c3d;
+  --nav-surface: #13100c;
+  --on-nav: #ece4e3;
+  --on-nav-2: #9a958f;
+  --nav-line: #37322d;
+  --nav-selected: #24201c;
+  --accent: #f2bdb7;
+  --accent-hover: #fbd1cc;
+  --accent-active: #ffa097;
+  --on-accent: #14110e;
+  --accent-text: #c5867f;
+  --accent-tint: #342321;
+  --accent-tint-text: #e2a49d;
+  --brand-rose: #cf9c97;
+  --brand-sage: #7f9482;
+  --sage-tint: #212b23;
+  --sage-tint-text: #93bf9b;
+  --sage-text: #689771;
+  --success: #49a771;
+  --success-tint: #0b301c;
+  --success-tint-text: #6bc891;
+  --warning: #ba8f46;
+  --warning-tint: #362507;
+  --warning-tint-text: #daad64;
+  --danger: #da7984;
+  --danger-hover: #eb8993;
+  --danger-tint: #3c1f22;
+  --danger-tint-text: #fa97a0;
+  --on-danger: #100d0a;
+  --info: var(--accent-text);
+  --info-tint: var(--accent-tint);
+  --info-tint-text: var(--accent-tint-text);
+  --focus: #c5867f;
+  --overlay: rgb(0 0 0 / 0.66);
+  --selection-bg: var(--accent-tint);
+  --grain-opacity: 0.042;
+  --viz-1: #d67169;
+  --viz-2: #3c7030;
+  --viz-3: #b25e98;
+  --viz-4: #b3880f;
+  --viz-5: #488acb;
+  --viz-6: #b84455;
+  --viz-7: #169d97;
+  --viz-8: #866ec5;
+  --viz-div-mid: #37322d;
+  --viz-grid: var(--border);
+  --viz-axis: var(--text-3);
+  --viz-unknown: repeating-linear-gradient(135deg, #4c4740 0 3px, transparent 3px 7px);
+  --shadow-1: 1px 1px 2px rgb(0 0 0 / 0.45), 2px 3px 8px -2px rgb(0 0 0 / 0.42);
+  --shadow-2: 2px 3px 10px rgb(0 0 0 / 0.5), 6px 16px 38px -10px rgb(0 0 0 / 0.66);
+}
+
+:root[data-theme="ink"][data-scheme="dark"], [data-theme="ink"][data-scheme="dark"] {
+  --paper: #1c2323;
+  --surface: var(--paper);
+  --bg: #0c1212;
+  --surface-2: #291016;
+  --surface-raised: #252d2d;
+  --surface-hover: #1b2b25;
+  --anchor: #183435;
+  --anchor-2: #244040;
+  --anchor-line: #3b5454;
+  --on-anchor: #e0e8e5;
+  --on-anchor-2: #a0aba6;
+  --point: #ffa28c;
+  --point-text: #e27960;
+  --point-tint: #441d14;
+  --point-tint-text: #ff9a82;
+  --text: #e1e8e5;
+  --text-2: #a8b2b1;
+  --text-3: #909998;
+  --text-inverse: #0c1212;
+  --text-disabled: #535959;
+  --neutral-tint: #1b2b25;
+  --neutral-tint-text: #a8b2b1;
+  --border: #2d3535;
+  --border-strong: #404a4a;
+  --border-input: #727d7c;
+  --hairline: rgb(225 232 229 / 0.15);
+  --band: #183435;
+  --on-band: #e0e8e5;
+  --on-band-2: #a0aba6;
+  --band-line: #3b5454;
+  --nav-surface: #183435;
+  --on-nav: #e0e8e5;
+  --on-nav-2: #a0aba6;
+  --nav-line: #3b5454;
+  --nav-selected: #244040;
+  --accent: #9cd9d9;
+  --accent-hover: #b8e7e7;
+  --accent-active: #ffa28c;
+  --on-accent: #0e1313;
+  --accent-text: #c58590;
+  --accent-tint: #342225;
+  --accent-tint-text: #e0a2ac;
+  --brand-rose: #ce9ba3;
+  --brand-sage: #79958a;
+  --sage-tint: #1f2b26;
+  --sage-tint-text: #84c1ab;
+  --sage-text: #589983;
+  --success: #5aa767;
+  --success-tint: #122f17;
+  --success-tint-text: #79c685;
+  --warning: #bb8f47;
+  --warning-tint: #362507;
+  --warning-tint-text: #daad64;
+  --danger: #d97a93;
+  --danger-hover: #ea89a2;
+  --danger-tint: #3c1f26;
+  --danger-tint-text: #f897af;
+  --on-danger: #090e0e;
+  --info: var(--accent-text);
+  --info-tint: var(--accent-tint);
+  --info-tint-text: var(--accent-tint-text);
+  --focus: #c58590;
+  --overlay: rgb(0 0 0 / 0.66);
+  --selection-bg: var(--accent-tint);
+  --grain-opacity: 0.042;
+  --viz-1: #d67072;
+  --viz-2: #3c7030;
+  --viz-3: #b25e98;
+  --viz-4: #b3880f;
+  --viz-5: #488acb;
+  --viz-6: #b84455;
+  --viz-7: #169d97;
+  --viz-8: #866ec5;
+  --viz-div-mid: #2d3535;
+  --viz-grid: var(--border);
+  --viz-axis: var(--text-3);
+  --viz-unknown: repeating-linear-gradient(135deg, #404a4a 0 3px, transparent 3px 7px);
+  --shadow-1: 1px 1px 2px rgb(0 0 0 / 0.45), 2px 3px 8px -2px rgb(0 0 0 / 0.42);
+  --shadow-2: 2px 3px 10px rgb(0 0 0 / 0.5), 6px 16px 38px -10px rgb(0 0 0 / 0.66);
+}
+
+@media (pointer: coarse) { :root { --control-h: 40px; --row-h: 44px; } }
+
+/* Reduced motion: keep the feedback, drop the movement.
+   Not a blanket kill switch - colour and opacity still transition (they carry meaning),
+   only transforms and travel distance are removed. */
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-slow: 120ms; --motion-distance: 0px; --flash-dur: 1ms; }
+  *, *::before, *::after { transition-property: opacity, background-color, border-color, color, box-shadow, outline-color !important; }
+  *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; }
+}
+/* ---- base ---- */
+/* ===== Fallback faces: until the web fonts load (or if they never do), system fonts are scaled to the measured widths so line lengths and column widths do not jump ===== */
+@font-face{font-family:"Fraunces Fallback";src:local("Georgia"),local("Times New Roman");size-adjust:93.3%}
+@font-face{font-family:"Inter Fallback";src:local("Helvetica Neue"),local("Arial"),local("Segoe UI");size-adjust:106.5%}
+@font-face{font-family:"Space Mono Fallback";src:local("Menlo"),local("Consolas"),local("DejaVu Sans Mono");size-adjust:101.7%}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:var(--weight-regular) var(--text-md)/var(--leading-normal) var(--font-sans);-webkit-tap-highlight-color:transparent;touch-action:manipulation;font-variant-numeric:lining-nums}
+::selection{background:var(--selection-bg)}
+:focus-visible{outline:var(--border-focus-width) solid var(--focus);outline-offset:2px;border-radius:var(--radius-xs)}
+button,input,select{font:inherit;color:inherit}
+a{color:var(--accent-text);text-underline-offset:.18em;text-decoration-thickness:from-font}
+code,kbd,.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums lining-nums}
+h1,h2,h3{margin:0;font-family:var(--font-display);font-weight:var(--display-weight);line-height:var(--leading-tight);text-wrap:balance;letter-spacing:var(--tracking-title);font-variation-settings:"opsz" var(--opsz-title)}
+p{margin:0}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;white-space:nowrap;clip-path:inset(50%)}
+.skip{position:absolute;left:var(--space-2);top:-48px;background:var(--surface);padding:var(--space-2) var(--space-3);border:1px solid var(--border-input);border-radius:var(--radius-sm);z-index:var(--z-toast)}
+.skip:focus{top:var(--space-2)}
+[hidden]{display:none!important}
+.muted{color:var(--text-2)}.faint{color:var(--text-3)}
+/* ---- topbar ---- */
+.topbar{position:sticky;top:0;z-index:var(--z-sticky);height:var(--topbar-h);display:flex;flex-wrap:nowrap;align-items:center;gap:var(--space-2);padding:0 var(--gutter);background:var(--band);border-bottom:1px solid var(--band-line);color:var(--on-band)}
+.brand{display:flex;align-items:center;gap:var(--space-2);color:inherit;text-decoration:none;min-width:0;flex:0 1 auto}
+.brand svg{flex:none}.brand b{white-space:nowrap;font-weight:var(--display-weight);flex:none;font-family:var(--font-display);font-variation-settings:"opsz" var(--opsz-title);font-size:var(--text-xl);letter-spacing:-0.014em}
+.brand span{color:var(--on-band-2);font-size:var(--text-xs);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill{display:inline-flex;align-items:center;gap:var(--space-1);height:22px;padding:0 var(--space-2);border-radius:var(--radius-full);font:var(--weight-medium) var(--text-2xs)/1 var(--font-mono);letter-spacing:.02em;border:1px solid var(--warning);color:var(--warning-tint-text);background:var(--warning-tint);white-space:nowrap;flex:none}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--warning)}
+.pill.live{border-color:var(--success);color:var(--success-tint-text);background:var(--success-tint)}.pill.live::before{background:var(--success)}
+.spacer{flex:1}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--space-1);height:var(--control-h);padding:0 var(--space-4);border-radius:var(--radius-sm);border:1px solid var(--border-input);background:var(--paper);color:var(--text);cursor:pointer;font-size:var(--text-sm);font-weight:var(--weight-medium);white-space:nowrap;text-decoration:none;transition:background-color var(--dur-fast) var(--ease-out),transform var(--dur-fast) var(--ease-out)}
+@media (hover:hover) and (pointer:fine){.btn:hover{background:var(--surface-hover)}}.btn:active{transform:scale(var(--press-scale))}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}@media (hover:hover) and (pointer:fine){.btn-primary:hover{background:var(--accent-hover)}}
+.btn-ghost{border-color:transparent;background:transparent}@media (hover:hover) and (pointer:fine){.btn-ghost:hover{background:var(--neutral-tint)}}
+.btn-icon{width:var(--control-h);padding:0}.btn-sm{height:26px;font-size:var(--text-xs);padding:0 var(--space-2)}
+.btn[disabled]{color:var(--text-disabled);background:var(--neutral-tint);border-color:var(--border);cursor:not-allowed;transform:none;box-shadow:none}
+.switch{display:inline-flex;align-items:center;gap:var(--space-2);height:var(--control-h);padding:0 var(--space-2);border:1px solid var(--border-input);border-radius:var(--radius-sm);background:var(--surface);cursor:pointer;font-size:var(--text-sm);transition:background-color var(--dur-fast) var(--ease-out),transform var(--dur-fast) var(--ease-out)}
+.switch i{width:28px;height:16px;border-radius:999px;background:var(--border-strong);position:relative;transition:background-color var(--dur-fast) var(--ease-out)}
+.switch i::after{content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:var(--surface);transition:transform var(--dur-fast) var(--ease-out)}
+.switch[aria-checked="true"] i{background:var(--success)}.switch[aria-checked="true"] i::after{transform:translateX(12px)}
+/* ---- layout ---- */
+.main-col{max-width:960px;margin:0 auto;padding:var(--space-5) var(--gutter) var(--space-10);display:grid;grid-template-columns:minmax(0,1fr);gap:var(--space-4)}
+#digestPlate .plate-in{max-width:calc(960px - 2 * var(--gutter));margin:0 auto}
+/* the Classify switch: in the top bar from 768px, first row of the page below that (it needs its visible label) */
+.page-switch{display:none}
+@media (max-width:767px){.page-switch{display:flex}}
+.connect-acts{margin-top:var(--space-3)}
+/* repo connection, as a section of the Settings dialog */
+.nl-connect h3{margin:0 0 var(--space-2);font-size:var(--text-md);font-weight:var(--weight-medium)}
+.nl-connect .row{margin-top:var(--space-3)}
+.nl-connect #setStatus{margin-top:var(--space-2);min-height:1.2em}
+.card{background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-5);box-shadow:var(--shadow-1)}
+.card h2{font-size:var(--text-md);font-weight:var(--weight-medium);margin-bottom:var(--space-2)}
+.hint{font-size:var(--text-xs);color:var(--text-2)}
+.row{display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center}
+input[type=password],input[type=search]{height:var(--control-h);padding:0 var(--space-2);border:1px solid var(--border-input);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-size:var(--text-sm);flex:1 1 200px;min-width:0}
+/* strip */
+.strip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border:1px solid var(--border);border-radius:var(--radius-md);background:var(--paper);box-shadow:var(--shadow-1)}
+.strip>div{padding:var(--space-3) var(--space-4);border-right:1px solid var(--hairline);min-width:0}
+.strip>div:last-child{border-right:0}
+.strip .k{font-size:var(--text-2xs);color:var(--text-3);text-transform:uppercase;letter-spacing:var(--tracking-caps);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.strip .v{font:var(--weight-semibold) var(--text-2xl)/1.1 var(--font-mono);font-variant-numeric:tabular-nums;margin-top:2px}
+.strip .v small{font:var(--weight-regular) var(--text-xs)/1 var(--font-mono);color:var(--text-3)}
+/* sum strip (where the digest went) */
+.sum-bar{display:flex;height:8px;border-radius:var(--radius-xs);overflow:hidden;gap:2px;background:var(--surface-2);margin-top:var(--space-2)}
+.sum-bar>span{display:block;height:100%}
+.sum-legend{display:flex;flex-wrap:wrap;gap:var(--space-2) var(--space-6);margin-top:var(--space-4);font-size:var(--text-xs);color:var(--text-2)}
+.sum-legend i{display:inline-block;width:9px;height:9px;border-radius:2px;vertical-align:-1px;margin-right:var(--space-2)}
+.sum-eq{margin-top:var(--space-3);font:var(--weight-regular) var(--text-xs)/1.6 var(--font-mono);color:var(--text-2);overflow-wrap:anywhere;padding-top:var(--space-3);border-top:1px solid var(--hairline);font-variant-numeric:tabular-nums}
+/* trend */
+.trend{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:var(--space-1);align-items:end;height:64px}
+.trend div{display:grid;gap:2px;align-content:end;height:100%}
+.trend i{display:block;background:var(--viz-seq-400);border-radius:2px 2px 0 0;min-height:2px}
+.trend i.act{background:var(--warning)}
+.trend-x{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:var(--space-1);font:var(--weight-regular) var(--text-2xs)/1 var(--font-mono);color:var(--text-3);text-align:center;margin-top:4px}
+/* filters + list */
+.filters{display:flex;flex-wrap:wrap;gap:var(--space-1)}
+.filters button{height:24px;padding:0 var(--space-2);border-radius:var(--radius-full);border:1px solid var(--border);background:var(--surface);font-size:var(--text-2xs);cursor:pointer;white-space:nowrap;color:var(--text)}
+.filters button[aria-pressed="true"]{background:var(--accent-tint);border-color:var(--accent-text);color:var(--accent-tint-text)}
+.filters button .n{font-family:var(--font-mono);color:var(--text-3);margin-left:4px}
+.list{border:1px solid var(--border);border-radius:var(--radius-md);background:var(--paper);overflow:hidden;box-shadow:var(--shadow-1)}
+.mail{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:var(--space-1) var(--space-3);padding:var(--space-2) var(--space-3);border-bottom:1px solid var(--hairline);align-items:center}
+.mail:last-child{border-bottom:0}
+.mail .flag{width:18px;text-align:center;color:var(--warning);font-weight:var(--weight-semibold)}
+.mail .subj{font-size:var(--text-sm);font-weight:var(--weight-medium);color:var(--text);text-decoration:none;overflow-wrap:anywhere}
+@media (hover:hover) and (pointer:fine){.mail .subj:hover{text-decoration:underline}}
+.mail .meta{grid-column:2;font-size:var(--text-xs);color:var(--text-2);display:flex;flex-wrap:wrap;gap:var(--space-1) var(--space-2);align-items:center}
+.mail .when{font:var(--weight-regular) var(--text-xs)/1 var(--font-mono);color:var(--text-3);white-space:nowrap;grid-row:span 2}
+.tag{display:inline-flex;align-items:center;gap:var(--space-1);height:21px;padding:0 var(--space-2);border-radius:var(--radius-full);font-size:var(--text-2xs);font-weight:var(--weight-medium);border:1px solid transparent;white-space:nowrap}
+.tag::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor}
+.tag-neutral{background:var(--neutral-tint);color:var(--neutral-tint-text);border-color:var(--border)}.tag-warning{background:var(--warning-tint);color:var(--warning-tint-text)}.tag-success{background:var(--success-tint);color:var(--success-tint-text)}
+.chip{display:inline-flex;align-items:center;gap:var(--space-1);height:19px;padding:0 var(--space-2);border-radius:var(--radius-xs);border:1px solid var(--border);background:var(--neutral-tint);color:var(--text-3);font:var(--weight-regular) var(--text-2xs)/1 var(--font-mono);white-space:nowrap}
+.chip b{color:var(--text-2);font-weight:700}
+.reason{font-size:var(--text-2xs);color:var(--text-2);overflow-wrap:anywhere}
+.empty{border:1px dashed var(--border-input);border-radius:var(--radius-md);padding:var(--space-10) var(--space-4);text-align:center;color:var(--text-2);display:grid;gap:var(--space-2);justify-items:center;background:var(--paper)}
+.empty h3{font-size:var(--text-xl);color:var(--text)}
+.steps{display:grid;gap:var(--space-2);font-size:var(--text-sm)}
+.steps li{display:grid;grid-template-columns:24px minmax(0,1fr);gap:var(--space-2)}
+.steps li b{font-family:var(--font-mono);color:var(--accent-text)}
+.steps code{background:var(--surface-2);padding:0 4px;border-radius:var(--radius-xs);font-size:var(--text-xs)}
+.honest{border-top:1px solid var(--band-line);font-size:var(--text-xs);color:var(--on-band-2);background:var(--band);padding:var(--space-10) var(--gutter) var(--space-12)}
+.honest dl{margin:0}.honest dt{font-weight:var(--weight-semibold);color:var(--on-band);font-family:var(--font-sans);font-size:var(--text-2xs);letter-spacing:var(--tracking-caps);text-transform:uppercase;margin-bottom:var(--space-2)}.honest dd{margin:0;max-width:68ch;line-height:var(--leading-relaxed)}
+.toast{position:fixed;right:var(--space-4);bottom:var(--space-4);z-index:var(--z-toast);background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--radius-md);box-shadow:var(--shadow-2);padding:var(--space-3) var(--space-4);font-size:var(--text-sm);max-width:min(420px,calc(100vw - 2*var(--gutter)));opacity:0;transform:translateY(var(--motion-distance));transition:opacity var(--dur-base) var(--ease-out),transform var(--dur-base) var(--ease-out);pointer-events:none}
+.toast.show{opacity:1;transform:none}.toast.err{border-color:var(--danger)}
+@media (max-width:899px){.strip{grid-template-columns:repeat(3,minmax(0,1fr))}.strip>div:nth-child(3){border-right:0}.strip>div:nth-child(n+4){border-top:1px solid var(--border)}}
+@media (max-width:639px){.brand span{display:none}.brand{flex:1 1 auto}.pill .long{display:none}.topbar .gh,.topbar #theme,.topbar #refresh{display:none}.strip{grid-template-columns:repeat(2,minmax(0,1fr))}.strip>div:nth-child(3){border-right:1px solid var(--border)}.strip>div:nth-child(2n){border-right:0}.strip>div:nth-child(n+3){border-top:1px solid var(--border)}.mail{grid-template-columns:auto minmax(0,1fr)}.mail .when{grid-row:auto;grid-column:2}}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+/* ===== Family layer v3.1: band surfaces, pressed and focus states, touch targets =====
+   The band (top bar, signature panel, footer) is the anchor surface: deep in Plaster and Ink, a whiter paper in
+   Paper. Everything on it uses the --on-band pair; focus rings and text selection get their own colours there
+   because --focus and --selection-bg are solved for light surfaces. Hover sits behind (hover:hover) so a tap on
+   a touch screen does not leave a stuck highlight. */
+.topbar .pill{border-color:var(--band-line);color:var(--on-band-2);background:transparent;font-weight:var(--weight-regular)}
+.topbar .pill::before{background:var(--warning)}
+.topbar .btn,.plate .btn{background:transparent;border-color:var(--band-line);color:var(--on-band)}
+.topbar .btn-ghost,.plate .btn-ghost{border-color:transparent}
+.topbar .btn-primary,.plate .btn-primary{background:var(--on-band);border-color:var(--on-band);color:var(--band)}
+@media (hover:hover) and (pointer:fine){
+  .topbar .btn:hover,.plate .btn:hover{background:var(--band-line);border-color:var(--band-line)}
+  .topbar .btn-primary:hover,.plate .btn-primary:hover{background:var(--on-band-2);border-color:var(--on-band-2)}
+}
+.topbar :focus-visible,.plate :focus-visible,.honest :focus-visible{outline-color:var(--on-band)}
+.topbar ::selection,.plate ::selection,.honest ::selection{background:var(--on-band-2);color:var(--band)}
+.honest-in{max-width:var(--content-max);margin:0 auto;display:grid;gap:var(--space-6);grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr))}
+.honest a{color:var(--on-band);text-decoration-color:var(--band-line)}
+.honest code{color:var(--on-band)}
+/* Pressed: the whole control scales, content included (reads as pushed in, not moved). Reduced motion keeps a
+   colour change instead of the scale. */
+.filters button:active,.switch:active{transform:scale(var(--press-scale))}
+@media (prefers-reduced-motion:reduce){.btn:active,.filters button:active,.switch:active{transform:none;background:var(--neutral-tint)}}
+/* Touch: 44px targets on coarse pointers. */
+@media (pointer:coarse){.btn,.nav a{min-height:var(--touch-min)}.btn-icon{min-width:var(--touch-min)}}
+/* Text fields: the edge darkens and a same-hue ring appears; the outline is for keyboard focus. */
+input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),select,textarea{transition:border-color var(--dur-fast) var(--ease-out),box-shadow var(--dur-fast) var(--ease-out)}
+input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):focus,select:focus,textarea:focus{outline:none;border-color:var(--accent-text);box-shadow:0 0 0 3px var(--accent-tint)}
+input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):focus-visible,select:focus-visible,textarea:focus-visible{outline:var(--border-focus-width) solid var(--focus);outline-offset:1px}
+::placeholder{color:var(--text-3)}
+/* Numeric columns: header text and figures share one right edge, by rule rather than by accident. */
+table.data th.num,table.data td.num{text-align:right}
+table.data th.num button{justify-content:flex-end;width:100%}
+/* Top bar by width. Controls never shrink; only the tagline truncates. The right-hand
+   group starts after the Demo pill. Compact (≤767px): mark, name, short pill, the one control the product needs, Settings.
+   Middle (768–1023px): add light/dark, GitHub and help. Full (≥1024px): everything. Never hidden: mark, name, pill, Settings. */
+.topbar > :not(.brand):not(.spacer){flex:none;white-space:nowrap}
+.topbar .spacer{display:none}
+.topbar .pill{margin-inline-end:auto}
+.topbar .brand{flex:0 1 auto;min-width:0}
+.topbar .brand b{flex:none}
+#nl-settings-button{flex:none}
+@media (pointer:coarse){#nl-settings-button{min-width:var(--touch-min);min-height:var(--touch-min)}}
+@media (max-width:767px){.topbar #theme,.topbar .gh,.topbar #help,.topbar .brand span,.topbar .pill .long{display:none}.topbar .brand b{font-size:var(--text-lg)}}
+@media (min-width:768px) and (max-width:1023px){.topbar .brand span,.topbar .pill .long{display:none}}
+@media (max-width:767px){.topbar #refresh,.topbar #togBtn{display:none}}
+/* Signature panel: the page title and the reconciliation bar share one plate on the band. The point colour
+   appears in three places only: the seal, the 56px rule under the title, and the first key of the bar. */
+.plate{background:var(--band);color:var(--on-band);padding:var(--space-8) var(--gutter) var(--space-6);border-bottom:1px solid var(--band-line)}
+.plate-in{max-width:var(--content-max);display:grid;gap:var(--space-5)}
+.eyebrow{font-family:var(--font-sans);font-size:var(--text-2xs);font-weight:var(--weight-semibold);letter-spacing:var(--tracking-caps);text-transform:uppercase;color:var(--text-3)}
+.display{font-size:var(--text-4xl);font-variation-settings:"opsz" var(--opsz-display);letter-spacing:var(--tracking-display);margin-left:-0.028em}
+.caption{font-family:var(--font-display);font-style:var(--caption-style);font-weight:400;font-variation-settings:"opsz" var(--opsz-caption);font-size:var(--text-sm);line-height:var(--leading-relaxed);color:var(--text-2);max-width:var(--measure)}
+.plate .eyebrow,.plate .caption{color:var(--on-band-2)}
+.plate h1{color:var(--on-band)}
+.plate .lede{margin:var(--space-3) 0 0;color:var(--on-band-2);max-width:var(--measure);font-size:var(--text-lg);line-height:var(--leading-lede)}
+.plate .rule{width:56px;height:2px;background:var(--point);margin-top:var(--space-4);border-radius:1px}
+.plate .sum-bar{background:transparent}
+.plate .sum-legend{color:var(--on-band-2)}
+.plate .sum-legend b{color:var(--on-band);font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.plate .sum-eq{border-top-color:var(--band-line);color:var(--on-band-2)}
+.plate .sum-eq .ok{color:var(--on-band);font-weight:var(--weight-semibold)}
+.plate .sum-eq .bad{background:var(--danger-tint);color:var(--danger-tint-text);font-weight:var(--weight-semibold);padding:0 var(--space-1);border-radius:var(--radius-xs)}
+.plate .caption{margin-top:var(--space-3)}
+.plate .chip{background:transparent;border-color:var(--band-line);color:var(--on-band-2)}
+.plate .chip b{color:var(--on-band)}
+/* the head row carries the page's own action; it stays compact so the band keeps within the reference share of the
+   first screen (47% at 1280x900, 75% at 375x812, as measured on the reference page) */
+.plate-head{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2) var(--space-3);margin-bottom:var(--space-1)}
+.plate-head .btn{margin-inline-start:auto;height:26px;padding:0 var(--space-3);font-size:var(--text-xs)}
+.hatch{background-image:repeating-linear-gradient(135deg,var(--on-band-2) 0 2px,transparent 2px 6px)}
+/* Classification labels are not status pills: a small sage square and the label, no fill, no border */
+.cat{display:inline-flex;align-items:center;gap:var(--space-2);font-size:var(--text-xs);color:var(--text-2)}
+.cat::before{content:"";width:7px;height:7px;border-radius:2px;background:var(--brand-sage);flex:none}
+/* Headersort: a short page keeps the footer band at the bottom; the footer grid matches the 960px column */
+body{min-height:100vh;display:flex;flex-direction:column}
+main{width:100%;flex:1 0 auto}
+.honest-in{max-width:calc(960px - 2 * var(--gutter))}
+/* The on/off switch: state is carried by fill and knob position, not by green alone.
+   Page: off = ring in --border-input + --text-2 knob; on = --success fill + paper knob.
+   Band: off = ring in --on-band-2 + --on-band-2 knob; on = --on-band fill + --band knob. */
+.switch i{background:transparent;box-shadow:inset 0 0 0 1px var(--border-input)}
+.switch i::after{background:var(--text-2)}
+.switch[aria-checked="true"] i{background:var(--success);box-shadow:none}
+.switch[aria-checked="true"] i::after{background:var(--paper)}
+@media (pointer:coarse){.switch{min-height:var(--touch-min)}}
+.topbar .switch{background:transparent;border-color:var(--band-line);color:var(--on-band)}
+.topbar .switch i{background:transparent;box-shadow:inset 0 0 0 1px var(--on-band-2)}
+.topbar .switch i::after{background:var(--on-band-2)}
+.topbar .switch[aria-checked="true"] i{background:var(--on-band);box-shadow:none}
+.topbar .switch[aria-checked="true"] i::after{background:var(--band)}
+.topbar .pill.live{border-color:var(--band-line);color:var(--on-band-2);background:transparent}
+.topbar .pill.live::before{background:var(--success)}
+@media (hover:hover) and (pointer:fine){.topbar .switch:hover{background:var(--band-line)}}
+/* ===== end of family layer v3.1 ===== */
 </style>
 </head>
 <body>
-
-<header>
-  <div class="wrap top">
-    <div class="brand">📮 <span data-i18n="brand">邮件分拣台</span><span class="mark">.</span><small>MAIL SORTER</small></div>
-    <div class="tools">
-      <span id="updated">—</span>
-      <button class="iconbtn" id="togBtn" onclick="toggleEnabled()" data-i18n-title="togT" title="开/关每日自动分类（GitHub Actions 每天早上给 Gmail 新邮件打 AI/xx 标签）">分类: —</button>
-      <button class="iconbtn" onclick="loadAll()" data-i18n="refresh">刷新</button>
-      <button class="iconbtn" id="langBtn" onclick="toggleLang()">EN</button>
-      <button aria-label="设置" class="iconbtn" onclick="toggleSettings()">⚙</button>
-    </div>
-  </div>
+<a class="skip" href="#main" data-i18n="skip">Skip to content</a>
+<header class="topbar">
+  <a class="brand" href="./" aria-label="Headersort home">
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true" focusable="false"><rect x="2.5" y="2.5" width="19" height="19" rx="5" stroke="currentColor" stroke-width="2"/><rect x="14" y="6" width="4" height="4" rx="1" fill="var(--point)"/><path d="M6 10l6 4 6-4M6 13v3h12v-3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <b>Headersort</b><span data-i18n="tagline">Gmail triage that reads only the envelope — sender and subject — and only adds labels.</span>
+  </a>
+  <span class="pill" id="pill" title="">Demo<span class="long" id="pillLong"> · fictional mail</span></span>
+  <span class="spacer"></span>
+  <button class="switch" id="togBtn" role="switch" aria-checked="false" onclick="toggleEnabled()" data-i18n-title="togT" title=""><i aria-hidden="true"></i><span id="togText">—</span></button>
+  <button class="btn btn-ghost" id="refresh" onclick="loadAll()" data-i18n="refresh">Refresh</button>
+  <button class="btn btn-ghost" id="langBtn" onclick="toggleLang()" aria-label="Switch language">中</button>
+  <button class="btn btn-ghost btn-icon" id="theme" aria-label="Dark mode" aria-pressed="false" title="Dark mode" data-i18n-aria="darkMode" data-i18n-title="darkMode"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg></button>
+  <button type="button" class="btn btn-ghost btn-icon" id="nl-settings-button" aria-haspopup="dialog" aria-label="Settings" title="Settings" data-i18n-aria="settingsBtn" data-i18n-title="settingsBtn"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10.34 5.10L10.58 2.51L13.42 2.51L13.66 5.10A7.1 7.1 0 0 1 15.71 5.95L17.71 4.28L19.72 6.29L18.05 8.29A7.1 7.1 0 0 1 18.90 10.34L21.49 10.58L21.49 13.42L18.90 13.66A7.1 7.1 0 0 1 18.05 15.71L19.72 17.71L17.71 19.72L15.71 18.05A7.1 7.1 0 0 1 13.66 18.90L13.42 21.49L10.58 21.49L10.34 18.90A7.1 7.1 0 0 1 8.29 18.05L6.29 19.72L4.28 17.71L5.95 15.71A7.1 7.1 0 0 1 5.10 13.66L2.51 13.42L2.51 10.58L5.10 10.34A7.1 7.1 0 0 1 5.95 8.29L4.28 6.29L6.29 4.28L8.29 5.95A7.1 7.1 0 0 1 10.34 5.10Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+  <a class="btn btn-ghost gh" href="https://github.com/NickkkLian/Mail-Sorter" rel="noopener">GitHub</a>
 </header>
 
-<main class="wrap">
-  <div class="settings" id="settings">
-    <div class="hint" data-i18n-html="setHint">连接你的私有数据仓库（令牌只存在这个浏览器里）。Token 需要对 <b>你的数据仓库</b>有 Contents 读写权限。</div>
-    <div class="row">
-      <input id="tokenInput" type="password" placeholder="github_pat_…" autocomplete="off">
-      <button class="btn" onclick="saveToken()" data-i18n="saveConnect">保存并连接</button>
+<main id="main" tabindex="-1">
+  <section class="plate" id="digestPlate" aria-labelledby="digestT" hidden>
+    <div class="plate-in">
+      <div>
+        <span class="eyebrow" id="digestEyebrow"></span>
+        <h1 class="display" id="digestT" data-i18n="digestT">Where the digest went</h1>
+        <p class="lede" data-i18n="digestLede">Every email in the digest, split by the label the classifier gave it. Only the envelope was read: sender and subject.</p>
+        <div class="rule" aria-hidden="true"></div>
+      </div>
+      <div role="group" aria-labelledby="digestT">
+        <div class="sum-bar" id="sumBar" aria-hidden="true"></div>
+        <div class="sum-legend" id="sumLegend"></div>
+        <div class="sum-eq" id="sumEq"></div>
+      </div>
     </div>
-    <div class="hint" id="setStatus"></div>
+  </section>
+
+  <div class="main-col">
+  <div class="page-switch">
+    <button class="switch" id="togBtnPage" role="switch" aria-checked="false" onclick="toggleEnabled()" data-i18n-title="togT" title=""><i aria-hidden="true"></i><span id="togTextPage">—</span></button>
   </div>
 
-  <div class="card setup" id="setupBox" style="display:none">
-    <b data-i18n="setupT">还没配置 —— 三步开通（一次性，约 5 分钟）：</b><br>
-    <span data-i18n-html="setupB">
-    ① Google 账号 → 安全 → 开启两步验证 → 搜「应用专用密码 App passwords」→ 生成一个（16 位）。<br>
-    ② GitHub 打开 <b>你的数据仓库</b> → Settings → Secrets and variables → Actions → 添加两条 Secret：<code>GMAIL_USER</code>=Gmail 地址、<code>GMAIL_APP_PASSWORD</code>=那 16 位密码。<br>
-    ③ 那个仓库 → Actions → 「Mail Classify」→ Run workflow：想把<b>现有收件箱</b>一次整理完，在 backfill_days 填天数（如 365）；留空只处理最近 7 天。之后每天早上自动分拣新邮件。</span>
-  </div>
+  <section class="card" id="connectCard" hidden>
+    <h2 data-i18n="setT">Connect your private data repo</h2>
+    <p class="hint" data-i18n="connHint">This board reads two files from your own private GitHub repo, so there is nothing to show until you connect one. The demo shows the same board with fictional mail.</p>
+    <div class="row connect-acts">
+      <button class="btn btn-primary" type="button" onclick="openSettings(true)" data-i18n="connBtn">Connect…</button>
+      <a class="btn" href="?demo=1" data-i18n="tryDemo">Try the demo</a>
+    </div>
+  </section>
 
-  <div class="stats" id="stats"></div>
-  <div class="filterbar" id="filter"></div>
+  <section class="card" id="setupBox" hidden>
+    <h2 data-i18n="setupT">Not set up yet — three one-time steps (about 5 minutes)</h2>
+    <ol class="steps" data-i18n-html="setupB"></ol>
+  </section>
+
+  <div id="stats"></div>
+  <section class="card" id="trendCard" hidden>
+    <h2 data-i18n="trendT">Last 7 days</h2>
+    <div class="trend" id="trend" role="img"></div><div class="trend-x" id="trendX"></div>
+    <p class="hint" style="margin-top:8px" data-i18n="trendHint">Bars are emails per day in the digest; the amber part needs action.</p>
+  </section>
+  <div class="row" id="filterRow" hidden>
+    <input type="search" id="q" placeholder="Search subject or sender…" aria-label="Search" oninput="onSearch(this.value)" data-i18n-ph="searchPh">
+    <div class="filters" id="filter" role="group" aria-label="Filter by category"></div>
+  </div>
   <div id="list"></div>
+  </div>
 </main>
+<footer class="honest">
+  <dl class="honest-in">
+    <div><dt data-i18n="aboutT">About this board</dt>
+    <dd data-i18n="aboutD">In demo mode every email is fictional and every address ends in the reserved .example TLD; nothing is fetched and nothing is sent. Connected, the board reads two JSON files from your private repo through the GitHub Contents API and can flip one switch in config.json.</dd></div>
+    <div><dt data-i18n="nvT">Not verified here</dt>
+    <dd data-i18n="nvD">The scheduled classifier runs in your own repo (a template is in template/); the board cannot see whether it ran. Category quality depends on the model and on subject lines alone. The digest is capped by keep_items, so the board never shows more than that many emails.</dd></div>
+    <div><dt data-i18n="srcT">Source</dt>
+    <dd><a href="https://github.com/NickkkLian/Mail-Sorter">github.com/NickkkLian/Mail-Sorter</a> · MIT · <span data-i18n="by">built by Nick Lian</span></dd></div>
+  </dl>
+</footer>
+<div class="toast" id="toast" role="status"></div>
 
-<footer data-i18n="foot">只加标签，绝不删信/标已读/动收件箱 · AI 只看发件人+主题，不看正文 · 摘要存私有仓库</footer>
-<div class="toast" id="toast"></div>
+<script>/* ---- appearance.js (inlined; source: design system theme kit) ---- */
+/* appearance.js — palette (Plaster · Paper · Ink) and light/dark for every Nick Lian product page.
+   Contract with design-tokens.css (v3.1):
+     <html>                                  Plaster, follows the OS light/dark setting
+     <html data-theme="paper|ink">           another palette
+     <html data-scheme="light|dark">         forced light or dark
+   Defaults write no attribute: an attribute present means the person chose something.
+   The choice is stored in localStorage (nl-theme, nl-scheme). The inline boot snippet at the top of <head> applies it
+   before the first paint, so there is no flash; this file keeps everything in sync afterwards.
 
+   Two controls, one writer (Appearance.set):
+     Appearance.bindToggle(button)            the top-bar ◐: light/dark only, never the palette. Its name stays
+                                              "Dark mode"; aria-pressed says whether dark is on.
+     Appearance.bindSettings(button, opts)    the top-bar gear: opens the Settings dialog. `opts` (or a function
+                                              returning it, read on every open) may carry `strings` (see STRINGS)
+                                              and `sections` (extra nodes after Appearance, e.g. a connection form).
+     Appearance.settings(opts)                the Theme and Appearance controls alone, for mounting elsewhere.
+   No dependencies. Styles use design tokens only. */
+(function (root) {
+  'use strict';
+  var KEY_THEME = 'nl-theme', KEY_SCHEME = 'nl-scheme';
+  var THEMES = ['plaster', 'paper', 'ink'];
+  var THEME_NAMES = { plaster: 'Plaster', paper: 'Paper', ink: 'Ink' };   // names, not translated
+  var SCHEMES = ['system', 'light', 'dark'];
+  var STRINGS = {
+    en: { title: 'Settings', theme: 'Theme', appearance: 'Appearance', system: 'System', light: 'Light', dark: 'Dark',
+          caption: 'Saved in this browser only. Plaster and System are the defaults.', done: 'Done' },
+    zh: { title: '设置', theme: '配色', appearance: '明暗', system: '跟随系统', light: '浅色', dark: '深色',
+          caption: '只保存在这个浏览器里。Plaster 与「跟随系统」是默认值。', done: '完成' }
+  };
+  var doc = document, html = doc.documentElement;
+  var toggles = [], uid = 0;
+
+  function get() {
+    var t = html.getAttribute('data-theme'), s = html.getAttribute('data-scheme');
+    return { theme: t === 'paper' || t === 'ink' ? t : 'plaster', scheme: s === 'light' || s === 'dark' ? s : 'system' };
+  }
+  function isDark() {
+    var s = get().scheme;
+    return s === 'dark' || (s === 'system' && !!root.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+  }
+  function syncMeta() {
+    var bg = getComputedStyle(html).getPropertyValue('--bg').trim();
+    if (!bg) return;
+    var metas = doc.querySelectorAll('meta[name="theme-color"]');
+    for (var i = 0; i < metas.length; i++) metas[i].setAttribute('content', bg);
+  }
+  function syncControls() {
+    var cur = get(), dark = String(isDark()), i;
+    for (i = 0; i < toggles.length; i++) toggles[i].setAttribute('aria-pressed', dark);
+    var radios = doc.querySelectorAll('.nl-settings input[type="radio"]');
+    for (i = 0; i < radios.length; i++) {
+      var r = radios[i];
+      r.checked = r.getAttribute('data-nl') === 'theme' ? r.value === cur.theme : r.value === cur.scheme;
+    }
+    // swatches preview each palette in the light/dark that is currently forced (system: the OS decides)
+    var sw = doc.querySelectorAll('.nl-swatch');
+    for (i = 0; i < sw.length; i++) {
+      if (cur.scheme === 'system') sw[i].removeAttribute('data-scheme'); else sw[i].setAttribute('data-scheme', cur.scheme);
+    }
+  }
+  function set(next) {
+    var cur = get();
+    var t = next && next.theme ? next.theme : cur.theme, s = next && next.scheme ? next.scheme : cur.scheme;
+    if (t === 'plaster') html.removeAttribute('data-theme'); else html.setAttribute('data-theme', t);
+    if (s === 'system') html.removeAttribute('data-scheme'); else html.setAttribute('data-scheme', s);
+    try { localStorage.setItem(KEY_THEME, t); localStorage.setItem(KEY_SCHEME, s); } catch (e) { /* private mode: still applies for this page */ }
+    syncMeta();
+    syncControls();
+    try { doc.dispatchEvent(new CustomEvent('appearancechange', { detail: get() })); } catch (e) {}
+    return get();
+  }
+  // From "follow the system" a press picks an explicit Light or Dark; going back to System is done in Settings.
+  function toggleScheme() { return set({ scheme: isDark() ? 'light' : 'dark' }); }
+  function bindToggle(btn) {
+    if (!btn || toggles.indexOf(btn) !== -1) return btn;
+    toggles.push(btn);
+    btn.removeAttribute('aria-haspopup');
+    btn.addEventListener('click', function () { toggleScheme(); });
+    btn.setAttribute('aria-pressed', String(isDark()));
+    return btn;
+  }
+
+  var styled = false;
+  function injectStyle() {
+    if (styled) return; styled = true;
+    var css = [
+      '.nl-settings{display:grid;gap:var(--space-5);min-width:0}',
+      '.nl-pickset{border:0;margin:0;padding:0;display:grid;gap:var(--space-3);min-width:0}',
+      '.nl-pickset legend{padding:0;margin-bottom:var(--space-3);font:var(--weight-semibold) var(--text-2xs)/1 var(--font-sans);letter-spacing:var(--tracking-caps);text-transform:uppercase;color:var(--text-3)}',
+      '.nl-picks{display:flex;flex-wrap:wrap;gap:var(--space-3);justify-self:start}',
+      '.nl-pick{position:relative;display:inline-flex;align-items:center;gap:var(--space-3);cursor:pointer;padding:var(--space-2) var(--space-3) var(--space-2) var(--space-2);',
+      'border:1px solid var(--border);border-radius:var(--radius-md);background:var(--paper);color:var(--text);font-size:var(--text-sm);',
+      'transition:border-color var(--dur-fast) var(--ease-out),background-color var(--dur-fast) var(--ease-out),transform var(--dur-fast) var(--ease-out)}',
+      '.nl-pick:active{transform:scale(var(--press-scale))}',
+      '.nl-pick input,.nl-seg input{position:absolute;opacity:0;width:1px;height:1px;margin:0}',
+      '.nl-pick:has(input:checked){border-color:var(--accent-text);background:var(--accent-tint);color:var(--accent-tint-text)}',
+      '.nl-pick:has(input:focus-visible),.nl-seg label:has(input:focus-visible){outline:var(--border-focus-width) solid var(--focus);outline-offset:2px}',
+      '.nl-swatch{display:grid;grid-template-columns:repeat(3,1fr);width:46px;height:26px;border-radius:var(--radius-xs);overflow:hidden;border:1px solid var(--border);flex:none}',
+      '.nl-swatch i{display:block}',
+      '.nl-swatch i:nth-child(1){background:var(--bg)}.nl-swatch i:nth-child(2){background:var(--band)}.nl-swatch i:nth-child(3){background:var(--point)}',
+      '.nl-seg{display:inline-flex;width:fit-content;max-width:100%;justify-self:start;padding:2px;gap:2px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--surface-2)}',
+      '.nl-seg label{position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:72px;height:28px;padding:0 var(--space-2);border-radius:var(--radius-sm);',
+      'cursor:pointer;font-size:var(--text-xs);color:var(--text-2);transition:background-color var(--dur-fast) var(--ease-out),color var(--dur-fast) var(--ease-out)}',
+      // the selected segment needs a ring: paper on the sunken track alone is 1.03-1.25:1; the ring is 3.29-4.19:1
+      '.nl-seg label:has(input:checked){background:var(--paper);color:var(--text);font-weight:var(--weight-medium);box-shadow:var(--shadow-1),inset 0 0 0 1px var(--border-input)}',
+      '.nl-caption{margin:0;font-family:var(--font-display);font-style:var(--caption-style);font-weight:400;font-variation-settings:"opsz" var(--opsz-caption);',
+      'font-size:var(--text-sm);line-height:var(--leading-relaxed);color:var(--text-2);max-width:var(--measure)}',
+      '@media (pointer:coarse){.nl-seg label{height:var(--touch-min)}.nl-pick{min-height:var(--touch-min)}.nl-dialog .nl-done{min-height:var(--touch-min);min-width:var(--touch-min)}}',
+      '@media (prefers-reduced-motion:reduce){.nl-pick:active,.nl-dialog .nl-done:active{transform:none;background:var(--neutral-tint)}}',
+      '.nl-dialog{border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface-raised);color:var(--text);box-shadow:var(--shadow-2);',
+      'padding:var(--space-5);width:min(460px,calc(100vw - 2 * var(--gutter,16px)));max-width:100%;max-height:calc(100dvh - 2 * var(--gutter,16px));overflow:auto;overscroll-behavior:contain}',
+      '.nl-dialog::backdrop{background:var(--overlay)}',
+      '.nl-dialog h2{margin:0 0 var(--space-5);font:var(--display-weight,600) var(--text-lg)/var(--leading-tight) var(--font-display);font-variation-settings:"opsz" var(--opsz-title)}',
+      '.nl-dialog .nl-section{margin-top:var(--space-6);padding-top:var(--space-5);border-top:1px solid var(--hairline)}',
+      '.nl-dialog .nl-acts{display:flex;justify-content:flex-end;margin-top:var(--space-6)}',
+      // Done commits nothing, so it is the neutral button, not the filled primary
+      '.nl-dialog .nl-done{min-height:var(--control-h);padding:0 var(--space-4);border-radius:var(--radius-sm);border:1px solid var(--border-input);background:var(--paper);color:var(--text);',
+      'font:inherit;font-size:var(--text-sm);font-weight:var(--weight-medium);cursor:pointer;transition:background-color var(--dur-fast) var(--ease-out),transform var(--dur-fast) var(--ease-out)}',
+      '.nl-dialog .nl-done:active{transform:scale(var(--press-scale))}',
+      '.nl-dialog .nl-done:focus-visible{outline:var(--border-focus-width) solid var(--focus);outline-offset:2px}',
+      '@media (hover:hover) and (pointer:fine){.nl-pick:hover{border-color:var(--border-strong)}.nl-seg label:hover{color:var(--text)}.nl-dialog .nl-done:hover{background:var(--surface-hover)}}'
+    ].join('');
+    var st = doc.createElement('style'); st.setAttribute('data-nl-appearance', ''); st.textContent = css; doc.head.appendChild(st);
+  }
+
+  function el(tag, attrs, kids) {
+    var n = doc.createElement(tag), k;
+    for (k in attrs || {}) if (Object.prototype.hasOwnProperty.call(attrs, k)) n.setAttribute(k, attrs[k]);
+    (kids || []).forEach(function (c) { if (c != null) n.appendChild(typeof c === 'string' ? doc.createTextNode(c) : c); });
+    return n;
+  }
+  function radio(kind, name, value, checked) {
+    var input = el('input', { type: 'radio', name: name, value: value, 'data-nl': kind });
+    input.checked = checked;
+    input.addEventListener('change', function () { if (input.checked) { var n = {}; n[kind] = value; set(n); } });
+    return input;
+  }
+  function strings(opts) {
+    var s = {}, base = STRINGS.en, over = (opts && opts.strings) || {}, k;
+    for (k in base) s[k] = over[k] || base[k];
+    return s;
+  }
+
+  /* The Theme and Appearance controls. Each group is named once, by its fieldset legend. Options: { strings, caption:false } */
+  function settings(opts) {
+    injectStyle();
+    opts = opts || {};
+    var S = strings(opts), cur = get(), n = ++uid;
+    var picks = el('div', { class: 'nl-picks' });
+    THEMES.forEach(function (t) {
+      var sw = el('span', { class: 'nl-swatch', 'data-theme': t, 'aria-hidden': 'true' }, [el('i'), el('i'), el('i')]);
+      if (cur.scheme !== 'system') sw.setAttribute('data-scheme', cur.scheme);
+      picks.appendChild(el('label', { class: 'nl-pick' }, [radio('theme', 'nl-theme-' + n, t, t === cur.theme), sw, THEME_NAMES[t]]));
+    });
+    var seg = el('div', { class: 'nl-seg' });
+    SCHEMES.forEach(function (s) { seg.appendChild(el('label', {}, [radio('scheme', 'nl-scheme-' + n, s, s === cur.scheme), S[s]])); });
+    var box = el('div', { class: 'nl-settings' }, [
+      el('fieldset', { class: 'nl-pickset' }, [el('legend', {}, [S.theme]), picks]),
+      el('fieldset', { class: 'nl-pickset' }, [el('legend', {}, [S.appearance]), seg])
+    ]);
+    if (opts.caption !== false) box.appendChild(el('p', { class: 'nl-caption' }, [S.caption]));
+    return box;
+  }
+
+  function openSettings(opener, opts) {
+    injectStyle();
+    opts = opts || {};
+    var S = strings(opts);
+    var old = doc.getElementById('nl-settings-dialog'); if (old) old.remove();
+    var dlg = el('dialog', { id: 'nl-settings-dialog', class: 'nl-dialog', 'aria-labelledby': 'nl-settings-h' });
+    var done = el('button', { type: 'button', class: 'nl-done' }, [S.done]);
+    done.addEventListener('click', function () { dlg.close(); });
+    dlg.appendChild(el('h2', { id: 'nl-settings-h' }, [S.title]));
+    dlg.appendChild(settings(opts));
+    (opts.sections || []).forEach(function (sec) {
+      var node = typeof sec === 'function' ? sec(dlg) : sec;
+      if (node) dlg.appendChild(el('div', { class: 'nl-section' }, [node]));
+    });
+    dlg.appendChild(el('div', { class: 'nl-acts' }, [done]));
+    dlg.addEventListener('close', function () {
+      dlg.remove();
+      if (typeof opts.onClose === 'function') opts.onClose();
+      if (opener && opener.focus) opener.focus();
+    });
+    // Escape closes even where the native close watcher does not fire (non-modal fallback, synthetic key events).
+    dlg.addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); dlg.close(); } });
+    // A pointer click on the backdrop closes. Judged by coordinates: the dialog's own padding is also the dialog
+    // element, and keyboard-made clicks (detail 0, coordinates 0,0) must never count.
+    dlg.addEventListener('click', function (e) {
+      if (e.target !== dlg || !e.detail) return;
+      var r = dlg.getBoundingClientRect();
+      if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) dlg.close();
+    });
+    doc.body.appendChild(dlg);
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+    var first = (opts.focus && dlg.querySelector(opts.focus)) || dlg.querySelector('input[data-nl="theme"]:checked');
+    if (first) first.focus();
+    return dlg;
+  }
+  function bindSettings(btn, opts) {
+    if (!btn || btn.getAttribute('data-nl-settings') === 'bound') return btn;
+    btn.setAttribute('data-nl-settings', 'bound');
+    btn.setAttribute('aria-haspopup', 'dialog');
+    btn.addEventListener('click', function () { openSettings(btn, typeof opts === 'function' ? opts() : opts); });
+    return btn;
+  }
+
+  // Keep theme-color metas and the toggle right when the OS flips light/dark while the page follows it.
+  if (root.matchMedia) {
+    var mq = matchMedia('(prefers-color-scheme: dark)');
+    var onFlip = function () { if (get().scheme === 'system') { syncMeta(); syncControls(); } };
+    if (mq.addEventListener) mq.addEventListener('change', onFlip); else if (mq.addListener) mq.addListener(onFlip);
+  }
+  if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', syncMeta); else syncMeta();
+
+  root.Appearance = {
+    get: get, set: set, isDark: isDark, toggleScheme: toggleScheme, bindToggle: bindToggle, bindSettings: bindSettings,
+    settings: settings, openSettings: openSettings, STRINGS: STRINGS,
+    THEMES: THEMES, SCHEMES: SCHEMES, KEYS: { theme: KEY_THEME, scheme: KEY_SCHEME }
+  };
+})(typeof self !== 'undefined' ? self : this);
+
+</script>
 <script>
-/* ============ 连接配置（owner / repo / token，只存本机） ============ */
+/* ============ connection (owner / repo / token live only in this browser; shared with the product family via pha-config) ============ */
 const PHA_KEY='pha-config';
 const DEFAULTS={owner:'',repo:'',token:''};
 let MAIL=null, CONF=null, SHA_CONF=null;
-let filter='all';
+let filter='all', query='';
 
 function cfg(){ try{ const c=JSON.parse(localStorage.getItem(PHA_KEY)||'null'); return Object.assign({},DEFAULTS,c||{}); }catch(e){ return Object.assign({},DEFAULTS); } }
 function configured(){ const c=cfg(); return Boolean(c.owner&&c.token); }
 
-/* ============ 双语（pha-lang 共享） ============ */
-/* 默认英文，中文一键切换。同源里若已存过 'zh' 就按中文渲染。 */
+/* ============ language (pha-lang shared; English by default) ============ */
 let lang=(()=>{ try{ return localStorage.getItem('pha-lang')==='zh'?'zh':'en'; }catch(e){ return 'en'; } })();
 const T=(zh,en)=>lang==='en'?en:zh;
 const I18N={
-  brand:{zh:'邮件分拣台',en:'Mail Sorter'},
+  skip:{zh:'跳到内容',en:'Skip to content'},
+  tagline:{zh:'只看信封（发件人+主题）、只加标签的 Gmail 分拣台。',en:'Gmail triage that reads only the envelope — sender and subject — and only adds labels.'},
   refresh:{zh:'刷新',en:'Refresh'},
-  togT:{zh:'开/关每日自动分类（GitHub Actions 每天早上给 Gmail 新邮件打 AI/xx 标签）',en:'Toggle daily auto-classification (labels new Gmail as AI/xx every morning)'},
-  setHint:{zh:'连接你的私有数据仓库（令牌只存在这个浏览器里）。Token 需要对 <b>你的数据仓库</b>有 Contents 读写权限。',en:'Connect your private data repo (stored only in this browser). The token needs Contents read/write on <b>your data repo</b>.'},
+  togT:{zh:'开/关定时自动分类（GitHub Actions 每天给 Gmail 新邮件打 AI/xx 标签）',en:'Toggle the scheduled classification (a GitHub Action labels new Gmail as AI/… each run)'},
+  setT:{zh:'连接你的私有数据仓库',en:'Connect your private data repo'},
+  setHint:{zh:'令牌只存在这个浏览器里（<code>localStorage</code>），只需要对<b>你的数据仓库</b>的 Contents 读写权限。',en:'The token is stored only in this browser (<code>localStorage</code>) and needs Contents read/write on <b>your data repo</b> — nothing else.'},
   saveConnect:{zh:'保存并连接',en:'Save & connect'},
-  setupT:{zh:'还没配置 —— 三步开通（一次性，约 5 分钟）：',en:'Not set up yet — three one-time steps (~5 min):'},
-  setupB:{zh:'① Google 账号 → 安全 → 开启两步验证 → 搜「应用专用密码 App passwords」→ 生成一个（16 位）。<br>② GitHub 打开 <b>你的数据仓库</b> → Settings → Secrets and variables → Actions → 添加两条 Secret：<code>GMAIL_USER</code>=Gmail 地址、<code>GMAIL_APP_PASSWORD</code>=那 16 位密码。<br>③ 那个仓库 → Actions → 「Mail Classify」→ Run workflow：想把<b>现有收件箱</b>一次整理完，在 backfill_days 填天数（如 365）；留空只处理最近 7 天。之后每天早上自动分拣新邮件。',en:'① Google Account → Security → turn on 2-Step Verification → search “App passwords” → create one (16 chars).<br>② In <b>your data repo</b> → Settings → Secrets and variables → Actions → add <code>GMAIL_USER</code> = your Gmail and <code>GMAIL_APP_PASSWORD</code> = that password.<br>③ That repo → Actions → “Mail Classify” → Run workflow: set backfill_days (e.g. 365) to organize the <b>existing inbox</b> in one go; leave empty for the last 7 days. New mail is then sorted automatically every morning.'},
-  foot:{zh:'只加标签，绝不删信/标已读/动收件箱 · AI 只看发件人+主题，不看正文 · 摘要存私有仓库',en:'Labels only — never deletes / marks read / moves mail · AI sees sender+subject only, never bodies · digest lives in your private repo'},
+  setupT:{zh:'还没配置 —— 三步开通（一次性，约 5 分钟）',en:'Not set up yet — three one-time steps (about 5 minutes)'},
+  setupB:{zh:'<li><b>1</b><span>Google 账号 → 安全 → 两步验证 → 应用专用密码 → 生成一个。</span></li><li><b>2</b><span>把 <code>template/</code> 拷进<b>你的数据仓库</b>，在 Settings → Secrets and variables → Actions 添加 <code>GMAIL_USER</code>、<code>GMAIL_APP_PASSWORD</code>、<code>ANTHROPIC_API_KEY</code>。</span></li><li><b>3</b><span>Actions → Mail Classify → Run workflow；想把现有收件箱一次整理完就填 backfill_days。之后它每天自己跑，这里点「刷新」即可。</span></li>',
+         en:'<li><b>1</b><span>Google Account → Security → 2-Step Verification → App passwords → create one.</span></li><li><b>2</b><span>Copy <code>template/</code> into <b>your private data repo</b> and add <code>GMAIL_USER</code>, <code>GMAIL_APP_PASSWORD</code> and <code>ANTHROPIC_API_KEY</code> under Settings → Secrets and variables → Actions.</span></li><li><b>3</b><span>Actions → Mail Classify → Run workflow; set backfill_days to sort the existing inbox in one pass. It then runs on its own — press Refresh here.</span></li>'},
+  digestT:{zh:'摘要去了哪里',en:'Where the digest went'},
+  trendT:{zh:'近 7 天',en:'Last 7 days'},
+  trendHint:{zh:'柱＝摘要里每天的邮件数；琥珀色部分需要处理。',en:'Bars are emails per day in the digest; the amber part needs action.'},
+  searchPh:{zh:'搜主题或发件人…',en:'Search subject or sender…'},
+  aboutT:{zh:'关于这个看板',en:'About this board'},
+  aboutD:{zh:'演示模式下所有邮件都是虚构的、地址都以保留的 .example 结尾；不抓取、不发送。连接后，看板通过 GitHub Contents API 读你私有仓库里的两个 JSON 文件，并且只能拨动 config.json 里的一个开关。',en:'In demo mode every email is fictional and every address ends in the reserved .example TLD; nothing is fetched and nothing is sent. Connected, the board reads two JSON files from your private repo through the GitHub Contents API and can flip one switch in config.json.'},
+  nvT:{zh:'这里验证不了的',en:'Not verified here'},
+  nvD:{zh:'定时分类脚本跑在你自己的仓库里（模板在 template/），看板看不到它跑没跑；分类质量取决于模型和主题行本身；摘要被 keep_items 封顶，看板最多显示这么多封。',en:'The scheduled classifier runs in your own repo (a template is in template/); the board cannot see whether it ran. Category quality depends on the model and on subject lines alone. The digest is capped by keep_items, so the board never shows more than that many emails.'},
+  srcT:{zh:'来源',en:'Source'},
+  by:{zh:'Nick Lian 制作',en:'built by Nick Lian'},
   langBtn:{zh:'EN',en:'中'},
+  darkMode:{zh:'深色模式',en:'Dark mode'},
+  settingsBtn:{zh:'设置',en:'Settings'},
+  connHint:{zh:'这个看板读的是你自己私有 GitHub 仓库里的两个文件，连接之前这里没有东西可显示。演示版用虚构邮件展示同一个看板。',en:'This board reads two files from your own private GitHub repo, so there is nothing to show until you connect one. The demo shows the same board with fictional mail.'},
+  connBtn:{zh:'连接…',en:'Connect…'},
+  tryDemo:{zh:'看演示',en:'Try the demo'},
+  digestLede:{zh:'摘要里的每一封，按分类脚本给它的标签分开。只读了信封：发件人和主题。',en:'Every email in the digest, split by the label the classifier gave it. Only the envelope was read: sender and subject.'},
 };
 const Ls=k=>(I18N[k]||{zh:k,en:k})[lang];
 function applyStatic(){
   document.documentElement.lang=lang==='en'?'en':'zh-CN';
-  document.title=lang==='en'?'Mail Sorter':'邮件分拣台 · Mail Sorter';
+  document.title=lang==='en'?'Headersort':'Headersort · 邮件分拣台';
   document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent=Ls(el.dataset.i18n); });
   document.querySelectorAll('[data-i18n-html]').forEach(el=>{ el.innerHTML=Ls(el.dataset.i18nHtml); });
   document.querySelectorAll('[data-i18n-title]').forEach(el=>{ el.title=Ls(el.dataset.i18nTitle); });
+  document.querySelectorAll('[data-i18n-aria]').forEach(el=>{ el.setAttribute('aria-label',Ls(el.dataset.i18nAria)); });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{ el.placeholder=Ls(el.dataset.i18nPh); });
   const lb=document.getElementById('langBtn'); if(lb) lb.textContent=Ls('langBtn');
 }
 function toggleLang(){ lang=lang==='en'?'zh':'en'; try{localStorage.setItem('pha-lang',lang);}catch(e){} applyStatic(); render(); }
 
-/* ============ 工具 ============ */
+/* ============ helpers ============ */
 const $=id=>document.getElementById(id);
 const esc=s=>(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-function toast(msg,isErr){ const t=$('toast'); t.textContent=msg; t.className='toast show'+(isErr?' err':''); setTimeout(()=>t.className='toast'+(isErr?' err':''),3000); }
+let toastTimer=null;
+function toast(msg,isErr){ const t=$('toast'); t.textContent=msg; t.className='toast show'+(isErr?' err':''); t.setAttribute('role',isErr?'alert':'status'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.className='toast'+(isErr?' err':''),isErr?6000:3000); }
 function b64decode(b64){ const bin=atob(String(b64).replace(/\s/g,'')); const bytes=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i); return new TextDecoder().decode(bytes); }
 function b64encode(str){ const bytes=new TextEncoder().encode(str); let bin=''; bytes.forEach(b=>bin+=String.fromCharCode(b)); return btoa(bin); }
 
+/* ============ GitHub Contents API (unchanged data layer: same paths, same fields, same 409 retry) ============ */
 async function ghGet(path){
   const c=cfg();
   const r=await fetch(`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${path}`,
@@ -197,131 +1604,142 @@ async function ghPut(path,obj,sha,message){
   return (await r.json()).content.sha;
 }
 
-/* ============ 设置 ============ */
-function toggleSettings(){ $('settings').classList.toggle('show'); }
+/* ============ settings ============ */
+/* Settings dialog (design system v3.1): palette and light/dark first, then the repo connection. The token field
+   lives only in the dialog; a visitor on the public page gets the connect card instead of a pop-up. */
+function setStatus(msg){ const st=$('setStatus'); if(st) st.textContent=msg; }
+function connectSection(){
+  const box=document.createElement('div'); box.className='nl-connect';
+  box.innerHTML=`<h3>${esc(Ls('setT'))}</h3><p class="hint">${Ls('setHint')}</p>
+    <div class="row"><input id="tokenInput" type="password" placeholder="github_pat_…" autocomplete="off" aria-label="${esc(T('GitHub 令牌','GitHub token'))}">
+    <button type="button" class="btn btn-primary" id="saveTokenBtn">${esc(Ls('saveConnect'))}</button></div>
+    <p class="hint" id="setStatus" role="status"></p>`;
+  box.querySelector('#saveTokenBtn').addEventListener('click',saveToken);
+  box.querySelector('#tokenInput').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); saveToken(); } });
+  box.querySelector('#setStatus').textContent=DEMO?T('演示数据（全部虚构，未连接任何仓库）','Demo data — all fictional, nothing connected')
+    :(configured()?T('✓ 已连接 ','✓ Connected to ')+cfg().owner+'/'+(cfg().repo||'…'):T('先粘贴 GitHub 令牌','Paste a GitHub token'));
+  return box;
+}
+function settingsOptions(focusToken){ return { strings:Appearance.STRINGS[lang], sections:[connectSection], focus:focusToken?'#tokenInput':null }; }
+function openSettings(focusToken){ Appearance.openSettings($('nl-settings-button'),settingsOptions(focusToken)); }
 async function saveToken(){
   const token=$('tokenInput').value.trim();
-  if(!token){ $('setStatus').textContent=T('请输入令牌','Enter a token'); return; }
+  if(!token){ setStatus(T('请输入令牌','Enter a token')); return; }
   const cur=cfg(); const next=Object.assign({},JSON.parse(localStorage.getItem(PHA_KEY)||'{}'),{owner:cur.owner||DEFAULTS.owner,repo:cur.repo||DEFAULTS.repo,token});
   localStorage.setItem(PHA_KEY,JSON.stringify(next));
   $('tokenInput').value='';
-  $('setStatus').textContent=T('已保存，加载中…','Saved, loading…');
+  setStatus(T('已保存，加载中…','Saved, loading…'));
   await loadAll();
-  $('setStatus').textContent=T('✓ 已连接','✓ Connected');
+  setStatus(T('✓ 已连接','✓ Connected'));
 }
 
-/* ============ 加载与渲染 ============ */
+/* ============ load + render ============ */
 async function loadAll(){
-  if(DEMO){ MAIL=DEMO_MAIL; CONF=DEMO_CONF; SHA_CONF=null; render();
-    $('setStatus').textContent=T('演示数据（全部虚构，未连接任何仓库）','Demo data — all fictional, nothing connected');
-    return; }
-  if(!configured()){ $('setupBox').style.display='none'; $('settings').classList.add('show'); $('setStatus').textContent=T('先粘贴 GitHub 令牌','Paste a GitHub token'); return; }
+  if(DEMO){ MAIL=DEMO_MAIL; CONF=DEMO_CONF; SHA_CONF=null; render(); return; }
+  if(!configured()){ render(); return; }
   try{
     const [m,c]=await Promise.all([ ghGet('mail/mail.json').catch(()=>({data:null,sha:null})), ghGet('mail/config.json').catch(()=>({data:null,sha:null})) ]);
     MAIL=m.data; CONF=c.data; SHA_CONF=c.sha;
     render();
   }catch(e){ toast(T('加载失败: ','Load failed: ')+e.message,true); }
 }
-
-function catLabel(key){
-  const cats=(CONF&&CONF.categories)||[];
-  const c=cats.find(x=>x.key===key);
-  return c?c.label:key;
-}
+function catLabel(key){ const cats=(CONF&&CONF.categories)||[]; const c=cats.find(x=>x.key===key); return c?c.label:key; }
 async function toggleEnabled(){
-  if(DEMO){ CONF.enabled=!(CONF.enabled!==false); render();
-    toast(T('演示模式：开关不会真的写入','Demo mode — the toggle is not persisted')); return; }
+  if(DEMO){ CONF.enabled=!(CONF.enabled!==false); render(); toast(T('演示模式：开关不会真的写入','Demo mode — the toggle is not persisted')); return; }
   if(!CONF){ toast(T('仓库里还没有 mail/config.json','No mail/config.json in the repo yet'),true); return; }
   const next=!(CONF.enabled!==false);
   CONF.enabled=next; render();
   try{ SHA_CONF=await ghPut('mail/config.json',CONF,SHA_CONF,`mail: classify ${next?'ON':'OFF'}`);
-    toast(next?T('已开启每日自动分类','Daily classification ON'):T('已关闭（定时任务将直接跳过）','OFF — the scheduled job skips itself')); }
+    toast(next?T('已开启定时自动分类','Scheduled classification ON'):T('已关闭（定时任务将直接跳过）','OFF — the scheduled job skips itself')); }
   catch(e){ CONF.enabled=!next; render(); toast(T('切换失败: ','Toggle failed: ')+e.message,true); }
 }
-function setFilter(c,el){ filter=c; document.querySelectorAll('#filter button').forEach(b=>b.classList.toggle('on',b===el)); renderList(); }
-
+function setFilter(c){ filter=c; render(); }
+function onSearch(v){ query=v.trim().toLowerCase(); renderList(); }
+const fmtDay=d=>d.toLocaleDateString(lang==='en'?'en-CA':'zh-CN',{month:'short',day:'numeric'});
 function render(){
-  const b=$('togBtn');
-  if(!CONF){ b.textContent=T('分类: —','Classify: —'); b.style.color=''; }
-  else{ const on=CONF.enabled!==false;
-    b.textContent=on?T('⏻ 分类: 开','⏻ Classify: ON'):T('⏻ 分类: 关','⏻ Classify: OFF');
-    b.style.color=on?'var(--green)':'var(--red)'; }
-  $('setupBox').style.display = (configured()&&!MAIL)?'block':'none';
-  const m=MAIL||{items:[]};
-  $('updated').textContent=m.updated_at?T('更新 ','Updated ')+m.updated_at.slice(0,16).replace('T',' '):T('尚未运行','Not run yet');
-  const items=m.items||[];
+  const on=CONF?CONF.enabled!==false:false;
+  const togLabel=!CONF?T('分类: —','Classify: —'):(on?T('分类: 开','Classify: on'):T('分类: 关','Classify: off'));
+  ['togBtn','togBtnPage'].forEach(id=>{ const b=$(id); b.setAttribute('aria-checked',String(!!CONF&&on)); b.disabled=!CONF; });
+  ['togText','togTextPage'].forEach(id=>{ $(id).textContent=togLabel; });
+  $('connectCard').hidden=DEMO||configured();
+  $('setupBox').hidden=!(configured()&&!MAIL&&!DEMO);
+  const pill=$('pill'); pill.classList.toggle('live',!DEMO&&configured()); pill.firstChild.textContent=DEMO?'Demo':(configured()?T('已连接','Connected'):'Demo'); $('pillLong').textContent=DEMO?T(' · 虚构邮件',' · fictional mail'):(configured()?' · '+esc(cfg().owner)+'/'+esc(cfg().repo||'…'):T(' · 未连接',' · not connected')); pill.title=DEMO?T('全部虚构，不连接任何东西','All fictional; connects to nothing'):'';
+  const m=MAIL||{items:[]}; const items=m.items||[];
   const now=Date.now(),dayMs=864e5;
-  // 「已分类」以前直接显示 items.length，而摘要被 keep_items 封顶（默认 500），
-  // 一过上限就永远显示 500，看着像卡住（真实发生过的现象）。
-  // 现在拆成两个：摘要窗口（受封顶，超了显示 500/500）＋ 累计已分类（脚本记账，只增不减）。
-  const total=Number(m.total_classified||0), floor=!!m.total_is_floor;
-  const keep=Number(m.keep_items||500);   // 脚本用的是 config.json 的 keep_items，这里只用于显示分母
+  const total=Number(m.total_classified||0), floor=!!m.total_is_floor, keep=Number(m.keep_items||(CONF&&CONF.keep_items)||500);
   const today=items.filter(i=>now-new Date(i.date).getTime()<dayMs).length;
   const week=items.filter(i=>now-new Date(i.date).getTime()<7*dayMs).length;
   const action=items.filter(i=>i.action).length;
-  $('stats').innerHTML=items.length?`
-    <div class="stat"><div class="k">${T('24 小时','Last 24h')}</div><div class="v">${today}</div></div>
-    <div class="stat"><div class="k">${T('近 7 天','Last 7d')}</div><div class="v">${week}</div></div>
-    <div class="stat"><div class="k">${T('⚡ 待办','⚡ Action')}</div><div class="v" style="color:${action?'var(--amber)':'var(--ink)'}">${action}</div></div>
-    <div class="stat" title="${T(
-      '摘要只保留最近 '+keep+' 封（config.json 的 keep_items）——不封顶的话 mail.json 会无限膨胀，App 打开变慢。',
-      'The digest keeps only the latest '+keep+' emails (keep_items in config.json) to stop mail.json growing without bound.'
-    )}"><div class="k">${T('摘要窗口','In digest')}</div><div class="v">${items.length}${items.length>=keep?`<span style="font-size:.6em;opacity:.55"> /${keep}</span>`:''}</div></div>
-    <div class="stat" title="${T(
-      total ? '分类脚本累计处理过的邮件数，不受摘要窗口封顶影响。'+(floor?'首次记账时早期数据已不可考，所以这是下限。':'') : '还没有累计数据——下一次定时任务跑完就有了。',
-      total ? 'Total emails the classifier has processed, unaffected by the digest cap.'+(floor?' Seeded from the window at first bookkeeping, so it is a lower bound.':'') : 'No cumulative figure yet — appears after the next scheduled run.'
-    )}"><div class="k">${T('累计已分类','Classified')}</div><div class="v">${total?(floor?'≥':'')+total:'—'}</div></div>`:'';
-  const counts={};
-  items.forEach(i=>{ counts[i.category]=(counts[i.category]||0)+1; });
-  const chips=[`<button class="${filter==='all'?'on':''}" onclick="setFilter('all',this)">${T('全部','All')} ${items.length}</button>`,
-    `<button class="${filter==='__action'?'on':''}" onclick="setFilter('__action',this)">⚡ ${T('待办','Action')} ${action}</button>`]
-    .concat(Object.keys(counts).sort((a,b)=>counts[b]-counts[a]).map(k=>
-      `<button class="${filter===k?'on':''}" onclick="setFilter('${k}',this)">${esc(catLabel(k))} ${counts[k]}</button>`));
-  $('filter').innerHTML=items.length?chips.join(''):'';
+  $('stats').innerHTML=items.length?`<div class="strip" role="group" aria-label="${T('摘要计数','Digest counts')}">
+    <div><div class="k">${T('24 小时','Last 24 h')}</div><div class="v">${today}</div></div>
+    <div><div class="k">${T('近 7 天','Last 7 days')}</div><div class="v">${week}</div></div>
+    <div><div class="k">${T('待处理','Needs action')}</div><div class="v" style="color:${action?'var(--warning)':'inherit'}">${action}</div></div>
+    <div title="${T('摘要只保留最近 '+keep+' 封（config.json 的 keep_items），不封顶 mail.json 会无限膨胀。','The digest keeps only the latest '+keep+' emails (keep_items in config.json) so mail.json cannot grow without bound.')}"><div class="k">${T('摘要窗口','In digest')}</div><div class="v">${items.length}<small> / ${keep}</small></div></div>
+    <div title="${total?T('分类脚本累计处理过的邮件数，不受摘要窗口封顶影响。'+(floor?'首次记账时早期数据已不可考，所以这是下限。':''),'Total emails the classifier has processed, unaffected by the digest cap.'+(floor?' Seeded from the window at first bookkeeping, so it is a lower bound.':'')):T('还没有累计数据——下一次定时任务跑完就有了。','No cumulative figure yet — appears after the next scheduled run.')}"><div class="k">${T('累计已分类','Classified')}</div><div class="v">${total?(floor?'≥':'')+total:'—'}</div></div></div>`:'';
+  // where the digest went: one segment per category (a sum strip: counts add up to the window)
+  const counts={}; items.forEach(i=>{ counts[i.category]=(counts[i.category]||0)+1; });
+  const cats=Object.keys(counts).sort((a,b)=>counts[b]-counts[a]);
+  $('digestPlate').hidden=!items.length;
+  $('digestEyebrow').textContent=DEMO?T('摘要 · 虚构邮件','Digest · fictional mail'):T('摘要 · ','Digest · ')+cfg().owner+'/'+(cfg().repo||'…');
+  if(items.length){ const seq=['--viz-seq-600','--viz-seq-500','--viz-seq-450','--viz-seq-400','--viz-seq-350','--viz-seq-300','--viz-seq-250','--viz-seq-200','--viz-seq-150'];
+    $('sumBar').innerHTML=cats.map((k,i)=>`<span style="width:${counts[k]/items.length*100}%;background:var(${seq[Math.min(i,seq.length-1)]})"></span>`).join('');
+    $('sumLegend').innerHTML=cats.map((k,i)=>`<span><i style="background:var(${seq[Math.min(i,seq.length-1)]})"></i>${esc(catLabel(k))} <b class="mono">${counts[k]}</b></span>`).join('');
+    $('sumEq').textContent=cats.map(k=>counts[k]).join(' + ')+' = '+items.length+' '+T('封在摘要里','in the digest')+' · '+action+' '+T('待处理','need action')+' ✓'; }
+  // 7-day trend
+  $('trendCard').hidden=!items.length;
+  if(items.length){ const days=[...Array(7)].map((_,i)=>{ const d=new Date(now-(6-i)*dayMs); d.setHours(0,0,0,0); return d; });
+    const per=days.map(d=>{ const a=d.getTime(), b=a+dayMs; const dayItems=items.filter(i=>{ const t=new Date(i.date).getTime(); return t>=a&&t<b; }); return {n:dayItems.length,act:dayItems.filter(i=>i.action).length,d}; });
+    const max=Math.max(1,...per.map(p=>p.n));
+    $('trend').innerHTML=per.map(p=>`<div title="${fmtDay(p.d)}: ${p.n} (${p.act} ${T('待处理','action')})"><i class="act" style="height:${p.act/max*60}px${p.act?'':';display:none'}"></i><i style="height:${Math.max(2,(p.n-p.act)/max*60)}px"></i></div>`).join('');
+    $('trend').setAttribute('aria-label',per.map(p=>`${fmtDay(p.d)}: ${p.n}`).join(', '));
+    $('trendX').innerHTML=per.map(p=>`<span>${fmtDay(p.d)}</span>`).join(''); }
+  $('filterRow').hidden=!items.length;
+  const chip=(key,label,n)=>`<button aria-pressed="${filter===key?'true':'false'}" onclick="setFilter('${esc(key)}')">${label}<span class="n">${n}</span></button>`;
+  $('filter').innerHTML=items.length?[chip('all',T('全部','All'),items.length),chip('__action','⚡ '+T('待处理','Action'),action)].concat(cats.map(k=>chip(k,esc(catLabel(k)),counts[k]))).join(''):'';
   renderList();
 }
 function renderList(){
-  const m=MAIL||{items:[]};
-  let items=m.items||[];
-  if(filter==='__action') items=items.filter(i=>i.action);
-  else if(filter!=='all') items=items.filter(i=>i.category===filter);
-  if(!items.length){ $('list').innerHTML=(m.items||[]).length?`<div class="empty">${T('此类别暂无邮件','No mail in this category')}</div>`:''; return; }
-  $('list').innerHTML=items.slice(0,150).map(i=>{
+  const m=MAIL||{items:[]}; let items=m.items||[];
+  if(!(m.items||[]).length){ $('list').innerHTML=DEMO||configured()?`<div class="empty"><h3>${T('摘要还是空的','The digest is empty')}</h3><p>${T('定时任务跑完第一次后这里会出现邮件。','Emails appear here after the first scheduled run.')}</p></div>`:''; return; }
+  if(filter==='__action') items=items.filter(i=>i.action); else if(filter!=='all') items=items.filter(i=>i.category===filter);
+  if(query) items=items.filter(i=>(i.subject+' '+i.from).toLowerCase().includes(query));
+  if(!items.length){ $('list').innerHTML=`<div class="empty"><h3>${T('没有匹配的邮件','No mail matches')}</h3><p>${T('换个类别或清空搜索。','Pick another category or clear the search.')}</p><button class="btn btn-sm" onclick="query='';document.getElementById('q').value='';setFilter('all')">${T('清除筛选','Clear filters')}</button></div>`; return; }
+  $('list').innerHTML='<div class="list">'+items.slice(0,150).map(i=>{
     const gurl=i.msgid?`https://mail.google.com/mail/u/0/#search/rfc822msgid:${encodeURIComponent(i.msgid)}`:'https://mail.google.com';
-    return `<div class="card mailrow">
-      <div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap">
-        ${i.action?'<span title="'+T('需要处理','Action needed')+'">⚡</span>':''}
-        <a class="subj" href="${gurl}" target="_blank" rel="noopener">${esc(i.subject)}</a>
-        <span class="chip">${esc(catLabel(i.category))}</span>
-      </div>
-      <div class="meta" style="margin-top:4px">${esc(i.from)} · ${esc((i.date||'').slice(0,16).replace('T',' '))}${i.reason?` · ${esc(i.reason)}`:''}</div>
-    </div>`;
-  }).join('');
+    const d=new Date(i.date); const when=isNaN(d)?'':`${fmtDay(d)} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    return `<div class="mail"><span class="flag" title="${i.action?T('需要处理','Action needed'):''}">${i.action?'⚡':''}</span>
+      <a class="subj" href="${gurl}" target="_blank" rel="noopener">${esc(i.subject)}</a>
+      <span class="when">${when}</span>
+      <div class="meta"><span class="cat">${esc(catLabel(i.category))}</span><span class="chip">from <b>${esc(String(i.from).replace(/^.*<|>$/g,''))}</b></span>${i.reason?`<span class="reason">${esc(i.reason)}</span>`:''}</div></div>`;
+  }).join('')+'</div>'+(items.length>150?`<p class="hint" style="margin-top:8px">${T('只显示前 150 封。','Showing the first 150.')}</p>`:'');
 }
 
-
-/* ============ ?demo=1 ============
-   演示数据全是编的——不连任何仓库、不发任何请求，就能看见界面长什么样。
-   真实数据一封都不会出现在这个公开仓里。 */
-const DEMO_MAIL={items:[
-  {subject:"Your package has shipped — tracking 1Z9X...",from:"ship@parcel-example.com",date:"2026-08-27T09:14",category:"logistics",action:false,reason:"tracking number, no reply needed"},
-  {subject:"Action required: confirm your tax residency by Sep 15",from:"noreply@bank-example.com",date:"2026-08-27T08:02",category:"finance",action:true,reason:"hard deadline in the subject"},
-  {subject:"Invitation: design review — Thu 14:00",from:"maria@studio-example.com",date:"2026-08-26T17:40",category:"work",action:true,reason:"meeting invite awaiting a reply"},
-  {subject:"Your monthly statement is ready",from:"statements@bank-example.com",date:"2026-08-26T06:00",category:"finance",action:false,reason:"recurring statement"},
-  {subject:"70% off everything — 48 hours only",from:"deals@shop-example.com",date:"2026-08-25T22:11",category:"promo",action:false,reason:"marketing blast"},
-  {subject:"Re: apartment viewing on Saturday",from:"landlord@rent-example.com",date:"2026-08-25T13:27",category:"life",action:true,reason:"question waiting on you"},
-  {subject:"Security alert: new sign-in from Chrome on macOS",from:"security@account-example.com",date:"2026-08-25T11:05",category:"account",action:false,reason:"informational alert"},
-  {subject:"Your flight YVR → NRT is now boarding at gate C48",from:"noreply@air-example.com",date:"2026-08-24T19:52",category:"travel",action:false,reason:"time-sensitive but no action"},
-  {subject:"Weekly digest: 12 new papers in your feed",from:"digest@papers-example.com",date:"2026-08-24T07:00",category:"reading",action:false,reason:"newsletter"},
-  {subject:"Overdue: library book due 3 days ago",from:"library@campus-example.com",date:"2026-08-23T10:31",category:"life",action:true,reason:"already past due"}
-]};
+/* ============ ?demo=1 — 60 fictional emails over the last 7 days, generated in code; every address ends in .example ============ */
+function makeDemo(){
+  const now=new Date(); now.setHours(9,15,0,0);
+  const T7=[['statements@bank.example','Your monthly statement is ready','finance',false,'recurring statement'],['billing@utility.example','Invoice 88213 due in 5 days','finance',true,'due date in the subject'],['noreply@tax-office.example','Action required: confirm your tax residency','finance',true,'hard deadline'],
+   ['pm@studio.example','Design review — Thursday 14:00','work',true,'meeting invite awaiting a reply'],['ci@build.example','Build #4471 failed on main','work',true,'failing build'],['hr@corp.example','Q3 objectives: draft due Friday','work',true,'deadline'],['calendar@corp.example','Updated invitation: sprint planning','work',false,'calendar update'],
+   ['landlord@rent.example','Re: apartment viewing on Saturday','life',true,'question waiting on you'],['clinic@dentist.example','Reminder: appointment tomorrow 9:30','life',false,'reminder, no reply needed'],['library@campus.example','Overdue: book due 3 days ago','life',true,'already past due'],
+   ['noreply@air.example','Your flight is now boarding at gate C48','travel',false,'time-sensitive, no action'],['stay@hotel.example','Booking confirmed: 2 nights','travel',false,'confirmation'],
+   ['ship@parcel.example','Your package has shipped — tracking 1Z9X','logistics',false,'tracking number'],['delivery@courier.example','Out for delivery today 2–4pm','logistics',false,'delivery window'],['returns@shop.example','Return label for order 5512','logistics',false,'label attached'],
+   ['security@account.example','Security alert: new sign-in from Chrome on macOS','account',false,'informational alert'],['noreply@id.example','Your verification code is 482913','account',false,'one-time code'],['admin@cloud.example','Your storage is 90% full','account',false,'usage warning'],
+   ['deals@shop.example','70% off everything — 48 hours only','promo',false,'marketing blast'],['news@brand.example','New arrivals you will love','promo',false,'newsletter'],['offers@airline.example','Flash sale: fares from 89','promo',false,'promotion'],
+   ['digest@papers.example','Weekly digest: 12 new papers in your feed','reading',false,'newsletter'],['newsletter@blog.example','Issue #142: on writing less','reading',false,'newsletter'],['editor@magazine.example','This week\'s long reads','reading',false,'newsletter']];
+  const items=[]; for(let i=0;i<60;i++){ const t=T7[i%T7.length]; const d=new Date(now.getTime()-Math.floor(i/9)*864e5-(i%9)*3600e3*1.3); items.push({subject:t[1]+(i>=T7.length?' ('+(Math.floor(i/T7.length)+1)+')':''),from:t[0],date:d.toISOString().slice(0,16),category:t[2],action:t[3]&&i<40,reason:t[4],msgid:'<demo-'+i+'@mail.example>'}); }
+  return {updated_at:now.toISOString(),keep_items:300,total_classified:1240,total_is_floor:true,items};
+}
+const DEMO=(()=>{ try{ return new URLSearchParams(location.search).get('demo')==='1'; }catch(e){ return false; } })();
+const DEMO_MAIL=DEMO?makeDemo():null;
 const DEMO_CONF={enabled:true, keep_items:300, categories:[
   {key:"work",label:"Work"},{key:"finance",label:"Finance"},{key:"life",label:"Life"},
   {key:"travel",label:"Travel"},{key:"logistics",label:"Shipping"},{key:"account",label:"Accounts"},
   {key:"promo",label:"Promotions"},{key:"reading",label:"Reading"}]};
-const DEMO=(()=>{ try{ return new URLSearchParams(location.search).get('demo')==='1'; }catch(e){ return false; } })();
 
-/* ============ 启动 ============ */
+/* ============ theme ============ */
+Appearance.bindToggle($('theme'));   // ◐ switches light/dark only (inlined appearance.js)
+Appearance.bindSettings($('nl-settings-button'),()=>settingsOptions(false));   // the gear: palette, light/dark, repo connection
+
+/* ============ start ============ */
 applyStatic();
 loadAll();
 </script>

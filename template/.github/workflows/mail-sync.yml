@@ -1,0 +1,45 @@
+name: Mail Classify
+
+on:
+  schedule:
+    - cron: '0 15 * * *'   # daily, 15:00 UTC
+    - cron: '0 3 * * *'    # and 03:00 UTC
+  workflow_dispatch:
+    inputs:
+      backfill_days:
+        description: 'Classify the existing inbox this many days back (leave empty for new mail only)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  classify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --omit=dev --no-audit --no-fund   # the template ships no lockfile, so npm ci would refuse
+      - name: Classify new mail (sender + subject only; labels only)
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          # the model: pick one provider (repository *variables*), and set that provider's key as a *secret*
+          LLM_PROVIDER: ${{ vars.LLM_PROVIDER }}          # anthropic (default) | openai | gemini | openai-compatible
+          LLM_MODEL: ${{ vars.LLM_MODEL }}                # required except for anthropic (default claude-haiku-4-5-20251001)
+          LLM_BASE_URL: ${{ vars.LLM_BASE_URL }}          # openai-compatible only
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          BACKFILL_DAYS: ${{ github.event.inputs.backfill_days }}
+        run: node mail/scripts/classify.mjs
+      - name: Commit the digest
+        run: |
+          git config user.name "mail-classify[bot]"
+          git config user.email "mail-classify[bot]@users.noreply.github.com"
+          git add -- mail/mail.json
+          git diff --cached --quiet || git commit -m "mail: classify $(date -u +%F)" && git push
