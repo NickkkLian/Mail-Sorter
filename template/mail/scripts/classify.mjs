@@ -6,6 +6,7 @@
 // Pure core (sortMail) + thin adapters, so `node template/check.mjs` can run the whole thing with mocks and no credentials.
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { complete, configFromEnv, describe, extractJson } from './llm.mjs';
 
 export const LABEL_PREFIX = 'AI/';
@@ -92,7 +93,7 @@ export function modelClassifier(cfg) {
   };
 }
 
-const isMain = process.argv[1] && path.resolve(process.argv[1]) === new URL(import.meta.url).pathname;
+const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {
   const env = process.env, root = process.cwd();
   const read = f => fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : null;

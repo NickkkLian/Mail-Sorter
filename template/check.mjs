@@ -5,6 +5,7 @@
 import { sortMail, parseVerdicts, buildPrompt } from './mail/scripts/classify.mjs';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const results = []; let failed = 0;
 const check = (name, ok, detail = '') => { results.push([ok ? 'PASS' : 'FAIL', name, detail]); if (!ok) failed++; };
@@ -55,7 +56,7 @@ function mocks() {
 { const p = buildPrompt([{ from: 'a@x.example', subject: 's' }], CATS); check('prompt tells the model it sees the envelope only and lists the allowed categories', /envelope only/.test(p.system) && CATS.every(c => p.system.includes(c)));
   check('parser tolerates prose around the JSON and pads short replies', parseVerdicts('sure: [{"category":"work"}]', 2).length === 2 && parseVerdicts('garbage', 3).every(v => Object.keys(v).length === 0)); }
 // 7. CLI dry-run smoke: no credentials → exit 0, nothing connected
-{ const r = spawnSync(process.execPath, [path.join(path.dirname(new URL(import.meta.url).pathname), 'mail/scripts/classify.mjs')], { cwd: path.dirname(new URL(import.meta.url).pathname), env: { PATH: process.env.PATH, DRY_RUN: '1' }, encoding: 'utf8' });
+{ const r = spawnSync(process.execPath, [path.join(path.dirname(fileURLToPath(import.meta.url)), 'mail/scripts/classify.mjs')], { cwd: path.dirname(fileURLToPath(import.meta.url)), env: { PATH: process.env.PATH, DRY_RUN: '1' }, encoding: 'utf8' });
   check('DRY_RUN=1 / no credentials: the CLI exits 0 without connecting', r.status === 0 && /DRY_RUN=1: not connecting/.test(r.stdout), (r.stdout + r.stderr).trim()); }
 // 8. negative control: a core that leaks the body must be caught by check 2
 { const m = mocks(); const leakyClassify = async (batch) => { m.calls.classifyInputs.push(...batch.map(b => ({ ...b, body: 'SECRET BODY leaked' }))); return batch.map(() => ({ category: 'work' })); };

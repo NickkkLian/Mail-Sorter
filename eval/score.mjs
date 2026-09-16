@@ -4,9 +4,10 @@
 //                                (LLM_PROVIDER anthropic|openai|gemini|openai-compatible, default anthropic, plus that provider's key)
 //   node eval/score.mjs --break  negative control: a cached category outside the set must be refused
 import fs from 'node:fs'; import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { buildPrompt, parseVerdicts } from '../template/mail/scripts/classify.mjs';
 import { complete, configFromEnv, describe } from '../template/mail/scripts/llm.mjs';
-const HERE = path.dirname(new URL(import.meta.url).pathname);
+const HERE = path.dirname(fileURLToPath(import.meta.url));
 const spec = JSON.parse(fs.readFileSync(path.join(HERE, 'headers.json'), 'utf8')), CACHE = path.join(HERE, 'llm-cache.json');
 const load = p => { const c = fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, 'utf8')) : { model: null, generated: null, entries: {} }; for (const [k, v] of Object.entries(c.entries || {})) if (!spec.categories.includes(v) && v !== 'other') throw new Error(`llm-cache: category ${JSON.stringify(v)} for ${k} is outside the allowed set`); if (Object.keys(c.entries || {}).length && !(c.model && c.generated && c.provider)) throw new Error('llm-cache: provider, model and generated date required'); return c; };
 const KW = [[/invoice|statement|tax|payslip|payment|declined|bank/i, 'finance'], [/review|objectives|build|sprint|contract|redline/i, 'work'], [/flight|booking|ticket|rental|embassy|boarding/i, 'travel'], [/shipped|delivery|dispatched|return label|parcel/i, 'logistics'], [/sign-in|verification|password|storage|terms/i, 'account'], [/off|sale|arrivals|coupon|save/i, 'promo'], [/digest|issue #|long reads|posts|new post/i, 'reading'], [/viewing|appointment|overdue|membership|conference/i, 'life']];
