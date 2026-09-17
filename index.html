@@ -1121,6 +1121,9 @@ input[type=password],input[type=search]{height:var(--control-h);padding:0 var(--
 .reason{font-size:var(--text-2xs);color:var(--text-2);overflow-wrap:anywhere}
 .empty{border:1px dashed var(--border-input);border-radius:var(--radius-md);padding:var(--space-10) var(--space-4);text-align:center;color:var(--text-2);display:grid;gap:var(--space-2);justify-items:center;background:var(--paper)}
 .empty h3{font-size:var(--text-xl);color:var(--text)}
+.error{border:1px solid var(--danger);border-radius:var(--radius-md);padding:var(--space-4);background:var(--paper);display:grid;gap:var(--space-2)}
+.error h2{font-size:var(--text-md);color:var(--danger)}
+.error .row{display:flex;flex-wrap:wrap;gap:var(--space-2)}
 .steps{display:grid;gap:var(--space-2);font-size:var(--text-sm)}
 .steps li{display:grid;grid-template-columns:24px minmax(0,1fr);gap:var(--space-2)}
 .steps li b{font-family:var(--font-mono);color:var(--accent-text)}
@@ -1284,6 +1287,8 @@ main{width:100%;flex:1 0 auto}
       <a class="btn" href="?demo=1" data-i18n="tryDemo">Try the demo</a>
     </div>
   </section>
+
+  <section class="error" id="loadError" role="alert" hidden></section>
 
   <section class="card" id="setupBox" hidden>
     <h2 data-i18n="setupT">Not set up yet — three one-time steps (about 5 minutes)</h2>
@@ -1615,10 +1620,11 @@ async function ghGet(path){
   const r=await fetch(`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${path}`,
     {headers:{Authorization:`Bearer ${c.token}`,Accept:'application/vnd.github+json'}});
   if(r.status===404) return {data:null,sha:null};
-  if(r.status===401||r.status===403) throw new Error(T('令牌无效或权限不足','Token invalid or insufficient permissions'));
-  if(!r.ok) throw new Error('GitHub '+r.status);
+  if(r.status===401||r.status===403) throw Object.assign(new Error('GitHub '+r.status),{kind:'auth',reason:T('GitHub 拒绝了这个令牌（'+r.status+'）','GitHub refused the token ('+r.status+')'),fix:T('粘贴一个对这个仓库有 Contents 读写权限的新令牌。','Paste a new fine-grained token with Contents read and write on this repo.')});
+  if(!r.ok) throw Object.assign(new Error('GitHub '+r.status),{kind:'http',reason:T('GitHub 返回 '+r.status,'GitHub answered '+r.status),fix:T('过一分钟再试。','Try again in a minute.')});
   const j=await r.json();
-  return {data:JSON.parse(b64decode(j.content)),sha:j.sha};
+  try{ return {data:JSON.parse(b64decode(j.content)),sha:j.sha}; }
+  catch(e){ throw Object.assign(e,{kind:'data',reason:T(path+' 不是有效的 JSON（'+e.message+'）',path+' is not valid JSON ('+e.message+')'),fix:T('去仓库里看看这个文件；下一次定时任务会重写它。','Look at the file in your repo; the next scheduled run rewrites it.')}); }
 }
 async function ghPut(path,obj,sha,message){
   const c=cfg();
@@ -1645,33 +1651,53 @@ function connectSection(){
     <p class="hint" id="setStatus" role="status"></p>`;
   box.querySelector('#saveTokenBtn').addEventListener('click',saveToken);
   box.querySelector('#tokenInput').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); saveToken(); } });
-  box.querySelector('#setStatus').textContent=DEMO?T('演示数据（全部虚构，未连接任何仓库）','Demo data — all fictional, nothing connected')
-    :(configured()?T('✓ 已连接 ','✓ Connected to ')+cfg().owner+'/'+(cfg().repo||'…'):T('先粘贴 GitHub 令牌','Paste a GitHub token'));
+  box.querySelector('#setStatus').textContent=connectionStatus();
   return box;
 }
 function settingsOptions(focusToken){ return { strings:Appearance.STRINGS[lang], sections:[connectSection], focus:focusToken?'#tokenInput':null }; }
 // Esc or Done returns focus to whatever opened the dialog: the gear, or the Connect… button on the page
 function openSettings(focusToken,opener){ Appearance.openSettings(opener||$('nl-settings-button'),settingsOptions(focusToken)); }
+// "✓ Connected" is said only after the two files have actually been read (it used to follow every save, loaded or not)
+function connectionStatus(){
+  if(DEMO) return T('演示数据（全部虚构，未连接任何仓库）','Demo data — all fictional, nothing connected');
+  if(LOAD_ERROR) return T('✗ 加载失败：','✗ Could not load: ')+LOAD_ERROR.reason;
+  if(LOADED) return T('✓ 已连接 ','✓ Connected to ')+cfg().owner+'/'+(cfg().repo||'…');
+  if(cfg().token&&!cfg().owner) return T('令牌已保存，但这个页面没有设置仓库（owner/repo），没有东西可加载。见 README「Running your own」。','Token saved, but this page has no repository set (owner/repo), so there is nothing to load. See "Running your own" in the README.');
+  if(configured()) return T('已保存，加载中…','Saved, loading…');
+  return T('先粘贴 GitHub 令牌','Paste a GitHub token');
+}
 async function saveToken(){
   const token=$('tokenInput').value.trim();
   if(!token){ setStatus(T('请输入令牌','Enter a token')); return; }
+  if(DEMO){ $('tokenInput').value=''; setStatus(T('演示模式不连接任何仓库，令牌没有保存。去掉地址里的 ?demo=1 再连接。','Demo mode never connects, so the token was not saved. Open the board without ?demo=1 to connect.')); return; }
   const cur=cfg(); const next=Object.assign({},JSON.parse(localStorage.getItem(PHA_KEY)||'{}'),{owner:cur.owner||DEFAULTS.owner,repo:cur.repo||DEFAULTS.repo,token});
   localStorage.setItem(PHA_KEY,JSON.stringify(next));
   $('tokenInput').value='';
-  setStatus(T('已保存，加载中…','Saved, loading…'));
+  setStatus(connectionStatus());
   await loadAll();
-  setStatus(T('✓ 已连接','✓ Connected'));
+  setStatus(connectionStatus());
 }
 
 /* ============ load + render ============ */
+// A file that is not there (404) means "not set up yet". Anything else — a refused token, no network, GitHub failing — is an
+// error the page shows with what to do (round-1 audit, 2026-09-16: both reads swallowed every error, so an expired token
+// showed the setup guide and the settings said "✓ Connected"). Data already on screen stays while the error shows.
+let LOADED=false, LOAD_ERROR=null;
 async function loadAll(){
-  if(DEMO){ MAIL=DEMO_MAIL; CONF=DEMO_CONF; SHA_CONF=null; render(); return; }
-  if(!configured()){ render(); return; }
+  if(DEMO){ MAIL=DEMO_MAIL; CONF=DEMO_CONF; SHA_CONF=null; render(); return true; }
+  if(!configured()){ render(); return false; }
   try{
-    const [m,c]=await Promise.all([ ghGet('mail/mail.json').catch(()=>({data:null,sha:null})), ghGet('mail/config.json').catch(()=>({data:null,sha:null})) ]);
-    MAIL=m.data; CONF=c.data; SHA_CONF=c.sha;
-    render();
-  }catch(e){ toast(T('加载失败: ','Load failed: ')+e.message,true); }
+    const [m,c]=await Promise.all([ghGet('mail/mail.json'),ghGet('mail/config.json')]);
+    MAIL=m.data; CONF=c.data; SHA_CONF=c.sha; LOADED=true; LOAD_ERROR=null;
+  }catch(e){ LOAD_ERROR=e.kind?e:{kind:'network',reason:T('连不上 GitHub（','Could not reach GitHub (')+(e.message||e)+')',fix:T('检查网络后重试。','Check the connection, then try again.')}; }
+  render();
+  return !LOAD_ERROR;
+}
+function loadErrorCard(){
+  const box=$('loadError'); box.hidden=!LOAD_ERROR||DEMO;
+  if(box.hidden){ box.innerHTML=''; return; }
+  box.innerHTML=`<h2>${T('没能读到你的摘要','Could not load your digest')}</h2><p>${esc(LOAD_ERROR.reason)} — ${esc(LOAD_ERROR.fix)}</p>
+    <div class="row"><button class="btn btn-sm" type="button" onclick="loadAll()">${T('重试','Try again')}</button>${LOAD_ERROR.kind==='auth'?`<button class="btn btn-sm" type="button" onclick="openSettings(true, this)">${T('换一个令牌…','Replace the token…')}</button>`:''}</div>`;
 }
 function catLabel(key){ const cats=(CONF&&CONF.categories)||[]; const c=cats.find(x=>x.key===key); return c?c.label:key; }
 async function toggleEnabled(){
@@ -1724,8 +1750,9 @@ function renderPage(){
   ['togBtn','togBtnPage'].forEach(id=>{ const b=$(id); b.setAttribute('aria-checked',String(!!CONF&&on)); b.disabled=!CONF; });
   ['togText','togTextPage'].forEach(id=>{ $(id).textContent=togLabel; });
   $('connectCard').hidden=DEMO||configured();
-  $('setupBox').hidden=!(configured()&&!MAIL&&!DEMO);
-  const pill=$('pill'); pill.classList.toggle('live',!DEMO&&configured()); pill.firstChild.textContent=DEMO?'Demo':(configured()?T('已连接','Connected'):'Demo'); $('pillLong').textContent=DEMO?T(' · 虚构邮件',' · fictional mail'):(configured()?' · '+esc(cfg().owner)+'/'+esc(cfg().repo||'…'):T(' · 未连接',' · not connected')); pill.title=DEMO?T('全部虚构，不连接任何东西','All fictional; connects to nothing'):'';
+  $('setupBox').hidden=!(configured()&&!MAIL&&!DEMO&&!LOAD_ERROR);
+  loadErrorCard();
+  const pill=$('pill'); pill.classList.toggle('live',!DEMO&&LOADED&&!LOAD_ERROR); pill.firstChild.textContent=DEMO?'Demo':LOAD_ERROR?T('未加载','Not loaded'):LOADED?T('已连接','Connected'):configured()?T('加载中…','Loading…'):'Demo'; $('pillLong').textContent=DEMO?T(' · 虚构邮件',' · fictional mail'):(configured()?' · '+esc(cfg().owner)+'/'+esc(cfg().repo||'…'):T(' · 未连接',' · not connected')); pill.title=DEMO?T('全部虚构，不连接任何东西','All fictional; connects to nothing'):'';
   const m=MAIL||{items:[]}; const items=m.items||[];
   const now=Date.now(),dayMs=864e5;
   const total=Number(m.total_classified||0), floor=!!m.total_is_floor, keep=Number(m.keep_items||(CONF&&CONF.keep_items)||500);
