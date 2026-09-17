@@ -1801,7 +1801,11 @@ function renderPage(){
   const counts={}; items.forEach(i=>{ counts[i.category]=(counts[i.category]||0)+1; });
   const cats=Object.keys(counts).sort((a,b)=>counts[b]-counts[a]);
   $('digestPlate').hidden=!items.length; $('pageT').hidden=!!items.length;  // one h1 on the page: the plate's when it shows
-  $('digestEyebrow').textContent=DEMO?T('摘要 · 虚构邮件','Digest · fictional mail'):T('摘要 · ','Digest · ')+cfg().owner+'/'+(cfg().repo||'…');
+  // when the classifier last wrote the digest, in the browser's own time zone and language; the Action writes UTC, and the
+  // board before v3.1 showed that UTC string as if it were local (ruling 2026-09-16 20:11 Q13)
+  const eb=$('digestEyebrow'), ran=lastRun(m);
+  eb.replaceChildren(DEMO?T('摘要 · 虚构邮件','Digest · fictional mail'):T('摘要 · ','Digest · ')+cfg().owner+'/'+(cfg().repo||'…'));
+  if(ran){ const t=document.createElement('time'); t.dateTime=m.updated_at; t.textContent=ran; eb.append(T(' · 更新于 ',' · updated '),t); }
   if(items.length){ const seq=['--viz-seq-600','--viz-seq-500','--viz-seq-450','--viz-seq-400','--viz-seq-350','--viz-seq-300','--viz-seq-250','--viz-seq-200','--viz-seq-150'];
     $('sumBar').innerHTML=cats.map((k,i)=>`<span style="width:${counts[k]/items.length*100}%;background:var(${seq[Math.min(i,seq.length-1)]})"></span>`).join('');
     $('sumLegend').innerHTML=cats.map((k,i)=>`<span><i style="background:var(${seq[Math.min(i,seq.length-1)]})"></i>${esc(catLabel(k))} <b class="mono">${counts[k]}</b></span>`).join('');
@@ -1824,9 +1828,11 @@ function renderPage(){
 // the digest stores senders as "Name <address>" (template classify.mjs); both parts are shown, as on the board before v3.1
 const senderAddress=f=>{ const m=String(f==null?'':f).match(/<([^>]*)>/); return m?m[1]:String(f==null?'':f).trim(); };
 const senderName=f=>{ const n=String(f==null?'':f).replace(/<[^>]*>/,'').trim(); return n||senderAddress(f); };
+const lastRun=m=>{ const d=new Date(m&&m.updated_at); if(!m||!m.updated_at||isNaN(d)) return null;
+  return new Intl.DateTimeFormat(lang==='en'?'en-US':'zh-CN',lang==='en'?{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}:{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(d); };
 function renderList(){
   const m=MAIL||{items:[]}; let items=m.items||[];
-  if(!(m.items||[]).length){ $('list').innerHTML=DEMO||configured()?`<div class="empty"><h3>${T('摘要还是空的','The digest is empty')}</h3><p>${T('定时任务跑完第一次后这里会出现邮件。','Emails appear here after the first scheduled run.')}</p><button class="btn btn-sm" onclick="loadAll()">${T('刷新','Refresh')}</button></div>`:''; return; }
+  if(!(m.items||[]).length){ $('list').innerHTML=DEMO||configured()?`<div class="empty"><h3>${T('摘要还是空的','The digest is empty')}</h3><p>${lastRun(m)?T('上次运行（'+lastRun(m)+'）没有新邮件可加。','Last run '+lastRun(m)+' found nothing to add.'):T('定时任务跑完第一次后这里会出现邮件。','Emails appear here after the first scheduled run.')}</p><button class="btn btn-sm" onclick="loadAll()">${T('刷新','Refresh')}</button></div>`:''; return; }
   if(filter==='__action') items=items.filter(i=>i.action); else if(filter!=='all') items=items.filter(i=>i.category===filter);
   if(query) items=items.filter(i=>(i.subject+' '+i.from).toLowerCase().includes(query));
   if(!items.length){ $('list').innerHTML=`<div class="empty"><h3>${T('没有匹配的邮件','No mail matches')}</h3><p>${T('换个类别或清空搜索。','Pick another category or clear the search.')}</p><button class="btn btn-sm" onclick="query='';document.getElementById('q').value='';setFilter('all');document.getElementById('q').focus()">${T('清除筛选','Clear filters')}</button></div>`; return; }
