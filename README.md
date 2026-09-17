@@ -8,7 +8,7 @@ A scheduled GitHub Action reads new mail over IMAP, asks a small model to label 
 
 ![Headersort board: counts strip, where the digest went, seven-day trend, category filters and the mail list](docs/screenshot-board.png)
 
-**Live demo:** https://nickkklian.github.io/Mail-Sorter/?demo=1 — sixty fictional emails over seven days, every address on the reserved `.example` domain. The demo connects to nothing and sends no requests. English by default, 中文 toggle in the header.
+**Live demo:** https://nickkklian.github.io/Mail-Sorter/?demo=1 — sixty fictional emails over seven days, every address on the reserved `.example` domain. The demo connects to no repository and no mailbox; its only network requests are the web fonts. English by default, 中文 toggle in the header.
 
 ## Four constraints, all mechanically checked
 
@@ -25,7 +25,7 @@ Anything that reads your mail should be able to say precisely how little of it i
 - **Where the digest went** — one bar per category; the counts add up to the window.
 - **Seven-day trend** — emails per day, with the action-needed share in amber.
 - **Filters and search** — by category or ⚡ action; each row deep-links to the original message in Gmail by `Message-ID` and shows the model's one-line reason, so a wrong label is debuggable instead of mysterious.
-- Setup guide when nothing is configured, empty states when the digest is empty, dark and light themes, 375 px layout.
+- A connect card when no repository is set, a setup guide when the repository has no digest yet, an error with *Try again* when GitHub cannot be read (a refused token, no network), empty states when the digest or a filter is empty, dark and light themes, 375 px layout.
 
 ## How it fits together
 
@@ -49,14 +49,14 @@ flowchart LR
 | Storage | Two JSON files in a private repo: `mail.json` (the digest, capped) and `config.json` (categories, on/off switch) |
 | Front end | One static HTML file, no build step, no dependencies beyond one web font. Reads the two JSON files through the GitHub Contents API |
 | Secrets | The Gmail app password and the model key live in the private repo's Actions secrets (names in `template/SECRETS.md`). The browser only ever holds a fine-grained GitHub token, in `localStorage`, scoped to Contents on one repo |
-| Failure mode | Missing credentials → the script exits 0 and changes nothing; a missing digest → the board renders a setup guide, not an error |
+| Failure mode | Missing credentials or `enabled: false` → the script exits 0 before logging in and changes nothing; a missing digest → the board renders a setup guide; a read that fails (refused token, no network) → the board says which and offers *Try again* |
 
 ## Running your own
 
 1. **App password** — Google Account → Security → 2-Step Verification → App passwords → create one.
 2. **Copy `template/` into your private data repo** (`.github/workflows/mail-sync.yml`, `mail/scripts/classify.mjs`, `mail/config.json`, `package.json`). Also copy `mail/scripts/llm.mjs`. Edit the categories in `mail/config.json`. Under Settings → Secrets and variables → Actions add the Gmail secrets and one model key listed in `template/SECRETS.md`; to use something other than Claude, set the repository variables `LLM_PROVIDER` and `LLM_MODEL` (and `LLM_BASE_URL` for an OpenAI-compatible server).
 3. **First run** — Actions → *Mail Classify* → Run workflow, with `backfill_days` set if you want the existing inbox sorted in one pass. After that it runs on its own.
-4. **Open the board** — paste a fine-grained GitHub token with Contents read/write on that one repo. It is stored in your browser and never written anywhere.
+4. **Open the board** — serve your own copy of `index.html` with your repository filled in: set `owner` and `repo` in `DEFAULTS` near the top of its script (the public page has no repository set, so there is nothing for it to load). Then open Settings and paste a fine-grained GitHub token with Contents read/write on that one repo. It is stored in your browser and never written anywhere.
 
 ```sh
 node template/check.mjs
