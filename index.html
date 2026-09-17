@@ -1043,6 +1043,7 @@ h1,h2,h3{margin:0;font-family:var(--font-display);font-weight:var(--display-weig
 p{margin:0}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;white-space:nowrap;clip-path:inset(50%)}
 .skip{position:absolute;left:var(--space-2);top:-48px;background:var(--surface);padding:var(--space-2) var(--space-3);border:1px solid var(--border-input);border-radius:var(--radius-sm);z-index:var(--z-toast)}
+.skip:focus-visible{outline-color:var(--on-band)}   /* the link shows on top of the dark top bar, so its ring is drawn on the band */
 .skip:focus{top:var(--space-2)}
 [hidden]{display:none!important}
 .muted{color:var(--text-2)}.faint{color:var(--text-3)}
@@ -1758,14 +1759,20 @@ function focusKey(el){
   find.caret=typeof el.selectionStart==='number'?[el.selectionStart,el.selectionEnd]:null;
   return find;
 }
+// Where focus goes when there is no control to go back to, and where the skip link sends it: the first visible h1 in main,
+// else the first visible h2, else main (ruling 2026-09-16 20:11 Q16; after Clear filters focus used to go to the whole
+// <main>, whose ring was off screen)
+function firstHeading(){
+  const seen=x=>{ const r=x.getBoundingClientRect(), cs=getComputedStyle(x); return r.width>2&&r.height>2&&cs.visibility!=='hidden'&&!/inset\(50%\)|rect\(0/.test(cs.clipPath+cs.clip); };
+  const x=[...document.querySelectorAll('main h1')].find(seen)||[...document.querySelectorAll('main h2')].find(seen)||document.getElementById('main');
+  if(x&&!x.hasAttribute('tabindex')) x.setAttribute('tabindex','-1');
+  return x;
+}
 function restoreFocus(find){
   if(!find||(document.activeElement&&document.activeElement!==document.body)) return;
   let el=find();
-  // headings in this order: one query for 'main h1, main h2, main' returns document order, where main itself comes first
-  // (Headersort round-1 audit: after Clear filters focus went to the whole <main>, whose ring was off screen)
-  const heading=()=>{ for(const sel of ['main h1','main h2','main']){ const x=[...document.querySelectorAll(sel)].find(y=>{ const r=y.getBoundingClientRect(); return r.width>2&&r.height>2; }); if(x){ if(!x.hasAttribute('tabindex')) x.setAttribute('tabindex','-1'); return x; } } return null; };
-  if(!el||!el.getClientRects().length) el=heading();
-  if(el){ el.focus(); if(document.activeElement!==el&&(el=heading())) el.focus(); }   // a disabled control does not take focus
+  if(!el||!el.getClientRects().length) el=firstHeading();
+  if(el){ el.focus(); if(document.activeElement!==el&&(el=firstHeading())) el.focus(); }   // a disabled control does not take focus
   if(el&&find.caret&&el.setSelectionRange) try{ el.setSelectionRange(find.caret[0],find.caret[1]); }catch(e){ /* not a text field */ }
 }
 function render(){ const find=focusKey(document.activeElement); renderPage(); restoreFocus(find); }
@@ -1822,7 +1829,7 @@ function renderList(){
   if(!(m.items||[]).length){ $('list').innerHTML=DEMO||configured()?`<div class="empty"><h3>${T('摘要还是空的','The digest is empty')}</h3><p>${T('定时任务跑完第一次后这里会出现邮件。','Emails appear here after the first scheduled run.')}</p><button class="btn btn-sm" onclick="loadAll()">${T('刷新','Refresh')}</button></div>`:''; return; }
   if(filter==='__action') items=items.filter(i=>i.action); else if(filter!=='all') items=items.filter(i=>i.category===filter);
   if(query) items=items.filter(i=>(i.subject+' '+i.from).toLowerCase().includes(query));
-  if(!items.length){ $('list').innerHTML=`<div class="empty"><h3>${T('没有匹配的邮件','No mail matches')}</h3><p>${T('换个类别或清空搜索。','Pick another category or clear the search.')}</p><button class="btn btn-sm" onclick="query='';document.getElementById('q').value='';setFilter('all')">${T('清除筛选','Clear filters')}</button></div>`; return; }
+  if(!items.length){ $('list').innerHTML=`<div class="empty"><h3>${T('没有匹配的邮件','No mail matches')}</h3><p>${T('换个类别或清空搜索。','Pick another category or clear the search.')}</p><button class="btn btn-sm" onclick="query='';document.getElementById('q').value='';setFilter('all');document.getElementById('q').focus()">${T('清除筛选','Clear filters')}</button></div>`; return; }
   $('list').innerHTML='<div class="list">'+items.slice(0,150).map(i=>{
     const gurl=i.msgid?`https://mail.google.com/mail/u/0/#search/rfc822msgid:${encodeURIComponent(i.msgid)}`:'https://mail.google.com';
     const d=new Date(i.date); const when=isNaN(d)?'':`${fmtDay(d)} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
@@ -1859,6 +1866,7 @@ Appearance.bindToggle($('theme'));   // ◐ switches light/dark only (inlined ap
 Appearance.bindSettings($('nl-settings-button'),()=>settingsOptions(false));   // the gear: palette, light/dark, repo connection
 
 /* ============ start ============ */
+document.querySelector('.skip').addEventListener('click',e=>{ e.preventDefault(); firstHeading().focus(); });   // no #main in the address
 applyStatic();
 loadAll();
 </script>
