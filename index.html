@@ -1789,6 +1789,9 @@ function renderPage(){
   $('filter').innerHTML=items.length?[chip('all',T('全部','All'),items.length),chip('__action','⚡ '+T('待处理','Action'),action)].concat(cats.map(k=>chip(k,esc(catLabel(k)),counts[k]))).join(''):'';
   renderList();
 }
+// the digest stores senders as "Name <address>" (template classify.mjs); both parts are shown, as on the board before v3.1
+const senderAddress=f=>{ const m=String(f==null?'':f).match(/<([^>]*)>/); return m?m[1]:String(f==null?'':f).trim(); };
+const senderName=f=>{ const n=String(f==null?'':f).replace(/<[^>]*>/,'').trim(); return n||senderAddress(f); };
 function renderList(){
   const m=MAIL||{items:[]}; let items=m.items||[];
   if(!(m.items||[]).length){ $('list').innerHTML=DEMO||configured()?`<div class="empty"><h3>${T('摘要还是空的','The digest is empty')}</h3><p>${T('定时任务跑完第一次后这里会出现邮件。','Emails appear here after the first scheduled run.')}</p><button class="btn btn-sm" onclick="loadAll()">${T('刷新','Refresh')}</button></div>`:''; return; }
@@ -1801,7 +1804,7 @@ function renderList(){
     return `<div class="mail"><span class="flag" title="${i.action?T('需要处理','Action needed'):''}">${i.action?'⚡':''}</span>
       <a class="subj" href="${gurl}" target="_blank" rel="noopener">${esc(i.subject)}</a>
       <span class="when">${when}</span>
-      <div class="meta"><span class="cat">${esc(catLabel(i.category))}</span><span class="chip">from <b>${esc(String(i.from).replace(/^.*<|>$/g,''))}</b></span>${i.reason?`<span class="reason">${esc(i.reason)}</span>`:''}</div></div>`;
+      <div class="meta"><span class="cat">${esc(catLabel(i.category))}</span><span class="chip">from <b>${esc(senderName(i.from))}</b>${senderName(i.from)!==senderAddress(i.from)?' '+esc(senderAddress(i.from)):''}</span>${i.reason?`<span class="reason">${esc(i.reason)}</span>`:''}</div></div>`;
   }).join('')+'</div>'+(items.length>150?`<p class="hint" style="margin-top:8px">${T('只显示前 150 封。','Showing the first 150.')}</p>`:'');
 }
 
