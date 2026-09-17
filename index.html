@@ -1280,7 +1280,7 @@ main{width:100%;flex:1 0 auto}
     <h2 data-i18n="setT">Connect your private data repo</h2>
     <p class="hint" data-i18n="connHint">This board reads two files from your own private GitHub repo, so there is nothing to show until you connect one. The demo shows the same board with fictional mail.</p>
     <div class="row connect-acts">
-      <button class="btn btn-primary" type="button" onclick="openSettings(true)" data-i18n="connBtn">Connect…</button>
+      <button class="btn btn-primary" type="button" onclick="openSettings(true, this)" data-i18n="connBtn">Connect…</button>
       <a class="btn" href="?demo=1" data-i18n="tryDemo">Try the demo</a>
     </div>
   </section>
@@ -1650,7 +1650,8 @@ function connectSection(){
   return box;
 }
 function settingsOptions(focusToken){ return { strings:Appearance.STRINGS[lang], sections:[connectSection], focus:focusToken?'#tokenInput':null }; }
-function openSettings(focusToken){ Appearance.openSettings($('nl-settings-button'),settingsOptions(focusToken)); }
+// Esc or Done returns focus to whatever opened the dialog: the gear, or the Connect… button on the page
+function openSettings(focusToken,opener){ Appearance.openSettings(opener||$('nl-settings-button'),settingsOptions(focusToken)); }
 async function saveToken(){
   const token=$('tokenInput').value.trim();
   if(!token){ setStatus(T('请输入令牌','Enter a token')); return; }
@@ -1709,11 +1710,12 @@ function focusKey(el){
 function restoreFocus(find){
   if(!find||(document.activeElement&&document.activeElement!==document.body)) return;
   let el=find();
-  if(!el||!el.getClientRects().length){
-    el=[...document.querySelectorAll('main h1, main h2, main')].find(x=>{ const r=x.getBoundingClientRect(); return r.width>2&&r.height>2; });
-    if(el&&!el.hasAttribute('tabindex')) el.setAttribute('tabindex','-1');
-  }
-  if(el){ el.focus(); if(find.caret&&el.setSelectionRange) try{ el.setSelectionRange(find.caret[0],find.caret[1]); }catch(e){ /* not a text field */ } }
+  // headings in this order: one query for 'main h1, main h2, main' returns document order, where main itself comes first
+  // (Headersort round-1 audit: after Clear filters focus went to the whole <main>, whose ring was off screen)
+  const heading=()=>{ for(const sel of ['main h1','main h2','main']){ const x=[...document.querySelectorAll(sel)].find(y=>{ const r=y.getBoundingClientRect(); return r.width>2&&r.height>2; }); if(x){ if(!x.hasAttribute('tabindex')) x.setAttribute('tabindex','-1'); return x; } } return null; };
+  if(!el||!el.getClientRects().length) el=heading();
+  if(el){ el.focus(); if(document.activeElement!==el&&(el=heading())) el.focus(); }   // a disabled control does not take focus
+  if(el&&find.caret&&el.setSelectionRange) try{ el.setSelectionRange(find.caret[0],find.caret[1]); }catch(e){ /* not a text field */ }
 }
 function render(){ const find=focusKey(document.activeElement); renderPage(); restoreFocus(find); }
 function renderPage(){
