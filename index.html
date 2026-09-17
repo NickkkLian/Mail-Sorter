@@ -1819,7 +1819,7 @@ function makeDemo(){
    ['security@account.example','Security alert: new sign-in from Chrome on macOS','account',false,'informational alert'],['noreply@id.example','Your verification code is 482913','account',false,'one-time code'],['admin@cloud.example','Your storage is 90% full','account',false,'usage warning'],
    ['deals@shop.example','70% off everything — 48 hours only','promo',false,'marketing blast'],['news@brand.example','New arrivals you will love','promo',false,'newsletter'],['offers@airline.example','Flash sale: fares from 89','promo',false,'promotion'],
    ['digest@papers.example','Weekly digest: 12 new papers in your feed','reading',false,'newsletter'],['newsletter@blog.example','Issue #142: on writing less','reading',false,'newsletter'],['editor@magazine.example','This week\'s long reads','reading',false,'newsletter']];
-  const items=[]; for(let i=0;i<60;i++){ const t=T7[i%T7.length]; const d=new Date(now.getTime()-Math.floor(i/9)*864e5-(i%9)*3600e3*1.3); items.push({subject:t[1]+(i>=T7.length?' ('+(Math.floor(i/T7.length)+1)+')':''),from:t[0],date:d.toISOString().slice(0,16),category:t[2],action:t[3]&&i<40,reason:t[4],msgid:'<demo-'+i+'@mail.example>'}); }
+  const items=[]; for(let i=0;i<60;i++){ const t=T7[i%T7.length]; const d=new Date(now.getTime()-Math.floor(i/9)*864e5-(i%9)*3600e3*1.3); items.push({subject:t[1]+(i>=T7.length?' ('+(Math.floor(i/T7.length)+1)+')':''),from:t[0],date:d.toISOString(),category:t[2],action:t[3]&&i<40,reason:t[4],msgid:'<demo-'+i+'@mail.example>'}); }
   return {updated_at:now.toISOString(),keep_items:300,total_classified:1240,total_is_floor:true,items};
 }
 const DEMO=(()=>{ try{ return new URLSearchParams(location.search).get('demo')==='1'; }catch(e){ return false; } })();
