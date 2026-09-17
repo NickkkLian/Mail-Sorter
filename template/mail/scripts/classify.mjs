@@ -100,6 +100,9 @@ if (isMain) {
   const config = read(path.join(root, 'mail/config.json')) || { enabled: false, categories: [] };
   const digest = read(path.join(root, 'mail/mail.json')) || { items: [] };
   if (env.DRY_RUN === '1') { console.log('DRY_RUN=1: not connecting to IMAP or the model; nothing changed.'); process.exit(0); }
+  // the switch is read before any credential or connection: with enabled:false the run touches nothing, not even the login
+  // (it used to log in to Gmail and open the inbox first, so a revoked app password failed the job while the switch was off)
+  if (config.enabled === false) { console.log('skipped: disabled in mail/config.json (no login, nothing changed)'); process.exit(0); }
   let cfg = null, missing = [];
   if (!env.GMAIL_USER || !env.GMAIL_APP_PASSWORD) missing.push('GMAIL_USER / GMAIL_APP_PASSWORD');
   try { cfg = configFromEnv(env, { defaultModel: 'claude-haiku-4-5-20251001' }); } catch (e) { missing.push(e.message); }

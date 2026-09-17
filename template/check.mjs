@@ -58,6 +58,20 @@ function mocks() {
 // 7. CLI dry-run smoke: no credentials → exit 0, nothing connected
 { const r = spawnSync(process.execPath, [path.join(path.dirname(fileURLToPath(import.meta.url)), 'mail/scripts/classify.mjs')], { cwd: path.dirname(fileURLToPath(import.meta.url)), env: { PATH: process.env.PATH, DRY_RUN: '1' }, encoding: 'utf8' });
   check('DRY_RUN=1 / no credentials: the CLI exits 0 without connecting', r.status === 0 && /DRY_RUN=1: not connecting/.test(r.stdout), (r.stdout + r.stderr).trim()); }
+// 7b. the CLI reads the switch before it logs in: enabled:false exits 0 with credentials present and no connection attempted.
+// A preloaded hook makes any socket or TLS connection print NETWORK ATTEMPT and exit 3. Negative control: the same run with
+// enabled:true goes past the switch (it then fails to load or reach the mail server, which is the point).
+{ const fs = await import('node:fs'); const os = await import('node:os');
+  const cli = path.join(path.dirname(fileURLToPath(import.meta.url)), 'mail/scripts/classify.mjs');
+  const hook = 'data:text/javascript,' + encodeURIComponent("import net from 'node:net'; import tls from 'node:tls'; const stop = () => { console.log('NETWORK ATTEMPT'); process.exit(3); }; net.connect = net.createConnection = stop; tls.connect = stop;");
+  const run = enabled => { const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'headersort-check-')); fs.mkdirSync(path.join(dir, 'mail'));
+    fs.writeFileSync(path.join(dir, 'mail/config.json'), JSON.stringify({ ...config, enabled }));
+    const r = spawnSync(process.execPath, ['--import', hook, cli], { cwd: dir, encoding: 'utf8', timeout: 20000,
+      env: { PATH: process.env.PATH, GMAIL_USER: 'check@mail.example', GMAIL_APP_PASSWORD: 'not-a-password', ANTHROPIC_API_KEY: 'not-a-key' } });
+    fs.rmSync(dir, { recursive: true, force: true }); return r; };
+  const off = run(false), on = run(true);
+  check('enabled:false: the CLI exits 0 before logging in, with credentials present', off.status === 0 && /skipped: disabled/.test(off.stdout) && !/NETWORK ATTEMPT/.test(off.stdout), (off.stdout + off.stderr).trim().slice(0, 160));
+  check('negative control: with enabled:true the same run goes on towards the mail server', on.status !== 0 && !/skipped: disabled/.test(on.stdout), `exit ${on.status} · ` + (on.stdout + on.stderr).trim().split('\n').slice(-1)[0].slice(0, 120)); }
 // 8. negative control: a core that leaks the body must be caught by check 2
 { const m = mocks(); const leakyClassify = async (batch) => { m.calls.classifyInputs.push(...batch.map(b => ({ ...b, body: 'SECRET BODY leaked' }))); return batch.map(() => ({ category: 'work' })); };
   await sortMail({ config, digest: { items: [] }, ...m, classify: leakyClassify });
