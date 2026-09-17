@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <script>/* appearance boot — runs before any stylesheet so the stored palette and light/dark apply on the first paint */(function(){try{var d=document.documentElement,L=window.localStorage,t=L.getItem('nl-theme'),s=L.getItem('nl-scheme');if(s===null){var o=L.getItem('theme')||L.getItem('qm-theme');if(o==='dark'||o==='light')s=o;}if(t==='paper'||t==='ink')d.setAttribute('data-theme',t);if(s==='dark'||s==='light')d.setAttribute('data-scheme',s);}catch(e){}})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Headersort: Gmail triage that reads only the envelope — sender and subject — and only adds labels. A scheduled Action writes a capped digest to your private repo; this board reads it.">
+<meta name="description" content="Gmail triage that reads only sender and subject — and only adds labels. Headersort: a scheduled Action writes a capped digest to your private repo; this board reads it.">
 <meta name="theme-color" content="#faece9" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#12110c" media="(prefers-color-scheme: dark)">
 <title>Headersort</title>
@@ -1245,7 +1245,7 @@ main{width:100%;flex:1 0 auto}
 <header class="topbar">
   <a class="brand" href="./" aria-label="Headersort home">
     <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true" focusable="false"><rect x="2.5" y="2.5" width="19" height="19" rx="5" stroke="currentColor" stroke-width="2"/><rect x="14" y="6" width="4" height="4" rx="1" fill="var(--point)"/><path d="M6 10l6 4 6-4M6 13v3h12v-3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    <b>Headersort</b><span data-i18n="tagline">Gmail triage that reads only the envelope — sender and subject — and only adds labels.</span>
+    <b>Headersort</b><span data-i18n="tagline">Gmail triage that reads only sender and subject — and only adds labels.</span>
   </a>
   <span class="pill" id="pill" title="">Demo<span class="long" id="pillLong"> · fictional mail</span></span>
   <span class="spacer"></span>
@@ -1570,7 +1570,7 @@ let lang=(()=>{ try{ return localStorage.getItem('pha-lang')==='zh'?'zh':'en'; }
 const T=(zh,en)=>lang==='en'?en:zh;
 const I18N={
   skip:{zh:'跳到内容',en:'Skip to content'},
-  tagline:{zh:'只看信封（发件人+主题）、只加标签的 Gmail 分拣台。',en:'Gmail triage that reads only the envelope — sender and subject — and only adds labels.'},
+  tagline:{zh:'只看信封（发件人+主题）、只加标签的 Gmail 分拣台。',en:'Gmail triage that reads only sender and subject — and only adds labels.'},
   refresh:{zh:'刷新',en:'Refresh'},
   togT:{zh:'开/关定时自动分类（GitHub Actions 每天给 Gmail 新邮件打 AI/xx 标签）',en:'Toggle the scheduled classification (a GitHub Action labels new Gmail as AI/… each run)'},
   setT:{zh:'连接你的私有数据仓库',en:'Connect your private data repo'},
