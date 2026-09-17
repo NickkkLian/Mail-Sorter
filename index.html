@@ -1723,7 +1723,7 @@ function loadErrorCard(){
   const box=$('loadError'); box.hidden=!LOAD_ERROR||DEMO;
   if(box.hidden){ box.innerHTML=''; return; }
   box.innerHTML=`<h2>${T('没能读到你的摘要','Could not load your digest')}</h2><p>${esc(LOAD_ERROR.reason)} — ${esc(LOAD_ERROR.fix)}</p>
-    <div class="row"><button class="btn btn-sm" type="button" onclick="loadAll()">${T('重试','Try again')}</button>${LOAD_ERROR.kind==='auth'?`<button class="btn btn-sm" type="button" onclick="openSettings(true, this)">${T('换一个令牌…','Replace the token…')}</button>`:''}</div>`;
+    <div class="row">${LOAD_ERROR.kind==='auth'?`<button class="btn btn-sm" type="button" onclick="openSettings(true, this)">${T('打开设置','Open settings')}</button>`:`<button class="btn btn-sm" type="button" onclick="loadAll()">${T('重试','Try again')}</button>`}</div>`;
 }
 function catLabel(key){ const cats=(CONF&&CONF.categories)||[]; const c=cats.find(x=>x.key===key); return c?c.label:key; }
 async function toggleEnabled(){
