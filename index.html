@@ -1730,12 +1730,24 @@ function loadErrorCard(){
    can show an English name for the keys the template ships without touching your data.
    Order: your own `label_en` if you added one → the shipped English name for that key →
    your label verbatim. A category we do not know still shows exactly what you wrote. */
-const CAT_EN={work:'Work',finance:'Finance',life:'Life',travel:'Travel',logistics:'Shipping',
-  account:'Accounts',promo:'Promotions',reading:'Reading',other:'Other'};
+/* Category names come out of mail/config.json in your own private repo — the Gmail labels the classifier creates,
+   read back — so a board wired to a mailbox kept in another language shows that language. English mode looks in
+   three places, in order, and shows what your config says if it finds none:
+     1. label_en, if you wrote one — your words beat anything here;
+     2. CAT_EN, by key: the keys this project's classifier creates, plus the template's. A key is an identifier and
+        reads the same in every language, which is why the table is keyed on it rather than on the label;
+     3. the label as it is — a category you add later keeps its own words rather than going blank.
+   A mailbox sorted by an older generation of the classifier can carry keys this table does not know. The answer for
+   that is label_en in your own config: it is yours to write, and it does not put your label names in a public file. */
+const CAT_EN={
+  action:'To do', job:'Jobs', school:'School', security:'Security', newsletter:'Newsletters',
+  work:'Work', finance:'Finance', life:'Life', travel:'Travel', logistics:'Shipping',
+  account:'Accounts', promo:'Promotions', reading:'Reading', other:'Other'};
 function catLabel(key){
   const cats=(CONF&&CONF.categories)||[]; const c=cats.find(x=>x.key===key);
-  if(lang==='en') return (c&&c.label_en)||CAT_EN[key]||(c?c.label:key);
-  return (c&&c.label_zh)||(c?c.label:key);
+  const label=c?c.label:key;
+  if(lang==='en') return (c&&c.label_en)||CAT_EN[key]||label;
+  return (c&&c.label_zh)||label;
 }
 async function toggleEnabled(){
   if(DEMO){ CONF.enabled=!(CONF.enabled!==false); render(); toast(T('演示模式：开关不会真的写入','Demo mode — the toggle is not persisted')); return; }
