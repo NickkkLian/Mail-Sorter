@@ -1749,6 +1749,31 @@ function catLabel(key){
   if(lang==='en') return (c&&c.label_en)||CAT_EN[key]||label;
   return (c&&c.label_zh)||label;
 }
+/* The reason under each row is not the mail and not the interface: it is a clause the classifier wrote into your
+   digest, in whatever language its prompt asked for. English mode shows reason_en when the classifier wrote one; for
+   rows written before it did, it shows the stored reason only if there is no CJK in it, and otherwise shows no reason
+   at all — the category still says what the row is, so nothing goes blank. Chinese mode shows what was stored. */
+const CJK=/[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af\uf900-\ufaff]/;
+function reasonFor(i){
+  if(lang==='en') return i.reason_en || (i.reason && !CJK.test(i.reason) ? i.reason : '');
+  return i.reason || i.reason_en || '';
+}
+/* A mail client puts its own reply/forward marker in front of the subject, in the language of that client's
+   interface ("转发:", "回复:"). The marker is not part of what the sender wrote, so English mode shows it as Fwd:/Re:;
+   the rest of the subject is the email's own text and is left exactly as it is. Display only: the digest, the search
+   and the Gmail link all keep using the stored subject. A chain such as "Re: 转发: …" is read marker by marker. */
+const SUBJ_MARKS=[[/^(?:转发|轉發|转寄|轉寄)\s*[:：]\s*/,'Fwd: '],[/^(?:回复|回覆|答复|答覆)\s*[:：]\s*/,'Re: '],
+  [/^(?:re|fwd?|aw|wg|sv|tr|rv)\s*[:：]\s*/i,null]];
+function subjectFor(subj){
+  if(lang!=='en'||!subj) return subj;
+  let out='', rest=String(subj);
+  for(let guard=0; guard<8; guard++){
+    const hit=SUBJ_MARKS.map(([rx,to])=>[rest.match(rx),to]).find(([m])=>m);
+    if(!hit) break;
+    out+=hit[1]===null?hit[0][0]:hit[1]; rest=rest.slice(hit[0][0].length);
+  }
+  return out+rest;
+}
 async function toggleEnabled(){
   if(DEMO){ CONF.enabled=!(CONF.enabled!==false); render(); toast(T('演示模式：开关不会真的写入','Demo mode — the toggle is not persisted')); return; }
   if(!CONF){ toast(T('仓库里还没有 mail/config.json','No mail/config.json in the repo yet'),true); return; }
@@ -1863,9 +1888,9 @@ function renderList(){
     const gurl=i.msgid?`https://mail.google.com/mail/u/0/#search/rfc822msgid:${encodeURIComponent(i.msgid)}`:'https://mail.google.com';
     const d=new Date(i.date); const when=isNaN(d)?'':`${fmtDay(d)} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
     return `<div class="mail"><span class="flag" title="${i.action?T('需要处理','Action needed'):''}">${i.action?'⚡':''}</span>
-      <a class="subj" href="${gurl}" target="_blank" rel="noopener">${esc(i.subject)}</a>
+      <a class="subj" href="${gurl}" target="_blank" rel="noopener">${esc(subjectFor(i.subject))}</a>
       <span class="when">${when}</span>
-      <div class="meta"><span class="cat">${esc(catLabel(i.category))}</span><span class="chip">from <b>${esc(senderName(i.from))}</b>${senderName(i.from)!==senderAddress(i.from)?' '+esc(senderAddress(i.from)):''}</span>${i.reason?`<span class="reason">${esc(i.reason)}</span>`:''}</div></div>`;
+      <div class="meta"><span class="cat">${esc(catLabel(i.category))}</span><span class="chip">from <b>${esc(senderName(i.from))}</b>${senderName(i.from)!==senderAddress(i.from)?' '+esc(senderAddress(i.from)):''}</span>${reasonFor(i)?`<span class="reason">${esc(reasonFor(i))}</span>`:''}</div></div>`;
   }).join('')+'</div>'+(items.length>150?`<p class="hint" style="margin-top:8px">${T('只显示前 150 封。','Showing the first 150.')}</p>`:'');
 }
 

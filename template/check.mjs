@@ -27,7 +27,7 @@ function mocks() {
     fetchHeaders: async () => mails,
     labelMessage: async (uid, label) => { calls.label.push([uid, label]); },
     moveMessage: async (uid, folder) => { calls.move.push([uid, folder]); },
-    classify: async (batch, cats) => { calls.classifyInputs.push(...batch); return batch.map((b, j) => { const hit = KW.find(([rx]) => rx.test(b.subject)); return { category: j === 0 ? 'nonsense-category' : (hit ? hit[1] : 'nonsense-category'), action: /due|review|viewing/i.test(b.subject), reason: 'keyword' }; }); }, // first of every batch: a category the model is not allowed to invent
+    classify: async (batch, cats) => { calls.classifyInputs.push(...batch); return batch.map((b, j) => { const hit = KW.find(([rx]) => rx.test(b.subject)); return { category: j === 0 ? 'nonsense-category' : (hit ? hit[1] : 'nonsense-category'), action: /due|review|viewing/i.test(b.subject), reason: 'keyword', reason_en: 'keyword (en)' }; }); }, // first of every batch: a category the model is not allowed to invent
   };
 }
 
@@ -39,6 +39,9 @@ function mocks() {
   check('a category outside config falls back to "other" instead of inventing a label', r.digest.items.some(i => i.category === 'other') && !r.digest.items.some(i => i.category === 'nonsense-category'));
   check('digest fields the board reads are present', ['updated_at', 'keep_items', 'total_classified', 'total_is_floor', 'items'].every(k => k in r.digest) && r.digest.items.every(i => ['subject', 'from', 'date', 'category', 'action', 'reason', 'msgid'].every(k => k in i)));
   check('digest items carry no body field', r.digest.items.every(i => !('body' in i)));
+  // the board shows reason_en in English mode; a classifier that drops it would put every row back in the mailbox's language
+  check('the English reason the model wrote is kept next to the original', r.digest.items.every(i => i.reason_en === 'keyword (en)' && i.reason === 'keyword'));
+  check('the prompt asks for reason_en, so a real model is told to write one', buildPrompt([{ from: 'a@x.example', subject: 's' }], ['work']).system.includes('reason_en'));
 }
 // 2. enabled:false does nothing at all
 { const m = mocks(); const r = await sortMail({ config: { ...config, enabled: false }, digest: { items: [] }, ...m });

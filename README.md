@@ -24,7 +24,7 @@ Anything that reads your mail should be able to say precisely how little of it i
 - **Counts** — last 24 h, last 7 days, mail that needs action, the digest window against its cap, and the cumulative total the classifier has processed (a lower bound once the window has rolled).
 - **Where the digest went** — one bar per category; the counts add up to the window.
 - **Seven-day trend** — emails per day, with the action-needed share in amber.
-- **Filters and search** — by category or ⚡ action; each row deep-links to the original message in Gmail by `Message-ID` and shows the model's one-line reason, so a wrong label is debuggable instead of mysterious.
+- **Filters and search** — by category or ⚡ action; each row deep-links to the original message in Gmail by `Message-ID` and shows the model's one-line reason, so a wrong label is debuggable instead of mysterious. The classifier writes that reason twice — `reason` in the language of the subject line and `reason_en` in English — and English mode shows `reason_en`; rows written before a classifier produced it show no reason rather than one in another language. A reply or forward marker that a mail client put in front of the subject in its own language — a Chinese client's equivalents of *Fwd:* and *Re:*, say — is shown as `Fwd:` / `Re:` in English mode; the rest of the subject is the sender's own text and is shown as written.
 - A connect card when no repository is set, a setup guide when the repository has no digest yet, an error with *Try again* when GitHub cannot be read (a refused token, no network), empty states when the digest or a filter is empty, dark and light themes, 375 px layout.
 
 ## How it fits together

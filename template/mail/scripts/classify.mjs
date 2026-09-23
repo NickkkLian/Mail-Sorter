@@ -30,7 +30,7 @@ export async function sortMail({ config, digest, fetchHeaders, labelMessage, mov
     fresh.slice(i, i + 25).forEach((h, j) => {
       const v = verdicts[j] || {};
       const category = categories.includes(v.category) ? v.category : 'other';
-      items.push({ uid: h.uid, msgid: h.msgid || null, subject: h.subject, from: h.from, date: h.date, category, action: v.action === true, reason: String(v.reason || '').slice(0, 120) });
+      items.push({ uid: h.uid, msgid: h.msgid || null, subject: h.subject, from: h.from, date: h.date, category, action: v.action === true, reason: String(v.reason || '').slice(0, 120), reason_en: String(v.reason_en || '').slice(0, 120) });
     });
   }
   for (const it of items) {
@@ -53,7 +53,7 @@ export async function sortMail({ config, digest, fetchHeaders, labelMessage, mov
 /** Prompt + parser for the model adapter. Kept here so the eval set scores exactly what production sends. */
 export function buildPrompt(batch, categories) {
   return {
-    system: `You sort email by its envelope only. For each item you get a sender and a subject line — nothing else, and you must not guess at bodies. Reply with JSON only: an array, same order, of {"category": one of ${JSON.stringify(categories)} or "other", "action": true if the email is waiting on a reply from the recipient or carries a real deadline, "reason": one short clause}.`,
+    system: `You sort email by its envelope only. For each item you get a sender and a subject line — nothing else, and you must not guess at bodies. Reply with JSON only: an array, same order, of {"category": one of ${JSON.stringify(categories)} or "other", "action": true if the email is waiting on a reply from the recipient or carries a real deadline, "reason": one short clause in the language of the subject line, "reason_en": the same clause in English}. The board shows reason_en when it is set to English, so a mailbox kept in another language still reads in one language.`,
     user: JSON.stringify(batch),
   };
 }
