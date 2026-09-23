@@ -80,7 +80,7 @@ node eval/score.mjs --break
 
 That run has been made: 2026-09-22, `claude-haiku-4-5-20251001`. **The keyword baseline scored 38/40 (95%) and the model 37/40 (93%)** — on this set the model is a little worse than the keywords, not better. Its three misses are the envelopes where the subject names one thing and belongs to another: a tax-residency notice read as an account message, a biometrics appointment read as an account message, and a flash sale on fares read as travel rather than promotion. That is the argument for the order the product actually uses — keywords first, the model for what they do not catch — rather than an argument for the model.
 
-Without the cache the eval reports **NOT RUN** (exit 2) rather than a number; the cache records the provider, model and date; `--break` is the negative control. This is a small evaluation set, not a formal evaluation pipeline.
+Without the cache the eval reports **NOT RUN** (exit 2) rather than a number; `--break` is the negative control. This is a small evaluation set, not a formal evaluation pipeline — and `eval/llm-cache.json` is the whole of what that run left behind. It records the provider, model and date, and nothing in this repository shows a request went over the network, so a hand-written cache would be indistinguishable from it.
 
 ## Limits and what is not verified here
 
