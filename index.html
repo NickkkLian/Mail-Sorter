@@ -1102,6 +1102,7 @@ input[type=password],input[type=search]{height:var(--control-h);padding:0 var(--
 .mail{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:var(--space-1) var(--space-3);padding:var(--space-2) var(--space-3);border-bottom:1px solid var(--hairline);align-items:center}
 .mail:last-child{border-bottom:0}
 .mail .flag{width:18px;text-align:center;color:var(--warning);font-weight:var(--weight-semibold)}
+.mail .flag svg{display:block;margin:0 auto}
 .mail .subj{font-size:var(--text-sm);font-weight:var(--weight-medium);color:var(--text);text-decoration:none;overflow-wrap:anywhere}
 @media (hover:hover) and (pointer:fine){.mail .subj:hover{text-decoration:underline}}
 .mail .meta{grid-column:2;font-size:var(--text-xs);color:var(--text-2);display:flex;flex-wrap:wrap;gap:var(--space-1) var(--space-2);align-items:center}
@@ -1862,7 +1863,7 @@ function renderPage(){
     $('trendX').innerHTML=per.map(p=>`<span>${fmtDay(p.d)}</span>`).join(''); }
   $('filterRow').hidden=!items.length;
   const chip=(key,label,n)=>`<button aria-pressed="${filter===key?'true':'false'}" onclick="setFilter('${esc(key)}')">${label}<span class="n">${n}</span></button>`;
-  $('filter').innerHTML=items.length?[chip('all',T('全部','All'),items.length),chip('__action','⚡ '+T('待处理','Action'),action)].concat(cats.map(k=>chip(k,esc(catLabel(k)),counts[k]))).join(''):'';
+  $('filter').innerHTML=items.length?[chip('all',T('全部','All'),items.length),chip('__action',T('待处理','Action'),action)].concat(cats.map(k=>chip(k,esc(catLabel(k)),counts[k]))).join(''):'';
   renderList();
 }
 // the digest stores senders as "Name <address>" (template classify.mjs); both parts are shown, as on the board before v3.1
@@ -1879,12 +1880,16 @@ function renderList(){
   $('list').innerHTML='<div class="list">'+items.slice(0,150).map(i=>{
     const gurl=i.msgid?`https://mail.google.com/mail/u/0/#search/rfc822msgid:${encodeURIComponent(i.msgid)}`:'https://mail.google.com';
     const d=new Date(i.date); const when=isNaN(d)?'':`${fmtDay(d)} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-    return `<div class="mail"><span class="flag" title="${i.action?T('需要处理','Action needed'):''}">${i.action?'⚡':''}</span>
+    return `<div class="mail">${i.action?`<span class="flag" role="img" aria-label="${T('需要处理','Action needed')}" title="${T('需要处理','Action needed')}">${BOLT}</span>`:'<span class="flag"></span>'}
       <a class="subj" href="${gurl}" target="_blank" rel="noopener">${esc(subjectFor(i.subject))}</a>
       <span class="when">${when}</span>
       <div class="meta"><span class="cat">${esc(catLabel(i.category))}</span><span class="chip">from <b>${esc(senderName(i.from))}</b>${senderName(i.from)!==senderAddress(i.from)?' '+esc(senderAddress(i.from)):''}</span>${reasonFor(i)?`<span class="reason">${esc(reasonFor(i))}</span>`:''}</div></div>`;
   }).join('')+'</div>'+(items.length>150?`<p class="hint" style="margin-top:8px">${T('只显示前 150 封。','Showing the first 150.')}</p>`:'');
 }
+
+/* the action flag: a line bolt drawn like the top bar's icons (24-unit box, 2 px stroke, round joins); the span around it
+   carries the name (role=img + aria-label), so a screen reader says "Action needed" instead of reading an emoji */
+const BOLT='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/></svg>';
 
 /* ============ ?demo=1 — 60 fictional emails over the last 7 days, generated in code; every address ends in .example ============ */
 function makeDemo(){
