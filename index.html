@@ -1564,10 +1564,197 @@ main{width:100%;flex:1 0 auto}
 
 </script>
 <script>
+/* safe-merge v1 — source of truth: the safe-merge library, kept outside this app. This block, from this comment to the
+   closing "})();", was copied from it; change the library and copy it again rather than editing a copy here.
+   The library has its own tests.
+   Why (2026-09-23): GitHub rejects a save whose sha is out of date (409).
+   The apps used to fetch the new sha and send the same stale data again, which silently erased whatever had been written
+   elsewhere since the page loaded (another tab, another device, a script). Now a stale save
+   re-reads the file, merges three ways, and asks only when both sides changed the same thing:
+     base   = the file as this page last read or saved it
+     theirs = the file as it is now
+     ours   = this page's data now
+   A value changed on one side only takes that side's change. Objects merge key by key; arrays whose items all carry a
+   unique `id` merge item by item, in the file's order, or in this page's order when only this page reordered them.
+   Timestamp fields (updatedAt and the like) changed on both sides take the later one.
+   Anything else changed on both sides, to different values, is a conflict that the owner resolves in a dialog. */
+const SafeMerge = (() => {
+  const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
+  /** JSON with sorted keys: the same data in another key order counts as unchanged */
+  const canon = (v) => JSON.stringify(v, (k, x) => (isObj(x)
+    ? Object.keys(x).sort().reduce((o, key) => { o[key] = x[key]; return o; }, {})
+    : x));
+  const same = (a, b) => canon(a) === canon(b);
+  const TIME_KEY = /^(updated_?at|modified_?at|date_?modified|last_?modified|last_?update(d|_?time)?|saved_?at|synced_?at|generated_?at|updated|modified)$/i;
+  const idOf = (x) => (isObj(x) && (typeof x.id === 'string' || typeof x.id === 'number') && x.id !== '' ? String(x.id) : null);
+  const byIdArray = (a) => Array.isArray(a) && a.every((x) => idOf(x) !== null) && new Set(a.map(idOf)).size === a.length;
+  // what the conflict dialog calls an item: its first short text field, else its id
+  const LABEL_KEYS = ['title', 'name', 'label', 'zh', 'en', 'book', 'merchant', 'payee', 'company', 'desc', 'note', 'text', 'content'];
+  const labelOf = (x) => {
+    if (!isObj(x)) return '';
+    const k = LABEL_KEYS.find((key) => (typeof x[key] === 'string' && x[key].trim()) || typeof x[key] === 'number');
+    const s = String(k ? x[k] : x.id).trim().replace(/\s+/g, ' ');
+    return s.length > 40 ? s.slice(0, 40) + '…' : s;
+  };
+
+  /** Three-way merge. opt.pick: 'mine' | 'theirs' decides conflicts; without it conflicts are collected into
+   *  opt.conflicts ({ path, theirs, ours }) and theirs is kept for now. Returns the merged value (undefined = removed). */
+  function merge3(base, theirs, ours, opt = {}, path = []) {
+    if (same(ours, base)) return theirs;                       // this page did not change it
+    if (same(theirs, base) || same(ours, theirs)) return ours; // only this page changed it, or both made the same change
+    if (isObj(base) && isObj(theirs) && isObj(ours)) {
+      const out = {};
+      for (const k of new Set([...Object.keys(theirs), ...Object.keys(ours), ...Object.keys(base)])) {
+        const v = merge3(base[k], theirs[k], ours[k], opt, [...path, k]);
+        if (v !== undefined) out[k] = v;
+      }
+      return out;
+    }
+    if (byIdArray(base) && byIdArray(theirs) && byIdArray(ours)) return mergeById(base, theirs, ours, opt, path);
+    const key = path[path.length - 1];
+    if (typeof key === 'string' && TIME_KEY.test(key) && typeof theirs === 'string' && typeof ours === 'string') {
+      return ours > theirs ? ours : theirs;                    // both sides touched a timestamp: keep the later one
+    }
+    if (opt.pick === 'mine') return ours;
+    if (opt.pick === 'theirs') return theirs;
+    if (opt.conflicts) opt.conflicts.push({ path, theirs, ours });
+    return theirs;
+  }
+
+  function mergeById(base, theirs, ours, opt, path) {
+    const B = new Map(base.map((x) => [idOf(x), x]));
+    const T = new Map(theirs.map((x) => [idOf(x), x]));
+    const O = new Map(ours.map((x) => [idOf(x), x]));
+    const merged = new Map();
+    for (const id of new Set([...T.keys(), ...O.keys(), ...B.keys()])) {
+      const label = labelOf(T.get(id) || O.get(id) || B.get(id));
+      merged.set(id, merge3(B.get(id), T.get(id), O.get(id), opt, [...path, { id, label }]));
+    }
+    // Order: the file's, unless only this page reordered the items it shares with the base. Items missing from the
+    // side whose order wins go right after their neighbour on the other side.
+    const shared = (a, b) => { const inB = new Set(b.map(idOf)); return a.map(idOf).filter((id) => inB.has(id)); };
+    const reordered = (side) => canon(shared(base, side)) !== canon(shared(side, base));
+    const [first, second] = reordered(ours) && !reordered(theirs) ? [ours, theirs] : [theirs, ours];
+    const out = first.map(idOf).filter((id) => merged.get(id) !== undefined).map((id) => merged.get(id));
+    const placed = new Set(out.map(idOf));
+    second.forEach((x, i) => {
+      const id = idOf(x);
+      if (placed.has(id) || merged.get(id) === undefined) return;
+      let j = i - 1;
+      while (j >= 0 && !placed.has(idOf(second[j]))) j--;
+      const at = j < 0 ? 0 : out.findIndex((y) => idOf(y) === idOf(second[j])) + 1;
+      out.splice(at, 0, merged.get(id));
+      placed.add(id);
+    });
+    return out;
+  }
+
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const show = (v, T) => {
+    if (v === undefined) return T('（没有／已删除）', '(absent / deleted)');
+    const s = typeof v === 'string' ? v : JSON.stringify(v, null, 2);
+    return s.length > 600 ? s.slice(0, 600) + ' …' : s;
+  };
+  const where = (path) => path.map((p) => (typeof p === 'object' ? `「${p.label}」` : p)).join(' › ') || '（整个文件）';
+
+  /** The conflict dialog. It must be answered: Esc is swallowed and clicking outside does nothing. */
+  function ask(conflicts, T) {
+    return new Promise((resolve) => {
+      const ov = document.createElement('div');
+      ov.setAttribute('data-no-esc', '');
+      ov.style.cssText = 'position:fixed;inset:0;z-index:2147483000;background:rgba(20,28,24,.5);display:flex;align-items:center;justify-content:center;padding:16px;';
+      const box = document.createElement('div');
+      box.setAttribute('role', 'dialog');
+      box.setAttribute('aria-modal', 'true');
+      box.style.cssText = 'background:#fff;color:#1f2a24;width:100%;max-width:720px;max-height:90vh;overflow:auto;border-radius:12px;padding:20px 22px;box-shadow:0 12px 40px rgba(0,0,0,.28);font:14px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans SC",sans-serif;';
+      const pre = 'white-space:pre-wrap;overflow-wrap:anywhere;margin:4px 0 0;padding:8px 10px;border-radius:8px;border:1px solid #d9e2dc;background:#f4f7f5;font:12.5px/1.55 ui-monospace,Menlo,monospace;max-height:30vh;overflow:auto;';
+      const items = conflicts.slice(0, 20).map((c) => `<li style="margin:0 0 14px;">
+        <div style="font-weight:600;">${esc(where(c.path))}</div>
+        <div style="margin-top:6px;color:#55655b;">${esc(T('别处存下的', 'Saved elsewhere'))}</div><pre style="${pre}">${esc(show(c.theirs, T))}</pre>
+        <div style="margin-top:6px;color:#55655b;">${esc(T('这个页面的', 'On this page'))}</div><pre style="${pre}">${esc(show(c.ours, T))}</pre></li>`).join('');
+      const more = conflicts.length > 20 ? `<p style="color:#55655b;">${esc(T(`还有 ${conflicts.length - 20} 处没列出，按同一个选择处理。`, `${conflicts.length - 20} more not listed; the same choice applies.`))}</p>` : '';
+      const btn = 'font:inherit;padding:8px 14px;border-radius:8px;cursor:pointer;margin-left:8px;';
+      box.innerHTML = `<h3 style="margin:0 0 8px;font-size:17px;">${esc(T('这个文件在别处也改过', 'This file was also changed elsewhere'))}</h3>
+        <p style="margin:0 0 14px;color:#3f5047;">${esc(T(
+          '这个页面打开之后，文件在别处（别的页面、别的设备，或直接写进仓库）也改过。没撞上的改动两边都已保留；下面这几处两边改得不一样，请选一边保留，另一边的会被丢掉（需要的话先把文字复制出来）。',
+          'After this page loaded, the file was also changed elsewhere (another page, another device, or a direct write to the repo). Changes that don’t collide are kept from both sides. The places below were changed differently on each side: choose which side to keep; the other side’s version is discarded, so copy any text you need first.'))}</p>
+        <ol style="padding-left:20px;margin:0;">${items}</ol>${more}
+        <div style="text-align:right;margin-top:10px;">
+          <button type="button" data-choice="theirs" style="${btn}border:1px solid #b9c8be;background:#fff;color:#1f2a24;">${esc(T('保留别处的', 'Keep the saved version'))}</button>
+          <button type="button" data-choice="mine" style="${btn}border:1px solid #2f6f4a;background:#2f6f4a;color:#fff;">${esc(T('用这个页面的', 'Use this page’s version'))}</button>
+        </div>`;
+      const swallowEsc = (e) => { if (e.key === 'Escape') { e.stopImmediatePropagation(); e.preventDefault(); } };
+      document.addEventListener('keydown', swallowEsc, true);
+      box.querySelectorAll('button[data-choice]').forEach((b) => b.addEventListener('click', () => {
+        document.removeEventListener('keydown', swallowEsc, true);
+        ov.remove();
+        resolve(b.getAttribute('data-choice'));
+      }));
+      ov.appendChild(box);
+      document.body.appendChild(ov);
+    });
+  }
+
+  /** Save with conflict handling.
+   *  put(data, sha) → fetch Response of the PUT; get() → { json, sha } of the file now (must bypass the browser cache);
+   *  base: the file as this page last read or saved it (null when this page never read it); T(zh, en) for text.
+   *  Resolves { sha, data, merged, wrote }: the file's new sha, the data now in the file, whether a merge happened, and
+   *  whether anything was written. Throws on other HTTP errors, or when the page never read the file. */
+  async function save({ data, sha, base, put, get, T, tries = 4, askFn = ask }) {
+    let merged = false;
+    for (let i = 0; i < tries; i++) {
+      const r = await put(data, sha);
+      if (r.ok) {
+        const j = await r.json().catch(() => ({}));
+        return { sha: (j.content && j.content.sha) || null, data, merged, wrote: true };
+      }
+      if (!(r.status === 409 || (r.status === 422 && !sha))) {
+        const e = await r.json().catch(() => ({}));
+        throw new Error(e.message || 'HTTP ' + r.status);
+      }
+      if (base == null) {
+        throw new Error(T('这个页面没能读到仓库里的版本；为免覆盖别处的内容，这次没有保存。请刷新页面后再改。',
+          'This page never read the file from the repo, so it did not save, to avoid overwriting changes made elsewhere. Reload the page and make the change again.'));
+      }
+      const remote = await get();
+      const conflicts = [];
+      let next = merge3(base, remote.json, data, { conflicts });
+      if (conflicts.length) next = merge3(base, remote.json, data, { pick: await askFn(conflicts, T) });
+      merged = true;
+      base = remote.json;
+      sha = remote.sha;
+      data = next;
+      if (same(next, remote.json)) return { sha, data, merged, wrote: false };
+    }
+    throw new Error(T('文件在别处一直在变，请刷新页面后再试。', 'The file keeps changing elsewhere. Reload the page and try again.'));
+  }
+
+  /** Changes made on this page while a save was in flight: put them on top of what the save left in the file.
+   *  sent = the data the save started with; saved = save().data; now = this page's data now. */
+  const rebase = (sent, saved, now) => merge3(sent, saved, now, { pick: 'mine' });
+
+  /** Run an async function one call at a time: two saves in flight would carry the same sha and one would get 409. */
+  function serial(fn) {
+    let chain = Promise.resolve();
+    return (...args) => {
+      const run = chain.then(() => fn(...args));
+      chain = run.catch(() => {});
+      return run;
+    };
+  }
+
+  /** A deep copy for `base` (structuredClone is not in every browser this runs in) */
+  const snapshot = (v) => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
+
+  return { merge3, same, canon, ask, save, rebase, serial, snapshot };
+})();
 /* ============ connection (owner / repo / token live only in this browser; shared with the product family via pha-config) ============ */
 const PHA_KEY='pha-config';
 const DEFAULTS={owner:'',repo:'',token:''};
 let MAIL=null, CONF=null, SHA_CONF=null;
+// mail/config.json as this page last read or saved it: the base a stale save merges against. It stays null until a read
+// succeeds, and a page without it refuses to write over the file.
+let BASE_CONF=null;
 let filter='all', query='';
 // Filter and search live in the address, so a filtered board survives a reload and can be shared (?demo=1 is kept).
 try{ const p0=new URLSearchParams(location.search); filter=p0.get('filter')||'all'; const q0=p0.get('q')||''; query=q0.trim().toLowerCase();
@@ -1633,11 +1820,12 @@ function toast(msg,isErr){ const t=$('toast'); t.textContent=msg; t.className='t
 function b64decode(b64){ const bin=atob(String(b64).replace(/\s/g,'')); const bytes=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i); return new TextDecoder().decode(bytes); }
 function b64encode(str){ const bytes=new TextEncoder().encode(str); let bin=''; bytes.forEach(b=>bin+=String.fromCharCode(b)); return btoa(bin); }
 
-/* ============ GitHub Contents API (unchanged data layer: same paths, same fields, same 409 retry) ============ */
-async function ghGet(path){
+/* ============ GitHub Contents API (same paths, same fields; a save whose sha is out of date is merged by SafeMerge) ============ */
+// fresh: skip the browser cache (a save re-reading the file must see what is there now, not a copy up to 60 s old)
+async function ghGet(path,fresh){
   const c=cfg();
   const r=await fetch(`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${path}`,
-    {headers:{Authorization:`Bearer ${c.token}`,Accept:'application/vnd.github+json'}});
+    {headers:{Authorization:`Bearer ${c.token}`,Accept:'application/vnd.github+json'},...(fresh?{cache:'no-store'}:{})});
   if(r.status===404) return {data:null,sha:null};
   if(r.status===401||r.status===403) throw Object.assign(new Error('GitHub '+r.status),{kind:'auth',reason:T('GitHub 拒绝了这个令牌（'+r.status+'）','GitHub refused the token ('+r.status+')'),fix:T('粘贴一个对这个仓库有 Contents 读写权限的新令牌。','Paste a new fine-grained token with Contents read and write on this repo.')});
   if(!r.ok) throw Object.assign(new Error('GitHub '+r.status),{kind:'http',reason:T('GitHub 返回 '+r.status,'GitHub answered '+r.status),fix:T('过一分钟再试。','Try again in a minute.')});
@@ -1645,18 +1833,28 @@ async function ghGet(path){
   try{ return {data:JSON.parse(b64decode(j.content)),sha:j.sha}; }
   catch(e){ throw Object.assign(e,{kind:'data',reason:T(path+' 不是有效的 JSON（'+e.message+'）',path+' is not valid JSON ('+e.message+')'),fix:T('去仓库里看看这个文件；下一次定时任务会重写它。','Look at the file in your repo; the next scheduled run rewrites it.')}); }
 }
-async function ghPut(path,obj,sha,message){
+// One PUT; returns the Response. A 409 used to be retried here with the same body, which wrote this tab's copy of
+// config.json over whatever had been changed since it loaded (2026-09-23 check). SafeMerge.save now handles it.
+function ghPut(path,obj,sha,message){
   const c=cfg();
   const body={message,content:b64encode(JSON.stringify(obj,null,2))};
   if(sha) body.sha=sha;
-  let r=await fetch(`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${path}`,
+  return fetch(`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${path}`,
     {method:'PUT',headers:{Authorization:`Bearer ${c.token}`,Accept:'application/vnd.github+json','Content-Type':'application/json'},body:JSON.stringify(body)});
-  if(r.status===409){ const cur=await ghGet(path); body.sha=cur.sha;
-    r=await fetch(`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${path}`,
-      {method:'PUT',headers:{Authorization:`Bearer ${c.token}`,Accept:'application/vnd.github+json','Content-Type':'application/json'},body:JSON.stringify(body)}); }
-  if(!r.ok) throw new Error('GitHub '+r.status);
-  return (await r.json()).content.sha;
 }
+// Save config.json: a stale save re-reads the file and merges three ways (base = as this page last read or saved it);
+// only a value changed on both sides asks. One save at a time, so two clicks never race on one sha.
+const saveConf=SafeMerge.serial(async message=>{
+  const sent=SafeMerge.snapshot(CONF);
+  const r=await SafeMerge.save({data:sent,sha:SHA_CONF,base:BASE_CONF,T,
+    put:(d,sha)=>ghPut('mail/config.json',d,sha,message),
+    get:async()=>{ const g=await ghGet('mail/config.json',true); return {json:g.data,sha:g.sha}; }});
+  SHA_CONF=r.sha; BASE_CONF=SafeMerge.snapshot(r.data);
+  // merged: the page takes the merged file plus anything changed here meanwhile (otherwise the next save would treat
+  // what came from elsewhere as deleted here)
+  if(r.merged){ CONF=SafeMerge.rebase(sent,r.data,CONF); render(); }
+  return r;
+});
 
 /* ============ settings ============ */
 /* Settings dialog (design system v3.1): palette and light/dark first, then the repo connection. The token field
@@ -1707,7 +1905,7 @@ async function loadAll(){
   if(!configured()){ render(); return false; }
   try{
     const [m,c]=await Promise.all([ghGet('mail/mail.json'),ghGet('mail/config.json')]);
-    MAIL=m.data; CONF=c.data; SHA_CONF=c.sha; LOADED=true; LOAD_ERROR=null;
+    MAIL=m.data; CONF=c.data; SHA_CONF=c.sha; BASE_CONF=SafeMerge.snapshot(CONF); LOADED=true; LOAD_ERROR=null;
   }catch(e){ LOAD_ERROR=e.kind?e:{kind:'network',reason:T('连不上 GitHub（','Could not reach GitHub (')+(e.message||e)+')',fix:T('检查网络后重试。','Check the connection, then try again.')}; }
   render();
   return !LOAD_ERROR;
@@ -1772,8 +1970,9 @@ async function toggleEnabled(){
   if(!CONF){ toast(T('仓库里还没有 mail/config.json','No mail/config.json in the repo yet'),true); return; }
   const next=!(CONF.enabled!==false);
   CONF.enabled=next; render();
-  try{ SHA_CONF=await ghPut('mail/config.json',CONF,SHA_CONF,`mail: classify ${next?'ON':'OFF'}`);
-    toast(next?T('已开启定时自动分类','Scheduled classification ON'):T('已关闭（定时任务将直接跳过）','OFF — the scheduled job skips itself')); }
+  try{ await saveConf(`mail: classify ${next?'ON':'OFF'}`);
+    // after a merge the switch shows what the file says, which is not always `next` (both sides changed it, the other kept)
+    toast(CONF&&CONF.enabled!==false?T('已开启定时自动分类','Scheduled classification ON'):T('已关闭（定时任务将直接跳过）','OFF — the scheduled job skips itself')); }
   catch(e){ CONF.enabled=!next; render(); toast(T('切换失败: ','Toggle failed: ')+e.message,true); }
 }
 function setFilter(c){ filter=c; syncURL(); render(); }
