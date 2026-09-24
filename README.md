@@ -1,5 +1,7 @@
 # Headersort
 
+![Headersort](.github/header.png)
+
 **Gmail triage that reads only sender and subject — and only adds labels.**
 
 A scheduled GitHub Action reads new mail over IMAP, asks a small model to label each one from its sender and subject line, adds an `AI/…` label, and writes a capped digest into your private repo. One static HTML file renders the board. Nothing runs between the two daily runs, nothing costs anything at rest, and nothing ever reads a message body.
