@@ -29,7 +29,7 @@ jobs:
           if [ -f eval/llm-cache.json ]; then node eval/score.mjs; else echo "no eval/llm-cache.json yet — eval not run"; fi
   board:
     # The board is one static file: no external scripts, demo addresses only on the reserved .example TLD,
-    # and the data-layer functions the private deployment depends on are present and unchanged in shape.
+    # and the data-layer functions (cfg, configured, ghGet, ghPut and the mail/config reads and writes) keep their shape.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

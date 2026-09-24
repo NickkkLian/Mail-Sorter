@@ -90,7 +90,7 @@ Without the cache the eval reports **NOT RUN** (exit 2) rather than a number; `-
 - The template has been exercised with mock adapters and a dry run only; it has not been run against a live Gmail account for this revision. The IMAP label call falls back from `messageFlagsAdd` to `messageCopy` depending on how Gmail exposes labels — confirm on your account before relying on it.
 - Category quality depends on the model and on subject lines alone; the reason shown per row is the model's, not a fact.
 - The board shows at most `keep_items` emails and at most 150 rows per filter.
-- The scheduled workflow and its script run in your private repo, not here — this repository is the board plus a template. The private deployment that produced the earlier screenshots is not published.
+- The scheduled workflow and its script run in your private repo, not here — this repository is the board plus a template.
 
 ## Files
 

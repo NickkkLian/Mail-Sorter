@@ -2,7 +2,7 @@
 // Providers: anthropic (default) · openai · gemini · openai-compatible (Ollama, LM Studio, vLLM, most gateways).
 // Model-agnostic: the prompt asks for JSON in plain words and the caller validates the reply (extractJson). No
 // provider-only feature is a precondition. Keys travel in headers only, never in a URL, and are never stored.
-// Same contract as docs/llm.js and llm.py in the sibling projects; template/check-llm.mjs tests it against a mock.
+// Same contract as docs/llm.js and llm.py in Bill Bench (NickkkLian/bill-categoriser); template/check-llm.mjs tests it against a mock.
 
 const PROVIDERS = ['anthropic', 'openai', 'gemini', 'openai-compatible'];
 const LABEL = { anthropic: 'Claude (Anthropic)', openai: 'OpenAI', gemini: 'Google Gemini', 'openai-compatible': 'OpenAI-compatible endpoint' };
