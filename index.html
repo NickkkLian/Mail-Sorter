@@ -1149,10 +1149,10 @@ input[type=password],input[type=search]{height:var(--control-h);padding:0 var(--
 }
 .topbar :focus-visible,.plate :focus-visible,.honest :focus-visible{outline-color:var(--on-band)}
 /* Focus scrolls clear of the sticky top bar: a control reached by Tab, or <main> after the skip link, never lands under
-   the bar (round-1 audits, 2026-09-16: the ring of <main> and most of a button sat behind it). A product whose sticky
+   the bar (2026-09-16: the ring of <main> and most of a button sat behind it). A product whose sticky
    chrome is taller than the bar, or wraps, sets --sticky-top to its measured height. */
 html{scroll-padding-top:calc(var(--sticky-top,var(--topbar-h)) + var(--space-3))}
-/* Native checkboxes and radios take the palette's accent instead of the browser's blue (ruling 2026-09-16 20:11 Q4:
+/* Native checkboxes and radios take the palette's accent instead of the browser's blue (contrast:
    checked fill against its surface 4.55–16.17:1, tick against the fill 4.71–16.34:1 across the three palettes, light and dark). */
 :root{accent-color:var(--accent)}
 .topbar ::selection,.plate ::selection,.honest ::selection{background:var(--on-band-2);color:var(--band)}
@@ -1340,7 +1340,7 @@ main{width:100%;flex:1 0 auto}
      Appearance.settings(opts)                the Theme and Appearance controls alone, for mounting elsewhere.
      Single-key shortcuts (products that have them pass `shortcuts`, a one-line description of their keys): an On | Off
      group after Appearance, stored as nl-shortcuts ("off" turns them off; anything else, or nothing, is on). Products
-     read Appearance.shortcutsOn() before acting on a page-level single key (WCAG 2.1.4; ruling 2026-09-16 20:11 Q3).
+     read Appearance.shortcutsOn() before acting on a page-level single key (WCAG 2.1.4).
    No dependencies. Styles use design tokens only. */
 (function (root) {
   'use strict';
@@ -1834,7 +1834,7 @@ async function ghGet(path,fresh){
   catch(e){ throw Object.assign(e,{kind:'data',reason:T(path+' 不是有效的 JSON（'+e.message+'）',path+' is not valid JSON ('+e.message+')'),fix:T('去仓库里看看这个文件；下一次定时任务会重写它。','Look at the file in your repo; the next scheduled run rewrites it.')}); }
 }
 // One PUT; returns the Response. A 409 used to be retried here with the same body, which wrote this tab's copy of
-// config.json over whatever had been changed since it loaded (2026-09-23 check). SafeMerge.save now handles it.
+// config.json over whatever had been changed since it loaded (found 2026-09-23). SafeMerge.save now handles it.
 function ghPut(path,obj,sha,message){
   const c=cfg();
   const body={message,content:b64encode(JSON.stringify(obj,null,2))};
@@ -1897,7 +1897,7 @@ async function saveToken(){
 
 /* ============ load + render ============ */
 // A file that is not there (404) means "not set up yet". Anything else — a refused token, no network, GitHub failing — is an
-// error the page shows with what to do (round-1 audit, 2026-09-16: both reads swallowed every error, so an expired token
+// error the page shows with what to do (2026-09-16: both reads swallowed every error, so an expired token
 // showed the setup guide and the settings said "✓ Connected"). Data already on screen stays while the error shows.
 let LOADED=false, LOAD_ERROR=null;
 async function loadAll(){
@@ -2000,7 +2000,7 @@ function focusKey(el){
   return find;
 }
 // Where focus goes when there is no control to go back to, and where the skip link sends it: the first visible h1 in main,
-// else the first visible h2, else main (ruling 2026-09-16 20:11 Q16; after Clear filters focus used to go to the whole
+// else the first visible h2, else main (after Clear filters focus used to go to the whole
 // <main>, whose ring was off screen)
 function firstHeading(){
   const seen=x=>{ const r=x.getBoundingClientRect(), cs=getComputedStyle(x); return r.width>2&&r.height>2&&cs.visibility!=='hidden'&&!/inset\(50%\)|rect\(0/.test(cs.clipPath+cs.clip); };
@@ -2042,7 +2042,7 @@ function renderPage(){
   const cats=Object.keys(counts).sort((a,b)=>counts[b]-counts[a]);
   $('digestPlate').hidden=!items.length; $('pageT').hidden=!!items.length;  // one h1 on the page: the plate's when it shows
   // when the classifier last wrote the digest, in the browser's own time zone and language; the Action writes UTC, and the
-  // board before v3.1 showed that UTC string as if it were local (ruling 2026-09-16 20:11 Q13)
+  // board before v3.1 showed that UTC string as if it were local
   const eb=$('digestEyebrow'), ran=lastRun(m);
   eb.replaceChildren(DEMO?T('摘要 · 虚构邮件','Digest · fictional mail'):T('摘要 · ','Digest · ')+cfg().owner+'/'+(cfg().repo||'…'));
   if(ran){ const t=document.createElement('time'); t.dateTime=m.updated_at; t.textContent=ran; eb.append(T(' · 更新于 ',' · updated '),t); }
