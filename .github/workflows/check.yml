@@ -36,5 +36,5 @@ jobs:
       - run: |
           test "$(grep -c '<script src="http' index.html)" = 0
           test "$(grep -oiE '[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}' index.html | grep -vc '\.example')" = 0
-          for f in "function cfg()" "function configured()" "async function ghGet(path)" "async function ghPut(path,obj,sha,message)" "ghGet('mail/mail.json')" "ghGet('mail/config.json')" "ghPut('mail/config.json'" "localStorage.getItem('pha-lang')"; do grep -qF "$f" index.html || { echo "missing: $f"; exit 1; }; done
+          for f in "function cfg()" "function configured()" "async function ghGet(path,fresh)" "function ghPut(path,obj,sha,message)" "ghGet('mail/mail.json')" "ghGet('mail/config.json')" "ghPut('mail/config.json'" "localStorage.getItem('pha-lang')"; do grep -qF "$f" index.html || { echo "missing: $f"; exit 1; }; done
           echo "board checks passed"
