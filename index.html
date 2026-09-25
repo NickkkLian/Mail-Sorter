@@ -1749,7 +1749,9 @@ const SafeMerge = (() => {
   return { merge3, same, canon, ask, save, rebase, serial, snapshot };
 })();
 /* ============ connection (owner / repo / token live only in this browser; shared with the product family via pha-config) ============ */
-const PHA_KEY='pha-config';
+// On GitHub Pages every public demo shares the origin nickkklian.github.io, so a shared key would let a token entered in
+// one demo connect the others: there this demo keeps its own key. On the hub the family shares one connection on purpose.
+const PHA_KEY=/\.github\.io$/.test(location.hostname)?'pha-config:Mail-Sorter':'pha-config';
 const DEFAULTS={owner:'',repo:'',token:''};
 let MAIL=null, CONF=null, SHA_CONF=null;
 // mail/config.json as this page last read or saved it: the base a stale save merges against. It stays null until a read
