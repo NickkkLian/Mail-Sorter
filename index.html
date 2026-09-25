@@ -1817,7 +1817,7 @@ function toggleLang(){ lang=lang==='en'?'zh':'en'; try{localStorage.setItem('pha
 
 /* ============ helpers ============ */
 const $=id=>document.getElementById(id);
-const esc=s=>(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const esc=s=>(s==null?'':String(s)).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let toastTimer=null;
 function toast(msg,isErr){ const t=$('toast'); t.textContent=msg; t.className='toast show'+(isErr?' err':''); t.setAttribute('role',isErr?'alert':'status'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.className='toast'+(isErr?' err':''),isErr?6000:3000); }
 function b64decode(b64){ const bin=atob(String(b64).replace(/\s/g,'')); const bytes=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i); return new TextDecoder().decode(bytes); }
@@ -1979,6 +1979,9 @@ async function toggleEnabled(){
   catch(e){ CONF.enabled=!next; render(); toast(T('切换失败: ','Toggle failed: ')+e.message,true); }
 }
 function setFilter(c){ filter=c; syncURL(); render(); }
+// category keys come from the digest, so they never go into an inline handler: the chip carries the key in data-filter
+// (HTML-escaped) and this one listener reads it back as plain text
+document.getElementById('filter').addEventListener('click',e=>{ const b=e.target.closest('button[data-filter]'); if(b) setFilter(b.dataset.filter); });
 function showAction(){ setFilter('__action'); const first=document.querySelector('#list .mail a.subj'); if(first) first.focus(); }
 function onSearch(v){ query=v.trim().toLowerCase(); syncURL(v); renderList(); }
 const fmtDay=d=>d.toLocaleDateString(lang==='en'?'en-CA':'zh-CN',{month:'short',day:'numeric'});
@@ -2064,7 +2067,7 @@ function renderPage(){
     $('trend').setAttribute('aria-label',per.map(p=>`${fmtDay(p.d)}: ${p.n}`).join(', '));
     $('trendX').innerHTML=per.map(p=>`<span>${fmtDay(p.d)}</span>`).join(''); }
   $('filterRow').hidden=!items.length;
-  const chip=(key,label,n)=>`<button aria-pressed="${filter===key?'true':'false'}" onclick="setFilter('${esc(key)}')">${label}<span class="n">${n}</span></button>`;
+  const chip=(key,label,n)=>`<button type="button" aria-pressed="${filter===key?'true':'false'}" data-filter="${esc(key)}">${label}<span class="n">${n}</span></button>`;
   $('filter').innerHTML=items.length?[chip('all',T('全部','All'),items.length),chip('__action',T('待处理','Action'),action)].concat(cats.map(k=>chip(k,esc(catLabel(k)),counts[k]))).join(''):'';
   renderList();
 }
