@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="script-src 'self' 'sha256-5nyhwSzTgu2n7ZAL4gvhru/QlXgk4oq6kTJUzThiFGQ=' 'sha256-wMCHn0OpH0CosStuYwKrHjIB5qySK0qbEbedXSkpsZQ=' 'sha256-5HpNXtG0B/lb024xl2VRRBTvTtLxZwzFx+m22IYm3Zo='">
 <script>/* appearance boot — runs before any stylesheet so the stored palette and light/dark apply on the first paint */(function(){try{var d=document.documentElement,L=window.localStorage,t=L.getItem('nl-theme'),s=L.getItem('nl-scheme');if(s===null){var o=L.getItem('theme')||L.getItem('qm-theme');if(o==='dark'||o==='light')s=o;}if(t==='paper'||t==='ink')d.setAttribute('data-theme',t);if(s==='dark'||s==='light')d.setAttribute('data-scheme',s);}catch(e){}})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="Gmail triage that reads only sender and subject — and only adds labels. Headersort: a scheduled Action writes a capped digest to your private repo; this board reads it.">
@@ -1246,9 +1247,9 @@ main{width:100%;flex:1 0 auto}
   </a>
   <span class="pill" id="pill" title="">Demo<span class="long" id="pillLong"> · fictional mail</span></span>
   <span class="spacer"></span>
-  <button class="switch" id="togBtn" role="switch" aria-checked="false" onclick="toggleEnabled()" data-i18n-title="togT" title=""><i aria-hidden="true"></i><span id="togText">—</span></button>
-  <button class="btn btn-ghost" id="refresh" onclick="loadAll()" data-i18n="refresh">Refresh</button>
-  <button class="btn btn-ghost" id="langBtn" onclick="toggleLang()" aria-label="Switch language">中</button>
+  <button class="switch" id="togBtn" role="switch" aria-checked="false" data-act="toggleEnabled" data-i18n-title="togT" title=""><i aria-hidden="true"></i><span id="togText">—</span></button>
+  <button class="btn btn-ghost" id="refresh" data-act="loadAll" data-i18n="refresh">Refresh</button>
+  <button class="btn btn-ghost" id="langBtn" data-act="toggleLang" aria-label="Switch language">中</button>
   <button class="btn btn-ghost btn-icon" id="theme" aria-label="Dark mode" aria-pressed="false" title="Dark mode" data-i18n-aria="darkMode" data-i18n-title="darkMode"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg></button>
   <button type="button" class="btn btn-ghost btn-icon" id="nl-settings-button" aria-haspopup="dialog" aria-label="Settings" title="Settings" data-i18n-aria="settingsBtn" data-i18n-title="settingsBtn"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10.34 5.10L10.58 2.51L13.42 2.51L13.66 5.10A7.1 7.1 0 0 1 15.71 5.95L17.71 4.28L19.72 6.29L18.05 8.29A7.1 7.1 0 0 1 18.90 10.34L21.49 10.58L21.49 13.42L18.90 13.66A7.1 7.1 0 0 1 18.05 15.71L19.72 17.71L17.71 19.72L15.71 18.05A7.1 7.1 0 0 1 13.66 18.90L13.42 21.49L10.58 21.49L10.34 18.90A7.1 7.1 0 0 1 8.29 18.05L6.29 19.72L4.28 17.71L5.95 15.71A7.1 7.1 0 0 1 5.10 13.66L2.51 13.42L2.51 10.58L5.10 10.34A7.1 7.1 0 0 1 5.95 8.29L4.28 6.29L6.29 4.28L8.29 5.95A7.1 7.1 0 0 1 10.34 5.10Z"/><circle cx="12" cy="12" r="3"/></svg></button>
   <a class="btn btn-ghost gh" href="https://github.com/NickkkLian/Mail-Sorter" rel="noopener">GitHub</a>
@@ -1260,7 +1261,7 @@ main{width:100%;flex:1 0 auto}
       <div>
         <div class="plate-head">
           <span class="eyebrow" id="digestEyebrow"></span>
-          <button class="btn btn-primary" id="actionBtn" type="button" onclick="showAction()" hidden></button>
+          <button class="btn btn-primary" id="actionBtn" type="button" data-act="showAction" hidden></button>
         </div>
         <h1 class="display" id="digestT" data-i18n="digestT">Where the digest went</h1>
         <p class="lede" data-i18n="digestLede">Every email in the digest, split by the label the classifier gave it. Only the envelope was read: sender and subject.</p>
@@ -1277,14 +1278,14 @@ main{width:100%;flex:1 0 auto}
   <div class="main-col">
   <h1 class="sr-only" id="pageT">Headersort</h1>
   <div class="page-switch">
-    <button class="switch" id="togBtnPage" role="switch" aria-checked="false" onclick="toggleEnabled()" data-i18n-title="togT" title=""><i aria-hidden="true"></i><span id="togTextPage">—</span></button>
+    <button class="switch" id="togBtnPage" role="switch" aria-checked="false" data-act="toggleEnabled" data-i18n-title="togT" title=""><i aria-hidden="true"></i><span id="togTextPage">—</span></button>
   </div>
 
   <section class="card" id="connectCard" hidden>
     <h2 data-i18n="setT">Connect your private data repo</h2>
     <p class="hint" data-i18n="connHint">This board reads two files from your own private GitHub repo, so there is nothing to show until you connect one. The demo shows the same board with fictional mail.</p>
     <div class="row connect-acts">
-      <button class="btn btn-primary" type="button" onclick="openSettings(true, this)" data-i18n="connBtn">Connect…</button>
+      <button class="btn btn-primary" type="button" data-act="openSettings" data-i18n="connBtn">Connect…</button>
       <a class="btn" href="?demo=1" data-i18n="tryDemo">Try the demo</a>
     </div>
   </section>
@@ -1303,7 +1304,7 @@ main{width:100%;flex:1 0 auto}
     <p class="hint" style="margin-top:8px" data-i18n="trendHint">Bars are emails per day in the digest; the amber part needs action.</p>
   </section>
   <div class="row" id="filterRow" hidden>
-    <input type="search" id="q" placeholder="Search subject or sender…" aria-label="Search" oninput="onSearch(this.value)" data-i18n-ph="searchPh">
+    <input type="search" id="q" placeholder="Search subject or sender…" aria-label="Search" data-i18n-ph="searchPh">
     <div class="filters" id="filter" role="group" aria-label="Filter by category"></div>
   </div>
   <div id="list"></div>
@@ -1917,7 +1918,7 @@ function loadErrorCard(){
   const box=$('loadError'); box.hidden=!LOAD_ERROR||DEMO;
   if(box.hidden){ box.innerHTML=''; return; }
   box.innerHTML=`<h2>${T('没能读到你的摘要','Could not load your digest')}</h2><p>${esc(LOAD_ERROR.reason)} — ${esc(LOAD_ERROR.fix)}</p>
-    <div class="row">${LOAD_ERROR.kind==='auth'?`<button class="btn btn-sm" type="button" onclick="openSettings(true, this)">${T('打开设置','Open settings')}</button>`:`<button class="btn btn-sm" type="button" onclick="loadAll()">${T('重试','Try again')}</button>`}</div>`;
+    <div class="row">${LOAD_ERROR.kind==='auth'?`<button class="btn btn-sm" type="button" data-act="openSettings">${T('打开设置','Open settings')}</button>`:`<button class="btn btn-sm" type="button" data-act="loadAll">${T('重试','Try again')}</button>`}</div>`;
 }
 /* Category names come from YOUR config.json, so they are whatever you typed — often Chinese.
    The key is the stable identifier (the model classifies into keys, not labels), so the board
@@ -1984,6 +1985,13 @@ function setFilter(c){ filter=c; syncURL(); render(); }
 document.getElementById('filter').addEventListener('click',e=>{ const b=e.target.closest('button[data-filter]'); if(b) setFilter(b.dataset.filter); });
 function showAction(){ setFilter('__action'); const first=document.querySelector('#list .mail a.subj'); if(first) first.focus(); }
 function onSearch(v){ query=v.trim().toLowerCase(); syncURL(v); renderList(); }
+function clearFilters(){ query=''; $('q').value=''; setFilter('all'); $('q').focus(); }
+// The page's Content-Security-Policy runs no inline event-handler attribute, so buttons name their action in data-act
+// and this one listener calls it; the search box gets its own listener.
+const ACTIONS={ toggleEnabled:()=>toggleEnabled(), loadAll:()=>loadAll(), toggleLang:()=>toggleLang(), showAction:()=>showAction(),
+  openSettings:(b)=>openSettings(true,b), clearFilters:()=>clearFilters() };
+document.addEventListener('click',e=>{ const b=e.target.closest('[data-act]'); if(b && Object.prototype.hasOwnProperty.call(ACTIONS,b.dataset.act)) ACTIONS[b.dataset.act](b); });
+$('q').addEventListener('input',e=>onSearch(e.target.value));
 const fmtDay=d=>d.toLocaleDateString(lang==='en'?'en-CA':'zh-CN',{month:'short',day:'numeric'});
 // render() rebuilds the chips, counts and list, so the control a keyboard user was on disappears and focus drops to <body>:
 // no focus ring, and Tab starts again from the top (found 2026-09-16 with real key presses). The wrapper puts focus back on
@@ -2078,10 +2086,10 @@ const lastRun=m=>{ const d=new Date(m&&m.updated_at); if(!m||!m.updated_at||isNa
   return new Intl.DateTimeFormat(lang==='en'?'en-US':'zh-CN',lang==='en'?{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}:{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(d); };
 function renderList(){
   const m=MAIL||{items:[]}; let items=m.items||[];
-  if(!(m.items||[]).length){ $('list').innerHTML=DEMO||configured()?`<div class="empty"><h3>${T('摘要还是空的','The digest is empty')}</h3><p>${lastRun(m)?T('上次运行（'+lastRun(m)+'）没有新邮件可加。','Last run '+lastRun(m)+' found nothing to add.'):T('定时任务跑完第一次后这里会出现邮件。','Emails appear here after the first scheduled run.')}</p><button class="btn btn-sm" onclick="loadAll()">${T('刷新','Refresh')}</button></div>`:''; return; }
+  if(!(m.items||[]).length){ $('list').innerHTML=DEMO||configured()?`<div class="empty"><h3>${T('摘要还是空的','The digest is empty')}</h3><p>${lastRun(m)?T('上次运行（'+lastRun(m)+'）没有新邮件可加。','Last run '+lastRun(m)+' found nothing to add.'):T('定时任务跑完第一次后这里会出现邮件。','Emails appear here after the first scheduled run.')}</p><button class="btn btn-sm" data-act="loadAll">${T('刷新','Refresh')}</button></div>`:''; return; }
   if(filter==='__action') items=items.filter(i=>i.action); else if(filter!=='all') items=items.filter(i=>i.category===filter);
   if(query) items=items.filter(i=>(i.subject+' '+i.from).toLowerCase().includes(query));
-  if(!items.length){ $('list').innerHTML=`<div class="empty"><h3>${T('没有匹配的邮件','No mail matches')}</h3><p>${T('换个类别或清空搜索。','Pick another category or clear the search.')}</p><button class="btn btn-sm" onclick="query='';document.getElementById('q').value='';setFilter('all');document.getElementById('q').focus()">${T('清除筛选','Clear filters')}</button></div>`; return; }
+  if(!items.length){ $('list').innerHTML=`<div class="empty"><h3>${T('没有匹配的邮件','No mail matches')}</h3><p>${T('换个类别或清空搜索。','Pick another category or clear the search.')}</p><button class="btn btn-sm" data-act="clearFilters">${T('清除筛选','Clear filters')}</button></div>`; return; }
   $('list').innerHTML='<div class="list">'+items.slice(0,150).map(i=>{
     const gurl=i.msgid?`https://mail.google.com/mail/u/0/#search/rfc822msgid:${encodeURIComponent(i.msgid)}`:'https://mail.google.com';
     const d=new Date(i.date); const when=isNaN(d)?'':`${fmtDay(d)} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;

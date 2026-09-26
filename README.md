@@ -52,6 +52,7 @@ flowchart LR
 | Storage | Two JSON files in a private repo: `mail.json` (the digest, capped) and `config.json` (categories, on/off switch) |
 | Front end | One static HTML file, no build step, no dependencies beyond one web font. Reads the two JSON files through the GitHub Contents API |
 | Secrets | The Gmail app password and the model key live in the private repo's Actions secrets (names in `template/SECRETS.md`). The browser only ever holds a fine-grained GitHub token, in `localStorage`, scoped to Contents on one repo |
+| Content-Security-Policy | A `<meta>` right after `<meta charset>`: scripts only from this site's own files and from the board's three inline scripts, pinned by sha256; no `'unsafe-inline'`, no `'unsafe-eval'`, no inline event handlers (buttons name their action in `data-act`). The token shares an origin with the author's other GitHub Pages sites and the board shows subjects and senders written by strangers, so the browser itself refuses a script from another host or text run as code. `node check-csp.mjs` (in CI) fails when the policy is missing, loosened or out of step with the page |
 | Failure mode | Missing credentials or `enabled: false` → the script exits 0 before logging in and changes nothing; a missing digest → the board renders a setup guide; a read that fails (refused token, no network) → the board says which and offers *Try again* |
 
 ## Running your own
@@ -66,6 +67,7 @@ node template/check.mjs
 node template/check-llm.mjs
 node eval/score.mjs
 node eval/score.mjs --break
+node check-csp.mjs             # the board's Content-Security-Policy; --write after editing an inline script, --self-test breaks it
 ```
 
 ### Model providers
@@ -96,6 +98,7 @@ Without the cache the eval reports **NOT RUN** (exit 2) rather than a number; `-
 
 ```
 index.html                 the entire board: tokens, layout, i18n dictionary, GitHub Contents client, renderer, demo data
+check-csp.mjs              writes and checks the board's Content-Security-Policy (there is no build step)
 template/                  the Action to copy into a private repo (workflow · classify.mjs · llm.mjs · config.json · package.json · SECRETS.md · check.mjs · check-llm.mjs)
 eval/headers.json          40 synthetic envelopes → expected category · eval/score.mjs scores cached model output
 docs/screenshot-board.png  README screenshot

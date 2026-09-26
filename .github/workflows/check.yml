@@ -38,3 +38,14 @@ jobs:
           test "$(grep -oiE '[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}' index.html | grep -vc '\.example')" = 0
           for f in "function cfg()" "function configured()" "async function ghGet(path,fresh)" "function ghPut(path,obj,sha,message)" "ghGet('mail/mail.json')" "ghGet('mail/config.json')" "ghPut('mail/config.json'" "localStorage.getItem('pha-lang')"; do grep -qF "$f" index.html || { echo "missing: $f"; exit 1; }; done
           echo "board checks passed"
+  content-security-policy:
+    # exactly script-src 'self' + the sha256 of each inline script, before the first script, and no inline handlers;
+    # the self-test makes each way of removing, loosening or unpinning it go red
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node check-csp.mjs
+      - run: node check-csp.mjs --self-test
