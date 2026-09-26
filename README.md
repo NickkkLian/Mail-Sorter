@@ -48,7 +48,7 @@ flowchart LR
 |---|---|
 | Schedule | GitHub Actions cron, twice a day. No server, no container, no always-on process |
 | Mail access | IMAP with a Google **app password** — a scoped credential that can be revoked on its own, rather than full OAuth |
-| Classification | A model of your choice — Claude Haiku by default, or OpenAI, Gemini, or any OpenAI-compatible server such as Ollama — on sender + subject only, batched 25 at a time; categories outside your config fall back to `other` |
+| Classification | A model of your choice — Claude Sonnet 5 by default, or OpenAI, Gemini, or any OpenAI-compatible server such as Ollama — on sender + subject only, batched 25 at a time; categories outside your config fall back to `other` |
 | Storage | Two JSON files in a private repo: `mail.json` (the digest, capped) and `config.json` (categories, on/off switch) |
 | Front end | One static HTML file, no build step, no dependencies beyond one web font. Reads the two JSON files through the GitHub Contents API |
 | Secrets | The Gmail app password and the model key live in the private repo's Actions secrets (names in `template/SECRETS.md`). The browser only ever holds a fine-grained GitHub token, in `localStorage`, scoped to Contents on one repo |
@@ -83,7 +83,7 @@ node check-csp.mjs             # the board's Content-Security-Policy; --write af
 
 `eval/headers.json` holds 40 synthetic sender+subject pairs (five per category). `node eval/score.mjs` scores cached model output against them and prints the keyword baseline next to it; envelope classification is easy enough that the baseline alone reaches 38/40, which is exactly why the eval reports both.
 
-That run has been made: 2026-09-22, `claude-haiku-4-5-20251001`. **The keyword baseline scored 38/40 (95%) and the model 37/40 (93%)** — on this set the model is a little worse than the keywords, not better. Its three misses are the envelopes where the subject names one thing and belongs to another: a tax-residency notice read as an account message, a biometrics appointment read as an account message, and a flash sale on fares read as travel rather than promotion. That is the argument for the order the product actually uses — keywords first, the model for what they do not catch — rather than an argument for the model.
+That run has been made: 2026-09-22, `claude-haiku-4-5-20251001`, the default at the time. The default is now `claude-sonnet-5` (Claude Opus 5.5 and Sonnet 5 are the only models the author's apps use); Sonnet 5 has **not** been scored on this set, and the cache below is still the Haiku run. **The keyword baseline scored 38/40 (95%) and the model 37/40 (93%)** — on this set the model is a little worse than the keywords, not better. Its three misses are the envelopes where the subject names one thing and belongs to another: a tax-residency notice read as an account message, a biometrics appointment read as an account message, and a flash sale on fares read as travel rather than promotion. That is the argument for the order the product actually uses — keywords first, the model for what they do not catch — rather than an argument for the model.
 
 Without the cache the eval reports **NOT RUN** (exit 2) rather than a number; `--break` is the negative control. This is a small evaluation set, not a formal evaluation pipeline — and `eval/llm-cache.json` is the whole of what that run left behind. It records the provider, model and date, and nothing in this repository shows a request went over the network, so a hand-written cache would be indistinguishable from it.
 

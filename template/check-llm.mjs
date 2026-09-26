@@ -38,19 +38,20 @@ function run(cfg) {
 }
 
 const PROVIDERS = [
-  ['anthropic', { ANTHROPIC_API_KEY: 'sk-ant-test' }, '/messages', 'claude-haiku-4-5-20251001'],
+  ['anthropic', { ANTHROPIC_API_KEY: 'sk-ant-test' }, '/messages', 'claude-sonnet-5'],
   ['openai', { OPENAI_API_KEY: 'sk-oa-test', LLM_MODEL: 'some-openai-model' }, '/chat/completions', 'some-openai-model'],
   ['gemini', { GEMINI_API_KEY: 'AIza-test', LLM_MODEL: 'gemini-some-model' }, '/models/gemini-some-model:generateContent', 'gemini-some-model'],
   ['openai-compatible', { LLM_MODEL: 'llama-local' }, '/chat/completions', 'llama-local'],
 ];
 for (const [provider, env, path, model] of PROVIDERS) {
   seen = [];
-  const cfg = L.configFromEnv({ LLM_PROVIDER: provider, LLM_BASE_URL: base, ...env }, { defaultModel: 'claude-haiku-4-5-20251001' });
+  const cfg = L.configFromEnv({ LLM_PROVIDER: provider, LLM_BASE_URL: base, ...env });   // no defaultModel: what classify.mjs does
   const { r, labels } = await run(cfg);
   ok(seen.length === 1 && seen[0].path === path, `${provider}: one batched call to ${path}`);
   const sent = JSON.stringify(seen[0].body);
   ok(!sent.includes('SECRET BODY') && !sent.includes('uid') && sent.includes('Design review Thursday'), `${provider}: the request carries sender + subject only`);
   ok(seen[0].body.model === model || (provider === 'gemini' && seen[0].path.includes(model)), `${provider}: model ${model}`);
+  if (provider === 'anthropic') ok(seen[0].body.max_tokens >= 16000, `anthropic: max_tokens ${seen[0].body.max_tokens} >= 16000 (Sonnet 5's thinking counts toward it)`);
   ok(labels.length === 6 && labels.filter(([, l]) => l === 'AI/Finance').length === 3 && labels.filter(([, l]) => l === 'AI/Work').length === 3, `${provider}: verdicts become AI/ labels (3 finance, 3 work)`);
   ok(r.digest.items.length === 6, `${provider}: digest holds the 6 classified items`);
 }
@@ -82,7 +83,14 @@ for (const [env, re] of [[{}, /ANTHROPIC_API_KEY is not set/], [{ LLM_PROVIDER: 
   ok(re.test(msg), `config error: ${JSON.stringify(env)} → ${msg}`);
 }
 ok(L.configFromEnv({ ANTHROPIC_API_KEY: 'k', MODEL: 'older-name' }).model === 'older-name', 'the older MODEL variable is still honoured');
-ok(L.configFromEnv({ ANTHROPIC_API_KEY: 'k' }, { defaultModel: 'claude-haiku-4-5-20251001' }).model === 'claude-haiku-4-5-20251001', 'Claude defaults to claude-haiku-4-5-20251001');
+ok(L.configFromEnv({ ANTHROPIC_API_KEY: 'k' }).model === 'claude-sonnet-5', 'Claude defaults to claude-sonnet-5');
+// the only Claude models the scripts may name are Opus 5.5 and Sonnet 5; eval/llm-cache.json is a record of an older run
+{ const fs = await import('node:fs'), url = await import('node:url');
+  const root = url.fileURLToPath(new URL('..', import.meta.url));
+  const files = ['template/mail/scripts/llm.mjs', 'template/mail/scripts/classify.mjs', 'template/.github/workflows/mail-sync.yml', 'template/SECRETS.md', 'eval/score.mjs'];
+  const ids = files.flatMap(f => [...fs.readFileSync(root + f, 'utf8').matchAll(/claude-[a-z0-9-]+/g)].map(m => f + ': ' + m[0]));
+  const bad = ids.filter(s => !/: claude-(opus-5-5|sonnet-5)$/.test(s));
+  ok(ids.length > 0 && bad.length === 0, `scripts name Opus 5.5 / Sonnet 5 only (${ids.length} ids seen${bad.length ? '; not allowed: ' + bad.join(', ') : ''})`); }
 
 srv.close();
 console.log(fail ? `RESULT: ${fail} FAILED (${pass} passed)` : `RESULT: ALL PASS (${pass})`);

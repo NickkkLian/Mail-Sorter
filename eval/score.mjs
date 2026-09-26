@@ -16,10 +16,10 @@ const arg = process.argv[2];
 if (arg === '--break') { try { fs.mkdirSync(path.join(HERE, '.tmp'), { recursive: true }); const bad = path.join(HERE, '.tmp', 'llm-cache.json'); fs.writeFileSync(bad, JSON.stringify({ provider: 'anthropic', model: 'mutated', generated: '2026-01-01', entries: { h01: 'gossip' } })); console.log('MUTATION wrote a cache whose h01 category is "gossip" (outside the set) into a temporary copy'); load(bad); console.log('FAIL: mutated cache accepted'); process.exit(1); } catch (e) { console.log('EXPECTED FAILURE OBSERVED: ' + e.message); fs.rmSync(path.join(HERE, '.tmp'), { recursive: true, force: true }); process.exit(0); } }
 let cache; try { cache = load(CACHE); } catch (e) { console.log('FAIL: ' + e.message); process.exit(2); }
 if (arg === '--llm') {
-  let cfg; try { cfg = configFromEnv(process.env, { defaultModel: 'claude-haiku-4-5-20251001' }); } catch (e) { console.log('NOT RUN: ' + e.message); process.exit(2); }
+  let cfg; try { cfg = configFromEnv(process.env); } catch (e) { console.log('NOT RUN: ' + e.message); process.exit(2); }
   let model = cfg.model;
   const todo = spec.items.filter(i => !(i.id in cache.entries));
-  for (let i = 0; i < todo.length; i += 25) { const batch = todo.slice(i, i + 25); const { system, user } = buildPrompt(batch.map(b => ({ from: b.from, subject: b.subject })), spec.categories); const res = await complete(cfg, system, user, { maxTokens: 2048 }); model = res.model; const v = parseVerdicts(res.text, batch.length); batch.forEach((b, j) => { cache.entries[b.id] = spec.categories.includes(v[j].category) ? v[j].category : 'other'; }); }
+  for (let i = 0; i < todo.length; i += 25) { const batch = todo.slice(i, i + 25); const { system, user } = buildPrompt(batch.map(b => ({ from: b.from, subject: b.subject })), spec.categories); const res = await complete(cfg, system, user, { maxTokens: 16000 }); model = res.model; const v = parseVerdicts(res.text, batch.length); batch.forEach((b, j) => { cache.entries[b.id] = spec.categories.includes(v[j].category) ? v[j].category : 'other'; }); }
   cache.provider = cfg.provider; cache.model = model; cache.generated = new Date().toISOString().slice(0, 10); fs.writeFileSync(CACHE, JSON.stringify(cache, null, 2) + '\n'); console.log(`cache written: ${Object.keys(cache.entries).length} entries (${describe(cfg)})`);
 }
 console.log(`keyword baseline: ${baseline}/${spec.items.length} = ${Math.round(baseline / spec.items.length * 100)}%`);

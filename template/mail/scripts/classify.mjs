@@ -84,11 +84,12 @@ async function imapAdapters(env) {
     moveMessage: (uid, folder) => client.messageMove({ uid }, folder, { uid: true }),
   };
 }
-/** Any provider through ./llm.mjs: Claude (default, claude-haiku-4-5-20251001), OpenAI, Gemini, OpenAI-compatible. */
+/** Any provider through ./llm.mjs: Claude (default, claude-sonnet-5), OpenAI, Gemini, OpenAI-compatible.
+ *  16000 output tokens: Claude Sonnet 5 thinks on every request and the thinking counts toward the limit. */
 export function modelClassifier(cfg) {
   return async (batch, categories) => {
     const { system, user } = buildPrompt(batch, categories);
-    const res = await complete(cfg, system, user, { maxTokens: 2048 });
+    const res = await complete(cfg, system, user, { maxTokens: 16000 });
     return parseVerdicts(res.text, batch.length);
   };
 }
@@ -105,7 +106,7 @@ if (isMain) {
   if (config.enabled === false) { console.log('skipped: disabled in mail/config.json (no login, nothing changed)'); process.exit(0); }
   let cfg = null, missing = [];
   if (!env.GMAIL_USER || !env.GMAIL_APP_PASSWORD) missing.push('GMAIL_USER / GMAIL_APP_PASSWORD');
-  try { cfg = configFromEnv(env, { defaultModel: 'claude-haiku-4-5-20251001' }); } catch (e) { missing.push(e.message); }
+  try { cfg = configFromEnv(env); } catch (e) { missing.push(e.message); }
   if (missing.length) { console.log(`Not configured (${missing.join('; ')}): skipping (exit 0).`); process.exit(0); }
   console.log(`model: ${describe(cfg)}`);
   const imap = await imapAdapters(env);
