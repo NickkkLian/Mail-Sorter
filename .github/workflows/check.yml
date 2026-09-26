@@ -10,8 +10,8 @@ jobs:
     # the enabled switch, the keep_items cap, a DRY_RUN smoke of the CLI, and a negative control.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - run: node template/check.mjs
@@ -20,8 +20,8 @@ jobs:
   eval:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - run: node eval/score.mjs --break
@@ -32,7 +32,7 @@ jobs:
     # and the data-layer functions (cfg, configured, ghGet, ghPut and the mail/config reads and writes) keep their shape.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: |
           test "$(grep -c '<script src="http' index.html)" = 0
           test "$(grep -oiE '[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}' index.html | grep -vc '\.example')" = 0
@@ -43,8 +43,8 @@ jobs:
     # the self-test makes each way of removing, loosening or unpinning it go red
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - run: node check-csp.mjs
