@@ -74,6 +74,8 @@ node check-csp.mjs             # the board's Content-Security-Policy; --write af
 
 `mail/scripts/llm.mjs` calls each provider's API directly with `fetch` — no SDK, so the template's only dependency is the IMAP client. Nothing provider-specific is required: the prompt asks for a JSON array in plain words, and anything that does not parse becomes `other`. Keys go in request headers only.
 
+The model stays your choice: the provider and the model id are free to set, for Claude too. Only the default is fixed, and for Claude it is `claude-sonnet-5` (the author's apps default to Claude Opus 5.5 or Sonnet 5 only). Sonnet 5 thinks on every request and the thinking counts toward the output limit, so Claude requests get `max_tokens` 16000; the other providers keep 2048. A Claude reply that stops with `refusal` or `max_tokens` is reported as that, not parsed as half an answer.
+
 | Provider | Configure | What has been run |
 |---|---|---|
 | Claude (Anthropic) | default · secret `ANTHROPIC_API_KEY` | `node template/check-llm.mjs`: request and reply format against a local mock of the documented API, end to end through `sortMail` to `AI/…` labels. **Not run against the live API for this revision.** |

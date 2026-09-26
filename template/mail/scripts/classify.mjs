@@ -85,11 +85,11 @@ async function imapAdapters(env) {
   };
 }
 /** Any provider through ./llm.mjs: Claude (default, claude-sonnet-5), OpenAI, Gemini, OpenAI-compatible.
- *  16000 output tokens: Claude Sonnet 5 thinks on every request and the thinking counts toward the limit. */
+ *  The output budget comes from llm.mjs: 16000 for Claude (Sonnet 5's thinking counts toward it), 2048 elsewhere. */
 export function modelClassifier(cfg) {
   return async (batch, categories) => {
     const { system, user } = buildPrompt(batch, categories);
-    const res = await complete(cfg, system, user, { maxTokens: 16000 });
+    const res = await complete(cfg, system, user);   // llm.mjs picks the output budget per provider
     return parseVerdicts(res.text, batch.length);
   };
 }

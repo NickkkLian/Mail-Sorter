@@ -92,6 +92,24 @@ ok(L.configFromEnv({ ANTHROPIC_API_KEY: 'k' }).model === 'claude-sonnet-5', 'Cla
   const bad = ids.filter(s => !/: claude-(opus-5-5|sonnet-5)$/.test(s));
   ok(ids.length > 0 && bad.length === 0, `scripts name Opus 5.5 / Sonnet 5 only (${ids.length} ids seen${bad.length ? '; not allowed: ' + bad.join(', ') : ''})`); }
 
+// (2026-09-25) Claude's output budget, and its stop reasons, with fetch replaced by a fake: nothing leaves this process
+{
+  const fakeFetch = (reply) => { const sent = []; const f = async (url, init) => { sent.push(JSON.parse(init.body)); return { ok: true, status: 200, text: async () => JSON.stringify(reply) }; }; f.sent = sent; return f; };
+  const claude = L.config({ provider: 'anthropic', apiKey: 'k', baseUrl: 'http://fake.invalid/v1' });
+  let f = fakeFetch({ model: 'claude-sonnet-5', stop_reason: 'end_turn', content: [{ type: 'thinking', thinking: '' }, { type: 'text', text: '[1]' }] });
+  const r = await L.complete(claude, 'S', 'U', { fetchImpl: f });
+  ok(f.sent[0].model === 'claude-sonnet-5' && f.sent[0].max_tokens === 16000, 'anthropic: default model claude-sonnet-5 with max_tokens 16000 (Sonnet 5 thinking counts toward it)');
+  ok(r.text === '[1]', 'anthropic: the text is read by block type after a thinking block');
+  f = fakeFetch({ model: 'm', choices: [{ message: { content: '[]' } }] });
+  await L.complete(L.config({ provider: 'openai-compatible', model: 'llama-local', baseUrl: 'http://fake.invalid/v1' }), 'S', 'U', { fetchImpl: f });
+  ok(f.sent[0].max_tokens === 2048, 'openai-compatible: the default budget stays 2048');
+  for (const [stop, re] of [['refusal', /declined the request \(stop_reason refusal\)/], ['max_tokens', /cut off at max_tokens/]]) {
+    f = fakeFetch({ model: 'claude-sonnet-5', stop_reason: stop, content: [{ type: 'text', text: '[{"a":' }] });
+    let msg = ''; try { await L.complete(claude, 'S', 'U', { fetchImpl: f }); } catch (e) { msg = e.message; }
+    ok(re.test(msg), `anthropic: stop_reason ${stop} is an error that says so (${msg || 'no error'})`);
+  }
+}
+
 srv.close();
 console.log(fail ? `RESULT: ${fail} FAILED (${pass} passed)` : `RESULT: ALL PASS (${pass})`);
 process.exit(fail ? 1 : 0);

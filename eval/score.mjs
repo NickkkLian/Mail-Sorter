@@ -19,7 +19,7 @@ if (arg === '--llm') {
   let cfg; try { cfg = configFromEnv(process.env); } catch (e) { console.log('NOT RUN: ' + e.message); process.exit(2); }
   let model = cfg.model;
   const todo = spec.items.filter(i => !(i.id in cache.entries));
-  for (let i = 0; i < todo.length; i += 25) { const batch = todo.slice(i, i + 25); const { system, user } = buildPrompt(batch.map(b => ({ from: b.from, subject: b.subject })), spec.categories); const res = await complete(cfg, system, user, { maxTokens: 16000 }); model = res.model; const v = parseVerdicts(res.text, batch.length); batch.forEach((b, j) => { cache.entries[b.id] = spec.categories.includes(v[j].category) ? v[j].category : 'other'; }); }
+  for (let i = 0; i < todo.length; i += 25) { const batch = todo.slice(i, i + 25); const { system, user } = buildPrompt(batch.map(b => ({ from: b.from, subject: b.subject })), spec.categories); const res = await complete(cfg, system, user); model = res.model; const v = parseVerdicts(res.text, batch.length); batch.forEach((b, j) => { cache.entries[b.id] = spec.categories.includes(v[j].category) ? v[j].category : 'other'; }); }
   cache.provider = cfg.provider; cache.model = model; cache.generated = new Date().toISOString().slice(0, 10); fs.writeFileSync(CACHE, JSON.stringify(cache, null, 2) + '\n'); console.log(`cache written: ${Object.keys(cache.entries).length} entries (${describe(cfg)})`);
 }
 console.log(`keyword baseline: ${baseline}/${spec.items.length} = ${Math.round(baseline / spec.items.length * 100)}%`);
