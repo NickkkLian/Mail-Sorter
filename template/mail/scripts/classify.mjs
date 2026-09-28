@@ -84,8 +84,8 @@ async function imapAdapters(env) {
     moveMessage: (uid, folder) => client.messageMove({ uid }, folder, { uid: true }),
   };
 }
-/** Any provider through ./llm.mjs: Claude (default, claude-sonnet-5), OpenAI, Gemini, OpenAI-compatible.
- *  The output budget comes from llm.mjs: 16000 for Claude (Sonnet 5's thinking counts toward it), 2048 elsewhere. */
+/** Any provider through ./llm.mjs: Claude (default, claude-sonnet-5-5), OpenAI, Gemini, OpenAI-compatible.
+ *  The output budget comes from llm.mjs: 16000 for Claude (Sonnet 5.5's thinking counts toward it), 2048 elsewhere. */
 export function modelClassifier(cfg) {
   return async (batch, categories) => {
     const { system, user } = buildPrompt(batch, categories);

@@ -38,7 +38,7 @@ function run(cfg) {
 }
 
 const PROVIDERS = [
-  ['anthropic', { ANTHROPIC_API_KEY: 'sk-ant-test' }, '/messages', 'claude-sonnet-5'],
+  ['anthropic', { ANTHROPIC_API_KEY: 'sk-ant-test' }, '/messages', 'claude-sonnet-5-5'],
   ['openai', { OPENAI_API_KEY: 'sk-oa-test', LLM_MODEL: 'some-openai-model' }, '/chat/completions', 'some-openai-model'],
   ['gemini', { GEMINI_API_KEY: 'AIza-test', LLM_MODEL: 'gemini-some-model' }, '/models/gemini-some-model:generateContent', 'gemini-some-model'],
   ['openai-compatible', { LLM_MODEL: 'llama-local' }, '/chat/completions', 'llama-local'],
@@ -51,7 +51,7 @@ for (const [provider, env, path, model] of PROVIDERS) {
   const sent = JSON.stringify(seen[0].body);
   ok(!sent.includes('SECRET BODY') && !sent.includes('uid') && sent.includes('Design review Thursday'), `${provider}: the request carries sender + subject only`);
   ok(seen[0].body.model === model || (provider === 'gemini' && seen[0].path.includes(model)), `${provider}: model ${model}`);
-  if (provider === 'anthropic') ok(seen[0].body.max_tokens >= 16000, `anthropic: max_tokens ${seen[0].body.max_tokens} >= 16000 (Sonnet 5's thinking counts toward it)`);
+  if (provider === 'anthropic') ok(seen[0].body.max_tokens >= 16000, `anthropic: max_tokens ${seen[0].body.max_tokens} >= 16000 (Sonnet 5.5's thinking counts toward it)`);
   ok(labels.length === 6 && labels.filter(([, l]) => l === 'AI/Finance').length === 3 && labels.filter(([, l]) => l === 'AI/Work').length === 3, `${provider}: verdicts become AI/ labels (3 finance, 3 work)`);
   ok(r.digest.items.length === 6, `${provider}: digest holds the 6 classified items`);
 }
@@ -83,28 +83,28 @@ for (const [env, re] of [[{}, /ANTHROPIC_API_KEY is not set/], [{ LLM_PROVIDER: 
   ok(re.test(msg), `config error: ${JSON.stringify(env)} → ${msg}`);
 }
 ok(L.configFromEnv({ ANTHROPIC_API_KEY: 'k', MODEL: 'older-name' }).model === 'older-name', 'the older MODEL variable is still honoured');
-ok(L.configFromEnv({ ANTHROPIC_API_KEY: 'k' }).model === 'claude-sonnet-5', 'Claude defaults to claude-sonnet-5');
-// the only Claude models the scripts may name are Opus 5.5 and Sonnet 5; eval/llm-cache.json is a record of an older run
+ok(L.configFromEnv({ ANTHROPIC_API_KEY: 'k' }).model === 'claude-sonnet-5-5', 'Claude defaults to claude-sonnet-5-5');
+// the only Claude models the scripts may name are Opus 5.5 and Sonnet 5.5; eval/llm-cache.json is a record of an older run
 { const fs = await import('node:fs'), url = await import('node:url');
   const root = url.fileURLToPath(new URL('..', import.meta.url));
   const files = ['template/mail/scripts/llm.mjs', 'template/mail/scripts/classify.mjs', 'template/.github/workflows/mail-sync.yml', 'template/SECRETS.md', 'eval/score.mjs'];
   const ids = files.flatMap(f => [...fs.readFileSync(root + f, 'utf8').matchAll(/claude-[a-z0-9-]+/g)].map(m => f + ': ' + m[0]));
-  const bad = ids.filter(s => !/: claude-(opus-5-5|sonnet-5)$/.test(s));
-  ok(ids.length > 0 && bad.length === 0, `scripts name Opus 5.5 / Sonnet 5 only (${ids.length} ids seen${bad.length ? '; not allowed: ' + bad.join(', ') : ''})`); }
+  const bad = ids.filter(s => !/: claude-(opus-5-5|sonnet-5-5)$/.test(s));
+  ok(ids.length > 0 && bad.length === 0, `scripts name Opus 5.5 / Sonnet 5.5 only (${ids.length} ids seen${bad.length ? '; not allowed: ' + bad.join(', ') : ''})`); }
 
 // (2026-09-25) Claude's output budget, and its stop reasons, with fetch replaced by a fake: nothing leaves this process
 {
   const fakeFetch = (reply) => { const sent = []; const f = async (url, init) => { sent.push(JSON.parse(init.body)); return { ok: true, status: 200, text: async () => JSON.stringify(reply) }; }; f.sent = sent; return f; };
   const claude = L.config({ provider: 'anthropic', apiKey: 'k', baseUrl: 'http://fake.invalid/v1' });
-  let f = fakeFetch({ model: 'claude-sonnet-5', stop_reason: 'end_turn', content: [{ type: 'thinking', thinking: '' }, { type: 'text', text: '[1]' }] });
+  let f = fakeFetch({ model: 'claude-sonnet-5-5', stop_reason: 'end_turn', content: [{ type: 'thinking', thinking: '' }, { type: 'text', text: '[1]' }] });
   const r = await L.complete(claude, 'S', 'U', { fetchImpl: f });
-  ok(f.sent[0].model === 'claude-sonnet-5' && f.sent[0].max_tokens === 16000, 'anthropic: default model claude-sonnet-5 with max_tokens 16000 (Sonnet 5 thinking counts toward it)');
+  ok(f.sent[0].model === 'claude-sonnet-5-5' && f.sent[0].max_tokens === 16000, 'anthropic: default model claude-sonnet-5-5 with max_tokens 16000 (Sonnet 5.5 thinking counts toward it)');
   ok(r.text === '[1]', 'anthropic: the text is read by block type after a thinking block');
   f = fakeFetch({ model: 'm', choices: [{ message: { content: '[]' } }] });
   await L.complete(L.config({ provider: 'openai-compatible', model: 'llama-local', baseUrl: 'http://fake.invalid/v1' }), 'S', 'U', { fetchImpl: f });
   ok(f.sent[0].max_tokens === 2048, 'openai-compatible: the default budget stays 2048');
   for (const [stop, re] of [['refusal', /declined the request \(stop_reason refusal\)/], ['max_tokens', /cut off at max_tokens/]]) {
-    f = fakeFetch({ model: 'claude-sonnet-5', stop_reason: stop, content: [{ type: 'text', text: '[{"a":' }] });
+    f = fakeFetch({ model: 'claude-sonnet-5-5', stop_reason: stop, content: [{ type: 'text', text: '[{"a":' }] });
     let msg = ''; try { await L.complete(claude, 'S', 'U', { fetchImpl: f }); } catch (e) { msg = e.message; }
     ok(re.test(msg), `anthropic: stop_reason ${stop} is an error that says so (${msg || 'no error'})`);
   }
