@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="script-src 'self' 'sha256-5nyhwSzTgu2n7ZAL4gvhru/QlXgk4oq6kTJUzThiFGQ=' 'sha256-wMCHn0OpH0CosStuYwKrHjIB5qySK0qbEbedXSkpsZQ=' 'sha256-5HpNXtG0B/lb024xl2VRRBTvTtLxZwzFx+m22IYm3Zo='">
+<meta http-equiv="Content-Security-Policy" content="script-src 'self' 'sha256-5nyhwSzTgu2n7ZAL4gvhru/QlXgk4oq6kTJUzThiFGQ=' 'sha256-wMCHn0OpH0CosStuYwKrHjIB5qySK0qbEbedXSkpsZQ=' 'sha256-0F31Cji2DTcoAzEcAN67vWjJlX5vjklUxvG+queNKPI='">
 <script>/* appearance boot — runs before any stylesheet so the stored palette and light/dark apply on the first paint */(function(){try{var d=document.documentElement,L=window.localStorage,t=L.getItem('nl-theme'),s=L.getItem('nl-scheme');if(s===null){var o=L.getItem('theme')||L.getItem('qm-theme');if(o==='dark'||o==='light')s=o;}if(t==='paper'||t==='ink')d.setAttribute('data-theme',t);if(s==='dark'||s==='light')d.setAttribute('data-scheme',s);}catch(e){}})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="Gmail triage that reads only sender and subject — and only adds labels. Headersort: a scheduled Action writes a capped digest to your private repo; this board reads it.">
@@ -1195,6 +1195,7 @@ table.data th.num button{justify-content:flex-end;width:100%}
 .display{font-size:var(--text-4xl);font-variation-settings:"opsz" var(--opsz-display);letter-spacing:var(--tracking-display);margin-left:-0.028em}
 .caption{font-family:var(--font-display);font-style:var(--caption-style);font-weight:400;font-variation-settings:"opsz" var(--opsz-caption);font-size:var(--text-sm);line-height:var(--leading-relaxed);color:var(--text-2);max-width:var(--measure)}
 .plate .eyebrow,.plate .caption{color:var(--on-band-2)}
+.eyebrow .tag{margin-left:var(--space-2);text-transform:none;letter-spacing:normal}
 .plate h1{color:var(--on-band)}
 .plate .lede{margin:var(--space-3) 0 0;color:var(--on-band-2);max-width:var(--measure);font-size:var(--text-lg);line-height:var(--leading-lede)}
 .plate .rule{width:56px;height:2px;background:var(--point);margin-top:var(--space-4);border-radius:1px}
@@ -2060,6 +2061,10 @@ function renderPage(){
   const eb=$('digestEyebrow'), ran=lastRun(m);
   eb.replaceChildren(DEMO?T('摘要 · 虚构邮件','Digest · fictional mail'):T('摘要 · ','Digest · ')+cfg().owner+'/'+(cfg().repo||'…'));
   if(ran){ const t=document.createElement('time'); t.dateTime=m.updated_at; t.textContent=ran; eb.append(T(' · 更新于 ',' · updated '),t); }
+  // the Action runs twice a day (template/.github/workflows/mail-sync.yml); more than 36 hours since the last write means runs have stopped or are failing
+  const idle=ran?(Date.now()-new Date(m.updated_at).getTime())/3600000:0;
+  if(idle>36){ const n=idle<72?Math.floor(idle):Math.floor(idle/24), w=document.createElement('span'); w.className='tag tag-warning';
+    w.textContent=idle<72?T('已 '+n+' 小时没有运行','No run for '+n+' hours'):T('已 '+n+' 天没有运行','No run for '+n+' days'); eb.append(w); }
   if(items.length){ const seq=['--viz-seq-600','--viz-seq-500','--viz-seq-450','--viz-seq-400','--viz-seq-350','--viz-seq-300','--viz-seq-250','--viz-seq-200','--viz-seq-150'];
     $('sumBar').innerHTML=cats.map((k,i)=>`<span style="width:${counts[k]/items.length*100}%;background:var(${seq[Math.min(i,seq.length-1)]})"></span>`).join('');
     $('sumLegend').innerHTML=cats.map((k,i)=>`<span><i style="background:var(${seq[Math.min(i,seq.length-1)]})"></i>${esc(catLabel(k))} <b class="mono">${counts[k]}</b></span>`).join('');
