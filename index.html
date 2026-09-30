@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="script-src 'self' 'sha256-5nyhwSzTgu2n7ZAL4gvhru/QlXgk4oq6kTJUzThiFGQ=' 'sha256-wMCHn0OpH0CosStuYwKrHjIB5qySK0qbEbedXSkpsZQ=' 'sha256-0F31Cji2DTcoAzEcAN67vWjJlX5vjklUxvG+queNKPI='">
+<meta http-equiv="Content-Security-Policy" content="script-src 'self' 'sha256-5nyhwSzTgu2n7ZAL4gvhru/QlXgk4oq6kTJUzThiFGQ=' 'sha256-wMCHn0OpH0CosStuYwKrHjIB5qySK0qbEbedXSkpsZQ=' 'sha256-tn5/vD2a0kQ+yKUtg7yc2HVcN/PVpNhUg2dx1pB6Qh8='">
 <script>/* appearance boot — runs before any stylesheet so the stored palette and light/dark apply on the first paint */(function(){try{var d=document.documentElement,L=window.localStorage,t=L.getItem('nl-theme'),s=L.getItem('nl-scheme');if(s===null){var o=L.getItem('theme')||L.getItem('qm-theme');if(o==='dark'||o==='light')s=o;}if(t==='paper'||t==='ink')d.setAttribute('data-theme',t);if(s==='dark'||s==='light')d.setAttribute('data-scheme',s);}catch(e){}})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="Gmail triage that reads only sender and subject — and only adds labels. Headersort: a scheduled Action writes a capped digest to your private repo; this board reads it.">
@@ -1570,8 +1570,8 @@ main{width:100%;flex:1 0 auto}
 </script>
 <script>
 /* safe-merge v1 — source of truth: the safe-merge library, kept outside this app. This block, from this comment to the
-   closing "})();", was copied from it; change the library and copy it again rather than editing a copy here.
-   The library has its own tests.
+   closing "})();", is a verbatim copy of it; a check compares every copy with the library byte for byte, so change the
+   library and copy it again rather than editing a copy. The library has its own tests.
    Why (2026-09-23): GitHub rejects a save whose sha is out of date (409).
    The apps used to fetch the new sha and send the same stale data again, which silently erased whatever had been written
    elsewhere since the page loaded (another tab, another device, a script). Now a stale save
@@ -1580,8 +1580,11 @@ main{width:100%;flex:1 0 auto}
      theirs = the file as it is now
      ours   = this page's data now
    A value changed on one side only takes that side's change. Objects merge key by key; arrays whose items all carry a
-   unique `id` merge item by item, in the file's order, or in this page's order when only this page reordered them.
+   unique `id` merge item by item, in the file's order, or in this page's order when only this page reordered them;
+   when both sides reordered them differently, the dialog asks which order to keep.
    Timestamp fields (updatedAt and the like) changed on both sides take the later one.
+   Two helpers for the apps: formChanges() so that an edit form opened before a merge writes back only the fields the
+   owner changed in it, and fetchFile() to read a file past the browser cache, including files over 1 MiB.
    Anything else changed on both sides, to different values, is a conflict that the owner resolves in a dialog. */
 const SafeMerge = (() => {
   const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -1639,7 +1642,15 @@ const SafeMerge = (() => {
     // side whose order wins go right after their neighbour on the other side.
     const shared = (a, b) => { const inB = new Set(b.map(idOf)); return a.map(idOf).filter((id) => inB.has(id)); };
     const reordered = (side) => canon(shared(base, side)) !== canon(shared(side, base));
-    const [first, second] = reordered(ours) && !reordered(theirs) ? [ours, theirs] : [theirs, ours];
+    let first = theirs, second = ours;
+    if (reordered(ours) && !reordered(theirs)) { first = ours; second = theirs; }
+    else if (reordered(ours) && reordered(theirs) && canon(shared(ours, theirs)) !== canon(shared(theirs, ours))) {
+      // both sides reordered, differently: a conflict like any other, shown as the two orders
+      const order = (list) => list.map((x, i) => `${i + 1}. ${labelOf(x)}`).join('\n');
+      let pick = opt.pick;
+      if (!pick) { if (opt.conflicts) opt.conflicts.push({ path: [...path, { id: '#order', label: '顺序 / order' }], theirs: order(theirs), ours: order(ours) }); pick = 'theirs'; }
+      if (pick === 'mine') { first = ours; second = theirs; }
+    }
     const out = first.map(idOf).filter((id) => merged.get(id) !== undefined).map((id) => merged.get(id));
     const placed = new Set(out.map(idOf));
     second.forEach((x, i) => {
@@ -1751,7 +1762,36 @@ const SafeMerge = (() => {
   /** A deep copy for `base` (structuredClone is not in every browser this runs in) */
   const snapshot = (v) => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
 
-  return { merge3, same, canon, ask, save, rebase, serial, snapshot };
+  /** An edit form opened on a record and submitted later: only the fields whose value the owner changed in the form.
+   *  Assign these onto the record as it is now; a merge that landed while the form was open may have changed the rest,
+   *  and writing the form's old copy of those fields back would undo it. openedWith = snapshot of the record at open. */
+  const formChanges = (openedWith, formValues) => Object.fromEntries(
+    Object.entries(formValues).filter(([k, v]) => !same(v, openedWith ? openedWith[k] : undefined)));
+
+  /** Read a file through the Contents API, past the browser cache: { text, sha }, or null when it does not exist.
+   *  Over 1 MiB that API answers encoding "none" with no content; read as an empty file, the next save replaced the whole
+   *  file with the few rows on the page. The same blob is read through the Git Blobs API instead (up to 100 MB).
+   *  An empty text comes back only for a file of 0 bytes. Any other read that comes back empty (a Git Blobs answer of 200
+   *  without content, an answer without a size) throws: a caller that took it for an empty file would overwrite the file. */
+  async function fetchFile(contentsUrl, headers) {
+    const r = await fetch(contentsUrl + (contentsUrl.includes('?') ? '&' : '?') + 't=' + Date.now(), { headers, cache: 'no-store' });
+    if (r.status === 404) return null;
+    if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message || 'HTTP ' + r.status); }
+    const j = await r.json();
+    let b64 = j.content;
+    if (!b64 && j.sha && j.size > 0) {
+      const repo = contentsUrl.match(/^(https:\/\/api\.github\.com\/repos\/[^/]+\/[^/]+)\/contents\//)[1];
+      const br = await fetch(`${repo}/git/blobs/${j.sha}`, { headers, cache: 'no-store' });
+      if (!br.ok) { const e = await br.json().catch(() => ({})); throw new Error(e.message || 'HTTP ' + br.status); }
+      b64 = (await br.json()).content;
+    }
+    const bin = atob(String(b64 || '').replace(/\s/g, ''));
+    const text = new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)));
+    if (!text && j.size !== 0) throw new Error('Read failed: ' + (j.path || 'the file') + ' came back empty' + (j.size > 0 ? ` (it has ${j.size} bytes)` : ''));
+    return { text, sha: j.sha };
+  }
+
+  return { merge3, same, canon, ask, save, rebase, serial, snapshot, formChanges, fetchFile };
 })();
 /* ============ connection (owner / repo / token live only in this browser; shared with the product family via pha-config) ============ */
 // On GitHub Pages every public demo shares the origin nickkklian.github.io, so a shared key would let a token entered in
