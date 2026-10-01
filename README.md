@@ -1,14 +1,16 @@
 # Headersort
 
-![Headersort](.github/header.png)
-
 **Gmail triage that reads only sender and subject — and only adds labels.**
 
-A scheduled GitHub Action reads new mail over IMAP, asks a small model to label each one from its sender and subject line, adds an `AI/…` label, and writes a capped digest into your private repo. One static HTML file renders the board. Nothing runs between the two daily runs, nothing costs anything at rest, and nothing ever reads a message body.
+**Try it:** [open the live demo](https://nickkklian.github.io/Mail-Sorter/?demo=1) (sixty fictional emails, no sign-in), or run `node template/check.mjs` in a clone.
+
+![Headersort board: counts strip, where the digest went, seven-day trend, category filters and the mail list](docs/screenshot-board.png)
+
+A scheduled GitHub Action reads new mail over IMAP, asks a model (Claude Sonnet 5.5 by default; the provider and model are yours to set) to label each one from its sender and subject line, adds an `AI/…` label, and writes a capped digest into your private repo. One static HTML file renders the board. Nothing runs between the two daily runs, nothing costs anything at rest, and nothing ever reads a message body.
 
 [![Check](https://img.shields.io/github/actions/workflow/status/NickkkLian/Mail-Sorter/check.yml?branch=main&label=check&style=flat-square&labelColor=2f5859)](https://github.com/NickkkLian/Mail-Sorter/actions/workflows/check.yml)
 
-![Headersort board: counts strip, where the digest went, seven-day trend, category filters and the mail list](docs/screenshot-board.png)
+![Headersort](.github/header.png)
 
 **Live demo:** https://nickkklian.github.io/Mail-Sorter/?demo=1 — sixty fictional emails over seven days, every address on the reserved `.example` domain. The demo connects to no repository and no mailbox; its only network requests are the web fonts. English by default, 中文 toggle in the header.
 
@@ -76,22 +78,20 @@ node check-csp.mjs             # the board's Content-Security-Policy; --write af
 
 The model stays your choice: the provider and the model id are free to set, for Claude too. Only the default is fixed, and for Claude it is `claude-sonnet-5-5` (the author's apps default to Claude Opus 5.5 or Sonnet 5.5 only). Sonnet 5.5 thinks on every request and the thinking counts toward the output limit, so Claude requests get `max_tokens` 16000; the other providers keep 2048. A Claude reply that stops with `refusal` or `max_tokens` is reported as that, not parsed as half an answer.
 
-| Provider | Configure | What has been run |
+| Provider | Configure | What the mock check covers |
 |---|---|---|
-| Claude (Anthropic) | default · secret `ANTHROPIC_API_KEY` | `node template/check-llm.mjs`: request and reply format against a local mock of the documented API, end to end through `sortMail` to `AI/…` labels. **Not run against the live API for this revision.** |
-| OpenAI | variables `LLM_PROVIDER=openai`, `LLM_MODEL` · secret `OPENAI_API_KEY` | Same mock checks (sends `max_completion_tokens`, no `temperature`). Should work per OpenAI's documentation; **not run live.** |
-| Google Gemini | variables `LLM_PROVIDER=gemini`, `LLM_MODEL` · secret `GEMINI_API_KEY` | Same mock checks (key in the `x-goog-api-key` header). Should work per Google's documentation; **not run live.** |
-| OpenAI-compatible | variables `LLM_PROVIDER=openai-compatible`, `LLM_MODEL`, `LLM_BASE_URL` · optional secret `LLM_API_KEY` | Same mock checks. **Not run against a real Ollama, LM Studio or vLLM server.** A GitHub-hosted runner can only reach a server with a public address. |
+| Claude (Anthropic) | default · secret `ANTHROPIC_API_KEY` | `node template/check-llm.mjs`: request and reply format against a local mock of the documented API, end to end through `sortMail` to `AI/…` labels |
+| OpenAI | variables `LLM_PROVIDER=openai`, `LLM_MODEL` · secret `OPENAI_API_KEY` | Same mock checks (sends `max_completion_tokens`, no `temperature`) |
+| Google Gemini | variables `LLM_PROVIDER=gemini`, `LLM_MODEL` · secret `GEMINI_API_KEY` | Same mock checks (key in the `x-goog-api-key` header) |
+| OpenAI-compatible | variables `LLM_PROVIDER=openai-compatible`, `LLM_MODEL`, `LLM_BASE_URL` · optional secret `LLM_API_KEY` | Same mock checks. A GitHub-hosted runner can only reach a server with a public address |
 
-`eval/headers.json` holds 40 synthetic sender+subject pairs (five per category). `node eval/score.mjs` scores cached model output against them and prints the keyword baseline next to it; envelope classification is easy enough that the baseline alone reaches 38/40, which is exactly why the eval reports both.
+`eval/headers.json` holds 40 synthetic sender+subject pairs (five per category). `node eval/score.mjs` scores a cached model run against them and prints a keyword baseline beside it: **keywords 38/40 (95%), model 37/40 (93%)** — the cached run is `claude-haiku-4-5-20251001` from 2026-09-22, the default at the time; the current default, `claude-sonnet-5-5`, has not been scored on this set. So on these 40 envelopes a keyword list scores one better than the model, and the eval prints both so nobody reads 93% as proof that a model is needed.
 
-That run has been made: 2026-09-22, `claude-haiku-4-5-20251001`, the default at the time. The default is now `claude-sonnet-5-5` (Claude Opus 5.5 and Sonnet 5.5 are the only models the author's apps use); Sonnet 5.5 has **not** been scored on this set, and the cache below is still the Haiku run. **The keyword baseline scored 38/40 (95%) and the model 37/40 (93%)** — on this set the model is a little worse than the keywords, not better. Its three misses are the envelopes where the subject names one thing and belongs to another: a tax-residency notice read as an account message, a biometrics appointment read as an account message, and a flash sale on fares read as travel rather than promotion. That is the argument for the order the product actually uses — keywords first, the model for what they do not catch — rather than an argument for the model.
-
-Without the cache the eval reports **NOT RUN** (exit 2) rather than a number; `--break` is the negative control. This is a small evaluation set, not a formal evaluation pipeline — and `eval/llm-cache.json` is the whole of what that run left behind. It records the provider, model and date, and nothing in this repository shows a request went over the network, so a hand-written cache would be indistinguishable from it.
+The keyword list lives only in the eval and the test mock. The product has no keyword step: `sortMail` sends every batch to the model. Without the cache the eval reports **NOT RUN** (exit 2) rather than a number, and `--break` is the negative control; the cache file is the only record of that run.
 
 ## Limits and what is not verified here
 
-- The template has been exercised with mock adapters and a dry run only; it has not been run against a live Gmail account for this revision. The IMAP label call falls back from `messageFlagsAdd` to `messageCopy` depending on how Gmail exposes labels — confirm on your account before relying on it.
+- Not run live: apart from the cached eval run of 2026-09-22, the template has only been run against mock adapters, a local mock of each provider's API and a dry run — no live Gmail account, and no live call with the current default model. The IMAP label call falls back from `messageFlagsAdd` to `messageCopy` depending on how Gmail exposes labels — confirm on your account before relying on it.
 - Category quality depends on the model and on subject lines alone; the reason shown per row is the model's, not a fact.
 - The board shows at most `keep_items` emails and at most 150 rows per filter.
 - The scheduled workflow and its script run in your private repo, not here — this repository is the board plus a template.
