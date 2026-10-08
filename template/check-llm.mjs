@@ -84,13 +84,13 @@ for (const [env, re] of [[{}, /ANTHROPIC_API_KEY is not set/], [{ LLM_PROVIDER: 
 }
 ok(L.configFromEnv({ ANTHROPIC_API_KEY: 'k', MODEL: 'older-name' }).model === 'older-name', 'the older MODEL variable is still honoured');
 ok(L.configFromEnv({ ANTHROPIC_API_KEY: 'k' }).model === 'claude-sonnet-5-5', 'Claude defaults to claude-sonnet-5-5');
-// the only Claude models the scripts may name are Opus 5.5 and Sonnet 5.5; eval/llm-cache.json is a record of an older run
+// the only Claude models the scripts may name are Opus 5.5, Sonnet 5.5 and Haiku 5.5; eval/llm-cache.json is a record of an older run
 { const fs = await import('node:fs'), url = await import('node:url');
   const root = url.fileURLToPath(new URL('..', import.meta.url));
   const files = ['template/mail/scripts/llm.mjs', 'template/mail/scripts/classify.mjs', 'template/.github/workflows/mail-sync.yml', 'template/SECRETS.md', 'eval/score.mjs'];
   const ids = files.flatMap(f => [...fs.readFileSync(root + f, 'utf8').matchAll(/claude-[a-z0-9-]+/g)].map(m => f + ': ' + m[0]));
-  const bad = ids.filter(s => !/: claude-(opus-5-5|sonnet-5-5)$/.test(s));
-  ok(ids.length > 0 && bad.length === 0, `scripts name Opus 5.5 / Sonnet 5.5 only (${ids.length} ids seen${bad.length ? '; not allowed: ' + bad.join(', ') : ''})`); }
+  const bad = ids.filter(s => !/: claude-(opus-5-5|sonnet-5-5|haiku-5-5)$/.test(s));
+  ok(ids.length > 0 && bad.length === 0, `scripts name Opus 5.5 / Sonnet 5.5 / Haiku 5.5 only (${ids.length} ids seen${bad.length ? '; not allowed: ' + bad.join(', ') : ''})`); }
 
 // (2026-09-25) Claude's output budget, and its stop reasons, with fetch replaced by a fake: nothing leaves this process
 {
