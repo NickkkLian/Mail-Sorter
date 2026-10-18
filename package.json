@@ -1,0 +1,10 @@
+{
+  "name": "mail-classify",
+  "private": true,
+  "type": "module",
+  "engines": {"node": ">=22"},
+  "scripts": {"test":"node --test test/*.test.mjs", "score":"node eval/score-cleanup.mjs", "check":"node scripts/check.mjs", "classify":"node mail/scripts/classify.mjs"},
+  "dependencies": {
+    "imapflow": "^1.0.164"
+  }
+}

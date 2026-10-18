@@ -1,0 +1,95 @@
+import {randomUUID} from 'node:crypto';
+import {settings,RULE_IDS} from './settings.mjs';
+import {decide,policyHash,fingerprint,DAY,protectedReason,address} from './rules.mjs';
+export const emptyState=()=>({digest:{items:[],lastUid:0,total_classified:0,total_is_floor:true},runtime:{scanAfter:0,lastProposalAt:null},proposal:null,journal:{runs:[],reviews:[]}});
+const quarantined=(state,id)=>state.journal.runs.some(r=>r.entries.some(e=>e.gmailId===id&&(e.status==='intent'||e.status==='uncertain'||['intent','retry','missing'].includes(e.undo_status))));
+export function seedProtection(config,digest){const c=settings(config),senders=new Set(c.protected.senders.map(address));for(const x of digest.items||[])if(['action','job','finance','school','health','official'].includes(x.category)){const a=address(x.fromAddr||x.from);if(a.includes('@'))senders.add(a);}c.protected.senders=[...senders];return c;}
+export const ruleHash=(c,id)=>fingerprint({id,rule:settings(c).rules[id],policy:policyHash(c)});
+export function autoEligible(c,id,reviews,now){
+  const r=c.rules[id];if(c.approval_mode!=='eligible_rules'||!r.auto)return false;
+  const rows=reviews.filter(x=>x.rule===id&&x.policy===ruleHash(c,id)).sort((a,b)=>Date.parse(a.at)-Date.parse(b.at));
+  const reject=rows.findLastIndex(x=>x.rejected>0||x.complete===false);const clean=rows.slice(reject+1).filter(x=>x.reviewed>0&&x.rejected===0&&x.complete===true);
+  const days=new Set(clean.map(x=>x.at.slice(0,10)));
+  return days.size>=r.clean_days&&clean.length>0&&Date.parse(now)-Date.parse(clean[0].at)>=r.clean_days*DAY&&Date.parse(now)-Date.parse(clean.at(-1).at)<=2*DAY;
+}
+const item=(m,v,c)=>({gmailId:m.gmailId,uid:m.uid,msgid:m.msgid||null,from:m.from||'',subject:m.subject||'',date:m.date,rule:v.rule,reason:v.reason,action:c.rules[v.rule].action});
+export async function makeProposal({messages,config,state,now=new Date(),evaluate=async m=>decide(m,config,now)}){
+  const c=settings(config),items=[];const unique=new Set();
+  for(const m of messages){if(unique.has(m.gmailId)||quarantined(state,m.gmailId))continue;unique.add(m.gmailId);const v=await evaluate(m);if(v.rule)items.push(item(m,v,c));}
+  const proposal={id:randomUUID(),created_at:now.toISOString(),policy:policyHash(c),items};
+  proposal.revision=fingerprint({policy:proposal.policy,items});state.proposal=proposal;state.runtime.lastProposalAt=now.toISOString();return proposal;
+}
+// persist must durably record the journal BEFORE any side effect. Only these mailbox verbs are used.
+export async function applyApproval({config,state,approval,mailbox,persist,now=new Date(),recordReview=true,evaluate=async m=>decide(m,config,now)}){
+  const c=settings(config),p=state.proposal; if(!c.enabled||!p||!approval)return {applied:0,skipped:'no approval'};
+  if(approval.proposal_id!==p.id||approval.revision!==p.revision||p.policy!==policyHash(c)||!Array.isArray(approval.selected)||approval.selected.some(x=>!p.items.some(i=>i.gmailId===x))||new Set(approval.selected).size!==approval.selected.length)return {applied:0,skipped:'stale approval'};
+  if(state.journal.runs.some(r=>r.proposal_id===p.id))return {applied:0,skipped:'consumed'};
+  const run={id:randomUUID(),proposal_id:p.id,at:now.toISOString(),selected_count:approval.selected.length,entries:[],status:'running'};
+  state.journal.runs.push(run);const chosen=new Set(approval.selected);
+  if(recordReview)for(const id of RULE_IDS){const group=p.items.filter(x=>x.rule===id);if(group.length)state.journal.reviews.push({run_id:run.id,rule:id,policy:ruleHash(c,id),at:now.toISOString(),reviewed:group.length,rejected:group.filter(x=>!chosen.has(x.gmailId)).length,complete:false});}
+  await persist(state);
+  for(const x of p.items.filter(x=>chosen.has(x.gmailId))){
+    if(quarantined(state,x.gmailId))continue;
+    let m,v;try{m=await mailbox.get(x.gmailId);v=m?await evaluate(m):null;}catch{continue;}
+    if(!m||v?.rule!==x.rule||c.rules[x.rule].action!==x.action||!c.rules[x.rule].enabled)continue;
+    const entry={gmailId:x.gmailId,rule:x.rule,action:x.action,label:`${c.label_prefix}Cleaned/${x.rule}`,at:now.toISOString(),status:'intent',originalLabels:[...m.labels],hadCleanLabel:m.labels.includes(`${c.label_prefix}Cleaned/${x.rule}`)};
+    run.entries.push(entry);await persist(state);
+    try{await mailbox.addLabel(x.gmailId,entry.label);await mailbox[x.action](x.gmailId);entry.status='done';}
+    catch{entry.status='uncertain';} // journal retains intent; never blindly replay a partially applied mutation
+    await persist(state);
+  }
+  run.status='finished';
+  run.skipped_count=chosen.size-run.entries.length;
+  for(const review of state.journal.reviews.filter(x=>x.run_id===run.id)){const selected=p.items.filter(x=>x.rule===review.rule&&chosen.has(x.gmailId));review.complete=selected.every(x=>run.entries.some(e=>e.gmailId===x.gmailId&&e.status==='done'));}
+  // Do not discard incomplete operations. Older completed runs retain Gmail cleanup labels for manual restoration.
+  const completed=state.journal.runs.filter(r=>r.status==='finished');
+  if(completed.length>c.log_runs){const drop=new Set(completed.slice(0,completed.length-c.log_runs).filter(r=>r.entries.every(e=>e.status==='undone'||(e.status==='done'&&!e.undo_status))).map(r=>r.id));state.journal.runs=state.journal.runs.filter(r=>!drop.has(r.id));}
+  state.journal.reviews=state.journal.reviews.filter(r=>Date.parse(now)-Date.parse(r.at)<400*DAY);
+  await persist(state);return {applied:run.entries.filter(x=>x.status==='done').length};
+}
+export async function undoRun({state,runId,mailbox,persist,now=new Date()}){
+  const run=state.journal.runs.find(x=>x.id===runId);if(!run)return {restored:0};let restored=0;
+  for(const e of run.entries){
+    if(e.status==='undone'||(e.action==='trash'&&Date.parse(now)-Date.parse(e.at)>=30*DAY))continue;
+    e.undo_status='intent';await persist(state);
+    try{const m=await mailbox.get(e.gmailId);if(!m){e.undo_status='missing';await persist(state);continue;}
+      await mailbox.restore(e.gmailId);for(const label of e.originalLabels||[])if(!label.startsWith('\\')&&!m.labels?.includes(label))await mailbox.addLabel(e.gmailId,label);if(!e.hadCleanLabel)await mailbox.removeLabel(e.gmailId,e.label);
+      e.status='undone';e.undo_status='done';restored++;
+      state.journal.reviews.push({rule:e.rule,policy:state.journal.reviews.findLast(x=>x.rule===e.rule)?.policy||'',at:now.toISOString(),reviewed:1,rejected:1,complete:false});
+    }catch{e.undo_status='retry';}await persist(state);
+  }return {restored};
+}
+export function updateDigest(state,m,v,c,now){
+  const d=state.digest,known=(d.items||[]).some(i=>i.gmailId===m.gmailId||(!i.gmailId&&i.uid===m.uid));
+  const safe={uid:m.uid,gmailId:m.gmailId,msgid:m.msgid||null,date:m.date,from:m.from||'',fromAddr:m.fromAddr||'',subject:m.subject||'',category:v.category,action:v.action===true,reason:v.rule?'Cleanup rule '+v.rule:(v.category==='other'?'Unsorted':'Keep signal'),reason_en:v.rule?'Cleanup rule '+v.rule:(v.category==='other'?'Unsorted':'Keep signal')};
+  d.items=[safe,...d.items.filter(i=>i.gmailId!==m.gmailId&&(i.gmailId||i.uid!==m.uid))].sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,c.keep_items);
+  if(!known&&m.uid>(d.lastUid||0))d.total_classified=Number(d.total_classified||0)+1;
+  d.lastUid=Math.max(d.lastUid||0,m.uid);
+  d.updated_at=now.toISOString();d.keep_items=c.keep_items;
+}
+export async function runCycle({config,state,mailbox,persist,approval=null,undoRequests=[],now=new Date(),force=false,backfill=false,evaluate=async m=>decide(m,config,now)}){
+  const c=settings(config);if(!c.enabled)return {skipped:'disabled'};
+  if(state.runtime.afterAuto){state.proposal=state.runtime.afterAuto;delete state.runtime.afterAuto;await persist(state);}
+  for(const req of undoRequests)await undoRun({state,runId:req.run_id,mailbox,persist,now});
+  await applyApproval({config:c,state,approval,mailbox,persist,now,evaluate});
+  if(!force&&state.runtime.lastProposalAt&&Date.parse(now)-Date.parse(state.runtime.lastProposalAt)<c.frequency_hours*3600000)return {skipped:'cadence'};
+  const page=await mailbox.scan({after:state.runtime.scanAfter||0,expectedUidValidity:state.runtime.uidValidity,limit:backfill?c.max_backfill:c.max_per_run,primaryOnly:c.primary_only});
+  if(page.reset){state.runtime.scanAfter=0;state.digest.lastUid=0;state.digest.total_is_floor=true;}
+  const pending=new Map((state.proposal?.items||[]).filter(x=>!state.journal.runs.some(r=>r.proposal_id===state.proposal.id)).map(x=>[x.gmailId,x]));
+  const all=[],decisions=new Map();
+  // Revalidate pending items; proposals never derive from the capped digest.
+  for(const id of pending.keys()){try{const m=await mailbox.get(id);if(m)all.push(m);}catch{/* unknown stays */}}
+  for(const m of page.messages){
+    let v;try{v=await evaluate(m);const label=c.categories.find(x=>x.key===v.category);if(label&&label.key!=='other'&&!protectedReason(m,c))await mailbox.addLabel(m.gmailId,c.label_prefix+label.label);}
+    catch{break;}
+    updateDigest(state,m,v,c,now);all.push(m);decisions.set(m.gmailId,v);state.runtime.scanAfter=m.uid;
+  }
+  state.runtime.uidValidity=page.uidValidity;
+  if(page.done&&page.messages.every(m=>m.uid<=(state.runtime.scanAfter||0)))state.runtime.scanAfter=0;
+  const latest=[...new Map(all.map(m=>[m.gmailId,m])).values()];
+  const p=await makeProposal({messages:latest,config:c,state,now,evaluate:async m=>decisions.has(m.gmailId)?decisions.get(m.gmailId):evaluate(m)});await persist(state);
+  const eligible=p.items.filter(x=>autoEligible(c,x.rule,state.journal.reviews,now));
+  // Automated reviews never add clean-history evidence; only human approval can establish eligibility.
+  if(eligible.length){const manual=p.items.filter(x=>!eligible.includes(x));state.runtime.afterAuto={...p,id:randomUUID(),items:manual,revision:fingerprint({policy:p.policy,items:manual})};await persist(state);state.proposal={...p,items:eligible};state.proposal.revision=fingerprint({policy:p.policy,items:eligible});await persist(state);await applyApproval({config:c,state,approval:{proposal_id:p.id,revision:state.proposal.revision,selected:eligible.map(x=>x.gmailId)},mailbox,persist,now,evaluate,recordReview:false});state.proposal=state.runtime.afterAuto;delete state.runtime.afterAuto;await persist(state);}
+  return {proposed:p.items.length};
+}

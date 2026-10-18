@@ -1,16 +1,105 @@
 {
-  "enabled": true,
+  "schema_version": 1,
+  "enabled": false,
+  "read_bodies": false,
+  "frequency_hours": 24,
+  "approval_mode": "every_run",
+  "primary_only": false,
   "keep_items": 500,
-  "primary_only": true,
-  "archive_categories": [],
+  "max_per_run": 120,
+  "max_backfill": 3000,
+  "max_sent": 50000,
+  "log_runs": 500,
+  "max_retries": 3,
+  "body_max_chars": 4000,
+  "body_fetch_bytes": 32768,
+  "label_prefix": "AI/",
   "categories": [
-    { "key": "work", "label": "Work" },
-    { "key": "finance", "label": "Finance" },
-    { "key": "life", "label": "Life" },
-    { "key": "travel", "label": "Travel" },
-    { "key": "logistics", "label": "Shipping" },
-    { "key": "account", "label": "Accounts" },
-    { "key": "promo", "label": "Promotions" },
-    { "key": "reading", "label": "Reading" }
-  ]
+    {
+      "key": "people",
+      "label": "People"
+    },
+    {
+      "key": "finance",
+      "label": "Money"
+    },
+    {
+      "key": "official",
+      "label": "Official"
+    },
+    {
+      "key": "travel",
+      "label": "Travel"
+    },
+    {
+      "key": "security",
+      "label": "Accounts"
+    },
+    {
+      "key": "school",
+      "label": "School"
+    },
+    {
+      "key": "job",
+      "label": "Jobs"
+    },
+    {
+      "key": "health",
+      "label": "Health"
+    },
+    {
+      "key": "other",
+      "label": "Unsorted"
+    }
+  ],
+  "protected": {
+    "senders": [],
+    "domains": [],
+    "labels": []
+  },
+  "sender_labels": {},
+  "rules": {
+    "O1": {
+      "enabled": true,
+      "action": "archive",
+      "auto": false,
+      "clean_days": 28
+    },
+    "O2": {
+      "enabled": true,
+      "action": "archive",
+      "auto": false,
+      "clean_days": 28
+    },
+    "O3": {
+      "enabled": true,
+      "action": "archive",
+      "auto": false,
+      "clean_days": 28
+    },
+    "O4": {
+      "enabled": true,
+      "action": "archive",
+      "auto": false,
+      "clean_days": 28
+    },
+    "O5": {
+      "enabled": true,
+      "action": "archive",
+      "auto": false,
+      "clean_days": 28
+    },
+    "O6": {
+      "enabled": true,
+      "action": "archive",
+      "auto": false,
+      "clean_days": 28
+    },
+    "O7": {
+      "enabled": true,
+      "action": "archive",
+      "auto": false,
+      "clean_days": 28
+    }
+  }
 }

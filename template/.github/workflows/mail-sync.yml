@@ -1,45 +1,63 @@
 name: Mail Classify
 
+# 每天自动把 Gmail 新邮件分类：打上 AI/xx 标签 + 写 mail/mail.json 摘要
+# 关闭方式：情报终端「邮件」页的开关按钮（写 mail/config.json 的 enabled）
 on:
   schedule:
-    - cron: '0 15 * * *'   # daily, 15:00 UTC
-    - cron: '0 3 * * *'    # and 03:00 UTC
+    # 每天 15:00 UTC = 温哥华 08:00（BC 永久 UTC-7）
+    - cron: '0 15 * * *'
+    # 兜底第二跑 22:00 UTC = 温哥华 15:00。理由：2026-07-24 那次失败是 GitHub 压根没分配 runner
+    # （0 个步骤执行、排队 15 分钟被 cancelled），代码层无法自救 → 只能换个时段再来一次。
+    # 增量游标在，没新邮件时几秒就退出；早跑成功的话第二跑基本是空转，几乎不花钱。
+    - cron: '0 22 * * *'
   workflow_dispatch:
     inputs:
-      backfill_days:
-        description: 'Classify the existing inbox this many days back (leave empty for new mail only)'
-        required: false
-        default: ''
+      run_now:
+        description: 'Prepare a review now, bypassing only the daily proposal cadence'
+        type: boolean
+        default: false
+      backfill:
+        description: 'Scan up to max_backfill oldest Inbox messages, through the same approval path'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
-
+concurrency:
+  group: mail-sync
+  cancel-in-progress: false
 jobs:
   classify:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Setup Node
+        uses: actions/setup-node@v5
         with:
           node-version: '22'
-      - run: npm install --omit=dev --no-audit --no-fund   # the template ships no lockfile, so npm ci would refuse
-      - name: Classify new mail (sender + subject only; labels only)
+      - name: Install locked dependencies
+        working-directory: mail/scripts
+        run: |
+          for i in 1 2 3; do
+            npm ci --no-audit --no-fund && exit 0
+            sleep 10
+          done
+          exit 1
+      - name: Propose mail cleanup and process reviewed decisions
         env:
+          STATE_BACKEND: github
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ github.token }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-          # the model: pick one provider (repository *variables*), and set that provider's key as a *secret*
-          LLM_PROVIDER: ${{ vars.LLM_PROVIDER }}          # anthropic (default) | openai | gemini | openai-compatible
-          LLM_MODEL: ${{ vars.LLM_MODEL }}                # required except for anthropic (default claude-sonnet-5-5)
-          LLM_BASE_URL: ${{ vars.LLM_BASE_URL }}          # openai-compatible only
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
-          BACKFILL_DAYS: ${{ github.event.inputs.backfill_days }}
+          LLM_PROVIDER: ${{ vars.LLM_PROVIDER }}
+          LLM_MODEL: ${{ vars.LLM_MODEL }}
+          LLM_BASE_URL: ${{ vars.LLM_BASE_URL }}
+          RUN_NOW: ${{ inputs.run_now && '1' || '0' }}
+          BACKFILL: ${{ inputs.backfill && '1' || '0' }}
         run: node mail/scripts/classify.mjs
-      - name: Commit the digest
-        run: |
-          git config user.name "mail-classify[bot]"
-          git config user.email "mail-classify[bot]@users.noreply.github.com"
-          git add -- mail/mail.json
-          git diff --cached --quiet || git commit -m "mail: classify $(date -u +%F)" && git push
+      # The runner commits state through Contents API before each mailbox mutation.
+      # Never git-add/push checkout state here: it can overwrite board decisions.

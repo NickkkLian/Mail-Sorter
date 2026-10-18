@@ -6,8 +6,7 @@ on:
 
 jobs:
   template:
-    # The classifier template runs on 20 synthetic emails with mock adapters: envelope-only input, labels-only output,
-    # the enabled switch, the keep_items cap, a DRY_RUN smoke of the CLI, and a negative control.
+    # Shared runtime, approval/undo lifecycle, injected providers, CSP and privacy.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -15,7 +14,7 @@ jobs:
         with:
           node-version: '22'
       - run: node template/check.mjs
-      - name: model path for Claude, OpenAI, Gemini and OpenAI-compatible against a local mock
+      - name: model path through injected offline provider doubles
         run: node template/check-llm.mjs
   eval:
     runs-on: ubuntu-latest
@@ -28,7 +27,7 @@ jobs:
       - run: |
           if [ -f eval/llm-cache.json ]; then node eval/score.mjs; else echo "no eval/llm-cache.json yet — eval not run"; fi
   board:
-    # The board is one static file: no external scripts, demo addresses only on the reserved .example TLD,
+    # Same-origin modules only; demo addresses use the reserved .example TLD.
     # and the data-layer functions (cfg, configured, ghGet, ghPut and the mail/config reads and writes) keep their shape.
     runs-on: ubuntu-latest
     steps:

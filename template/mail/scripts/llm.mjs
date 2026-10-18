@@ -77,13 +77,11 @@ async function complete(cfg, system, user, { maxTokens, fetchImpl, browser = fal
   const timer = ctl ? setTimeout(() => ctl.abort(), timeoutMs) : null;
   let res;
   try { res = await f(req.url, { method: 'POST', headers: req.headers, body: req.body, signal: ctl ? ctl.signal : undefined }); }
-  catch (e) { throw new ProviderError(`${cfg.provider}: network error (${e.name === 'AbortError' ? 'timed out' : e.message}) — offline, blocked by CORS, or the endpoint is down`); }
+  catch (e) { throw new ProviderError(`${cfg.provider}: request unavailable`); }
   finally { if (timer) clearTimeout(timer); }
   const raw = await res.text();
   if (!res.ok) {
-    let detail = raw.slice(0, 300);
-    try { const j = JSON.parse(raw); detail = (j.error && (j.error.message || j.error)) || detail; } catch (e) {}
-    throw new ProviderError(`${cfg.provider}: HTTP ${res.status} ${typeof detail === 'string' ? detail : JSON.stringify(detail)}`.trim());
+    throw new ProviderError(`${cfg.provider}: HTTP ${Number(res.status) || 0}`);
   }
   let data;
   try { data = JSON.parse(raw); } catch (e) { throw new ProviderError(`${cfg.provider}: response was not JSON`); }

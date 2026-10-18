@@ -1,0 +1,9 @@
+[
+  {"id":"O1","name":"One-time codes and verification links","days":1},
+  {"id":"O2","name":"Shipping status","days":30,"delivered_days":7},
+  {"id":"O3","name":"Past events and reminders","days":1,"reminder_days":2},
+  {"id":"O4","name":"Promotions and sales","days":30},
+  {"id":"O5","name":"Newsletters and digests","days":60},
+  {"id":"O6","name":"Social and app notifications","days":14},
+  {"id":"O7","name":"Routine security alerts","days":90}
+]

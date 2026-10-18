@@ -1,0 +1,10 @@
+node_modules/
+.tmp*/
+.dry-test-*/
+.sample-test-*/
+mail/config.json
+mail/mail.json
+mail/runtime.json
+mail/cleanup-*.json
+mail/.runner.lock
+template/mail/.runner.lock

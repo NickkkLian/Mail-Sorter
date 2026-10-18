@@ -5,15 +5,17 @@
 //   node check-csp.mjs              check; exits 1 on any finding (CI runs this)
 //   node check-csp.mjs --self-test  the check must catch each broken copy of the page below, and pass the real page
 //
-// The policy: scripts only from this site's own files ('self') and from the page's own inline scripts, each pinned by
-// its sha256. No 'unsafe-inline', no 'unsafe-eval', no other host. So the browser itself refuses a script from another
+// The policy: default resources from self, GitHub connections only, Google Fonts styles/fonts, self/data images.
+// Scripts only from self and pinned inline sha256 hashes: no script 'unsafe-inline', 'unsafe-eval', or other host.
+// Inline styles remain allowed because the existing board uses style blocks and style attributes.
+// So the browser itself refuses a script from another
 // host, text run as code (eval, a string given to setTimeout, a script element given text) and inline event-handler
 // attributes. The key and token this app keeps in localStorage share an origin with other sites; this keeps a script
 // that got into shown content from running.
 //
 // What the check fails on:
 //   1. not exactly one policy <meta>, or one that comes after a <script> (that script runs without it);
-//   2. a policy that is not exactly  script-src 'self'  followed by sha256 hashes;
+//   2. a policy that differs from the complete resource allowlist;
 //   3. hashes that are not those of the page's inline scripts, in order (an edited inline script would stop running);
 //   4. an inline event-handler attribute (onclick="...") or a javascript: address in the page or in its scripts, which
 //      the policy would refuse to run.
@@ -35,7 +37,7 @@ export function inlineHashes(page) {
   return [...page.matchAll(INLINE)].filter((m) => !/\bsrc\s*=/.test(m[1]))
     .map((m) => `'sha256-${createHash('sha256').update(m[2], 'utf8').digest('base64')}'`);
 }
-export const policyFor = (page) => `script-src 'self' ${inlineHashes(page).join(' ')}`;
+export const policyFor = (page) => `default-src 'self'; script-src 'self' ${inlineHashes(page).join(' ')}; connect-src https://api.github.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'`;
 
 export function check(page, files = {}) {
   const found = [];
@@ -43,13 +45,7 @@ export function check(page, files = {}) {
   if (metas.length !== 1) return [`${PAGE}: needs exactly one Content-Security-Policy <meta> (found ${metas.length})`];
   const m = metas[0], first = page.search(/<script\b/i);
   if (first !== -1 && m.index > first) found.push(`${PAGE}: the Content-Security-Policy comes after a <script>, which runs without it`);
-  const t = m[1].trim().split(/\s+/);
-  if (t[0] !== 'script-src' || t[1] !== "'self'" || t.length < 3 || !t.slice(2).every((x) => /^'sha256-[A-Za-z0-9+/]{43}='$/.test(x))) {
-    found.push(`${PAGE}: the Content-Security-Policy is not exactly script-src 'self' plus sha256 hashes: ${m[1]}`);
-  } else {
-    const want = inlineHashes(page).join(' '), have = t.slice(2).join(' ');
-    if (want !== have) found.push(`${PAGE}: the policy's hashes are not those of the page's inline scripts (run node check-csp.mjs --write)`);
-  }
+  if(m[1]!==policyFor(page))found.push(`${PAGE}: policy differs from the required resource restrictions or current inline script hashes (run node check-csp.mjs --write)`);
   for (const [name, text] of Object.entries({ [PAGE]: page, ...files })) {
     for (const h of text.matchAll(HANDLER)) {
       const line = text.slice(0, h.index).split('\n').length;
@@ -71,9 +67,9 @@ export const BROKEN = [
   ['another host added', ADD('https://cdn.example.com')],
   ['any https host', ADD('https:')],
   ['a wildcard', ADD('*')],
-  ['another directive added', (p) => p.replace(/(content="script-src[^"]*)"/, '$1; object-src *"')],
+  ['another directive added', (p) => p.replace(/(content="[^"]*)"/, '$1; object-src *"')],
   ["'self' taken out", (p) => p.replace("script-src 'self' ", 'script-src ')],
-  ['no hash left', (p) => p.replace(/(content="script-src 'self')[^"]*"/, '$1"')],
+  ['no hash left', (p) => p.replace(/(script-src 'self')[^;"]*/, '$1')],
   ['a hash for another script', (p) => p.replace(/'sha256-[^']{44}'/, `'sha256-${'A'.repeat(43)}='`)],
   ['an inline script edited', (p) => p.replace(/<script>/, '<script>/* edited */')],
   ['an inline script added', (p) => p.replace('</body>', '<script>void 0</script>\n</body>')],
@@ -81,13 +77,18 @@ export const BROKEN = [
   ['two policies', (p) => p.replace(CSP_META, (m) => `${m}${m}`)],
   ['an inline click handler', (p) => p.replace('</body>', '<button onclick="go()">x</button>\n</body>')],
   ['a javascript: link', (p) => p.replace('</body>', '<a href="javascript:go()">x</a>\n</body>')],
+  ['default-src removed',p=>p.replace("default-src 'self'; ",'')],
+  ['connect-src broadened',p=>p.replace('connect-src https://api.github.com','connect-src https:')],
+  ['style-src broadened',p=>p.replace("style-src 'self'", "style-src * 'self'")],
+  ['font-src broadened',p=>p.replace("font-src 'self'", "font-src * 'self'")],
+  ['img-src broadened',p=>p.replace("img-src 'self' data:","img-src * data:")],
 ];
 
 function selfTest() {
   const page = read(PAGE), files = readFiles(page);
   let ok = true;
   const own = check(page, files);
-  console.log(own.length ? `REAL PAGE FAILS: ${own.join('; ')}` : `real page passes: ${policyFor(page).split(' ').length - 2} inline script hashes, ${Object.keys(files).length} script files scanned`);
+  console.log(own.length ? `REAL PAGE FAILS: ${own.join('; ')}` : `real page passes: ${inlineHashes(page).length} inline script hashes, ${Object.keys(files).length} script files scanned`);
   if (own.length) ok = false;
   for (const [name, change] of BROKEN) {
     const changed = change(page);

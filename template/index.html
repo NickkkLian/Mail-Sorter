@@ -1,0 +1,2203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-5nyhwSzTgu2n7ZAL4gvhru/QlXgk4oq6kTJUzThiFGQ=' 'sha256-wMCHn0OpH0CosStuYwKrHjIB5qySK0qbEbedXSkpsZQ=' 'sha256-eE7cF0r/xVIRFAe0q+w1WRruq6PPaSYUgis0kDqKOeQ='; connect-src https://api.github.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'">
+<script>/* appearance boot — runs before any stylesheet so the stored palette and light/dark apply on the first paint */(function(){try{var d=document.documentElement,L=window.localStorage,t=L.getItem('nl-theme'),s=L.getItem('nl-scheme');if(s===null){var o=L.getItem('theme')||L.getItem('qm-theme');if(o==='dark'||o==='light')s=o;}if(t==='paper'||t==='ink')d.setAttribute('data-theme',t);if(s==='dark'||s==='light')d.setAttribute('data-scheme',s);}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Sort what matters. Review outdated mail before cleanup. Headersort: a scheduled Action writes a capped digest to your private repo; this board reads it.">
+<meta name="theme-color" content="#f7e9e8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#130e15" media="(prefers-color-scheme: dark)">
+<title>Headersort</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Crect x='2.5' y='2.5' width='19' height='19' rx='5' stroke='%231d1b24' stroke-width='2'/%3E%3Crect x='14' y='6' width='4' height='4' rx='1' fill='%23ca6980'/%3E%3Cpath d='M6 10l6 4 6-4M6 13v3h12v-3' stroke='%231d1b24' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500..600;1,9..144,400&family=Inter:wght@400..600&family=Space+Mono:wght@400;700&display=swap">
+<style>
+/* ---- design tokens (shared across the product family; inlined because this app is one file) ---- */
+/* Design tokens — the only source of colour, type, spacing and motion values for this app.
+   Three palettes: Plaster (default), <html data-theme="paper">, <html data-theme="ink">.
+   Light/dark: follows the OS unless <html data-scheme="light|dark"> is set (appearance.js stores the choice).
+   Pages consume semantic tokens (--bg, --surface, --text, --accent …), never raw values. */
+/* ------------------------------------------------------------------
+   THEMES.  data-theme picks the palette, data-scheme picks light/dark.
+
+     <html>                                        Plaster, follows the OS
+     <html data-theme="paper">                     Paper, follows the OS
+     <html data-theme="ink" data-scheme="dark">    Ink, forced dark
+
+   Plaster and "follow the system" are the DEFAULTS and write no attribute
+   at all - the attribute being present means the user chose something.
+
+   data-theme="dark" / "light" is a LEGACY alias. Every shipped product has
+   moved to data-scheme; the one remaining consumer is a token-migration
+   script outside this repository, which locates the dark values by matching
+   ^:root[data-theme="dark"]{ at the start of a line. Keep this block
+   standalone and line-start until that script stops parsing for it.
+
+   Each palette is declared twice: once on :root, once on a bare
+   [data-theme] so a nested element can preview a theme (used by the theme
+   picker) without the page hardcoding any colour.
+
+   A palette block overrides colour only. Spacing, type scale, radius,
+   shadow geometry and motion are declared once on :root and shared.
+   ------------------------------------------------------------------ */
+
+:root {
+
+  color-scheme: light;
+
+  /* ---- 1. Surfaces: four levels. Lightness AND hue both step ---- */
+  --paper:          #fdf6f2;   /* cards, table body, inputs - lit plane */
+  --surface:        var(--paper); /* v2 name kept: --surface is the card surface */
+  --bg:             #f7e9e8;   /* canvas - the local colour of the scene */
+  --surface-2:      #d3e3d8;   /* sunken: nav, table head, code - shadow side */
+  --surface-raised: #fef9f4;   /* menus, popovers (pair with --shadow-2) */
+  --surface-hover:  #faeff2;
+
+  /* ---- 2. Anchor: the weight of the page. Top bar / signature panel / footer / primary button ---- */
+  --anchor:         #053333;
+  --anchor-2:       #052627;   /* hover + active step */
+  --anchor-line:    #2f5859;   /* rules drawn on the anchor surface */
+  --on-anchor:      #f7f0e9;
+  --on-anchor-2:    #c7beb4;
+
+  /* ---- 3. Point colour: lily pink. Under 1.5% of page area. Seal, signature rule, one chart key ---- */
+  --point:          #ca6980;
+  --point-text:     #9c4059;   /* use this step when it has to be text */
+  --point-tint:     #ffdce2;
+  --point-tint-text:#7d2d44;
+
+  /* ---- 4. Text and borders. The ink is a deep violet-blue, not black ---- */
+  --text:           #1d1b24;
+  --text-2:         #4c4a54;
+  --text-3:         #605e67;
+  --text-inverse:   #f7f0e9;
+  --text-disabled:  #929198;   /* below 4.5 on purpose: disabled is exempt */
+  --neutral-tint:   #faeff2;
+  --neutral-tint-text: #4c4a54;
+
+  --border:         #d6d4df;        /* component edge, 1px, shadow-hue tinted */
+  --border-strong:  #bebcc8;
+  --border-input:   #797781;  /* control edge, >=3:1 on every surface */
+  --hairline:       rgb(40 23 74 / 0.10); /* second, lighter rule weight, shadow hue */
+  --border-width:   1px;
+  --border-focus-width: 2px;
+
+  /* ---- 5. Structural roles: which surface carries the band and the nav ----
+     The band is the top bar, the signature panel and the footer taken together. */
+  --band:          #053333;
+  --on-band:       #f7f0e9;
+  --on-band-2:     #c7beb4;
+  --band-line:     #2f5859;
+  --nav-surface:   #d3e3d8;
+  --on-nav:        #1d1b24;
+  --on-nav-2:      #605e67;
+  --nav-line:      #d6d4df;
+  --nav-selected:  #fdf6f2;
+  /* Non-text marks placed ON the band (legend keys, bar segments, icons, status dots).
+     Solved against --band, so they hold >=3:1 whether the band is paper or a deep anchor.
+     Never put --viz-seq-* or --warning on the band: fixed values fail on one of the two. */
+  --on-band-3:     #877d72;
+  --on-band-warning: #a97d23;
+
+  /* ---- 6. Accent and semantic colours ---- */
+  --accent:        #053333;
+  --accent-hover:  #052627;
+  --accent-active: #052627;
+  --on-accent:     #f7f0e9;
+  --accent-text:   #94484a;   /* links, icons, focus ring */
+  --accent-tint:   #f7e3e2;   /* selected row (plus a 3px leading bar) */
+  --accent-tint-text: #783739;
+
+  --brand-rose:    #bf8887;   /* decoration only: seal, charts, illustration. Never text */
+  --brand-sage:    #69866d;
+  --sage-tint:     #dae7db;   /* classification tint, never a status */
+  --sage-tint-text:#27512f;
+  --sage-text:     #4a7851;   /* decorative small labels only, never a status or link */
+
+  --success:       #006d49;  --success-tint: #c4f4db;  --success-tint-text: #005739;
+  --warning:       #7e5800;  --warning-tint: #fde5bd;  --warning-tint-text: #654500;
+  --danger:        #a93920;  --danger-hover: #99290e;
+  --danger-tint:   #ffe1d9;  --danger-tint-text: #902003;  --on-danger: #f9f6ee;
+
+  --info: var(--accent-text); --info-tint: var(--accent-tint); --info-tint-text: var(--accent-tint-text);
+  --focus:         #94484a;
+  --overlay:       rgb(36 35 41 / 0.50);   /* shadow hue, low chroma: a full-screen veil dims, it does not repaint */
+  --selection-bg:  var(--accent-tint);
+
+  /* ---- 7. Grain: the only non-flat surface treatment ----
+     Inline SVG noise, no network request, greyscale on purpose: it modulates
+     lightness only, so it cannot shift a hue or move a contrast ratio. It is the
+     cheap stand-in for broken brushwork - a coloured or painterly texture here
+     would read as a filter, which is the thing this system must not become.
+     Fixed layer BEHIND content (z-index 0, content z-index 1). Never z-index:-1. */
+  --grain-opacity: 0.034;
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+
+  /* ---- 8. Data visualisation. Fixed order, assigned in sequence, never cycled ---- */
+  --viz-1: #de7476;  --viz-2: #447838;  --viz-3: #a25089;  --viz-4: #ca9d33;
+  --viz-5: #3c7ebe;  --viz-6: #ab2e45;  --viz-7: #14938d;  --viz-8: #7860b5;
+  --viz-seq-100: #ffe4e3; --viz-seq-150: #fbd0cf; --viz-seq-200: #f5bcba;
+  --viz-seq-250: #eca5a4; --viz-seq-300: #e09090; --viz-seq-350: #d47b7c;
+  --viz-seq-400: #c5686a; --viz-seq-450: #b55658; --viz-seq-500: #a44448;
+  --viz-seq-550: #91343a; --viz-seq-600: #7c272d; --viz-seq-650: #651d22;
+  --viz-seq-700: #4d1418;
+  --viz-div-neg: var(--viz-5); --viz-div-mid: #d6d4df; --viz-div-pos: var(--viz-1);
+  --viz-grid: var(--border); --viz-axis: var(--text-3);
+  --viz-unknown: repeating-linear-gradient(135deg, #bebcc8 0 3px, transparent 3px 7px);
+
+  /* ---- 9. Type (unchanged from v3.1: the brief changed the palette, not the type) ---- */
+  --font-display: "Fraunces", "Fraunces Fallback", Georgia, "Noto Serif SC", "Songti SC", serif;
+  --font-sans:    "Inter", "Inter Fallback", system-ui, -apple-system, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  --font-mono:    "Space Mono", "Space Mono Fallback", ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --display-weight: 600;
+  --caption-style:  italic;
+  --opsz-display: 144;   /* page title at 28px and above */
+  --opsz-title:    28;   /* panel titles, 16-24px */
+  --opsz-caption:  11;   /* italic captions - low opsz is what looks engraved */
+
+  --text-2xs: 0.6875rem; --text-xs: 0.75rem;  --text-sm: 0.8125rem; --text-md: 0.875rem;
+  --text-lg:  1rem;      --text-xl: 1.25rem;  --text-2xl: 1.5rem;   --text-3xl: 2rem;
+  --text-4xl: 2.5rem;    /* page title, Fraunces at opsz 144 */
+  --leading-tight: 1.14; --leading-lede: 1.45; --leading-normal: 1.5; --leading-relaxed: 1.65;
+  --weight-regular: 400; --weight-medium: 500; --weight-semibold: 600;
+  --tracking-caps:    0.09em;
+  --tracking-display: -0.021em;
+  --tracking-title:   -0.009em;
+  --measure: 33em;               /* prose line length, about 60–75 characters of Inter (em, not ch: 66ch ran 78–96) */
+
+  /* ---- 10. Space / radius / shadow / motion / layers / layout ---- */
+  --space-0-5: 0.125rem; --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem; --space-4: 1rem;
+  --space-5: 1.25rem; --space-6: 1.5rem; --space-8: 2rem; --space-10: 2.5rem; --space-12: 3rem; --space-16: 4rem;
+  --gutter: var(--space-4);
+  --radius-xs: 3px; --radius-sm: 5px; --radius-md: 8px; --radius-lg: 12px; --radius-full: 999px;
+  /* Shadows carry the SHADOW hue, not the ink hue and never grey; light still
+     comes from the top left so every offset is +x +y. */
+  --shadow-1: 1px 1px 2px rgb(40 23 74 / 0.06),
+              2px 3px 8px -2px rgb(40 23 74 / 0.10);
+  --shadow-2: 2px 3px 8px rgb(40 23 74 / 0.11),
+              6px 14px 34px -10px rgb(40 23 74 / 0.24);
+  --dur-fast: 120ms; --dur-base: 200ms; --dur-slow: 300ms; --dur-exit: 150ms;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1); --ease-soft: cubic-bezier(0.32, 0.72, 0, 1); --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --press-scale: 0.97;
+  --motion-distance: 8px; --flash-dur: 600ms;
+  --z-sticky: 10; --z-drawer: 20; --z-overlay: 30; --z-modal: 40; --z-toast: 50;
+  --topbar-h: 52px; --nav-w: 232px; --nav-w-min: 56px; --inspector-w: 360px; --content-max: 1440px;
+  --control-h: 32px; --row-h: 38px; --touch-min: 44px;
+}
+
+/* Nested preview of the default theme. */
+[data-theme="plaster"] {
+  color-scheme: light;
+  --paper: #fdf6f2;
+  --surface: var(--paper);
+  --bg: #f7e9e8;
+  --surface-2: #d3e3d8;
+  --point: #ca6980;
+  --text: #1d1b24;
+  --text-2: #4c4a54;
+  --border: #d6d4df;
+  --band: #053333;
+  --on-band: #f7f0e9;
+  --band-line: #2f5859;
+  --accent: #053333;
+  --on-accent: #f7f0e9;
+  --accent-text: #94484a;
+}
+
+/* --- Paper, light (59 colour tokens differ from the default; 2 preview tokens restated) --- */
+:root[data-theme="paper"], [data-theme="paper"] {
+  color-scheme: light;
+  --paper: #fdf6f2;
+  --surface: var(--paper);
+  --bg: #f7f4ed;
+  --surface-2: #e8f4f1;
+  --surface-raised: #fef7f4;
+  --surface-hover: #f5f7f0;
+  --anchor: #19222e;
+  --anchor-2: #0f1722;
+  --anchor-line: #3c4551;
+  --on-anchor: #f9efeb;
+  --on-anchor-2: #c9bcb6;
+  --point: #b54a60;
+  --point-text: #ad3b55;
+  --point-tint: #ffdce0;
+  --point-tint-text: #87233d;
+  --text: #181d25;
+  --text-2: #4b5158;
+  --text-3: #5f646c;
+  --text-inverse: #f9efeb;
+  --text-disabled: #8e9398;
+  --neutral-tint: #f5f7f0;
+  --neutral-tint-text: #4b5158;
+  --border: #d0d7e0;
+  --border-strong: #b6bec9;
+  --border-input: #787e87;
+  --hairline: rgb(0 34 78 / 0.10);
+  --band: #fdf6f2;
+  --on-band: #181d25;
+  --on-band-2: #4b5158;
+  --band-line: #d0d7e0;
+  --nav-surface: #f7f4ed;
+  --on-nav: #181d25;
+  --on-nav-2: #5f646c;
+  --nav-line: #d0d7e0;
+  --on-band-3: #92837d;
+  --on-band-warning: #a5781e;
+  --accent: #b54a60;
+  --accent-hover: #a43b53;
+  --accent-active: #a43b53;
+  --on-accent: #fdf3f1;
+  --accent-text: #984d5a;
+  --accent-tint: #f7e2e5;
+  --accent-tint-text: #773643;
+  --brand-rose: #be878f;
+  --brand-sage: #638773;
+  --sage-tint: #d7e8de;
+  --sage-tint-text: #195238;
+  --sage-text: #3d795b;
+  --success: #007253;
+  --success-tint: #c2f5de;
+  --success-tint-text: #00573e;
+  --warning: #845d00;
+  --danger: #8c1b00;
+  --danger-hover: #771200;
+  --on-danger: #fdf3f1;
+  --focus: #984d5a;
+  --overlay: rgb(32 36 42 / 0.50);
+  --viz-div-mid: #d0d7e0;
+  --viz-unknown: repeating-linear-gradient(135deg, #b6bec9 0 3px, transparent 3px 7px);
+  --shadow-1: 1px 1px 2px rgb(0 34 78 / 0.06), 2px 3px 8px -2px rgb(0 34 78 / 0.10);
+  --shadow-2: 2px 3px 8px rgb(0 34 78 / 0.11), 6px 14px 34px -10px rgb(0 34 78 / 0.24);
+}
+
+/* --- Ink, light (63 colour tokens differ from the default; 1 preview tokens restated) --- */
+:root[data-theme="ink"], [data-theme="ink"] {
+  color-scheme: light;
+  --paper: #fbf8f1;
+  --surface: var(--paper);
+  --bg: #e7f2ef;
+  --surface-2: #f0e1e4;
+  --surface-raised: #fef8f4;
+  --surface-hover: #edf6f8;
+  --anchor: #241b34;
+  --anchor-2: #1a1028;
+  --anchor-line: #473f58;
+  --on-anchor: #f8f0ea;
+  --on-anchor-2: #c8bdb4;
+  --point: #cf5821;
+  --point-text: #ad3e00;
+  --point-tint: #ffded2;
+  --point-tint-text: #842c00;
+  --text: #1e1b24;
+  --text-2: #504d56;
+  --text-3: #64616a;
+  --text-inverse: #f8f0ea;
+  --text-disabled: #939198;
+  --neutral-tint: #edf6f8;
+  --neutral-tint-text: #504d56;
+  --border: #d7d4df;
+  --border-strong: #bfbbc8;
+  --border-input: #7e7b85;
+  --hairline: rgb(44 22 72 / 0.10);
+  --band: #241b34;
+  --on-band: #f8f0ea;
+  --on-band-2: #c8bdb4;
+  --band-line: #473f58;
+  --nav-surface: #241b34;
+  --on-nav: #f8f0ea;
+  --on-nav-2: #c8bdb4;
+  --nav-line: #473f58;
+  --nav-selected: #1a1028;
+  --on-band-3: #7b7066;
+  --on-band-warning: #9c700e;
+  --accent: #241b34;
+  --accent-hover: #1a1028;
+  --accent-active: #1a1028;
+  --on-accent: #f8f0ea;
+  --accent-text: #984b54;
+  --accent-tint: #f7e2e4;
+  --accent-tint-text: #77363e;
+  --brand-rose: #be878b;
+  --brand-sage: #5c877d;
+  --sage-tint: #d5e8e3;
+  --sage-tint-text: #005346;
+  --sage-text: #2c7a6b;
+  --success: #21703f;
+  --success-tint: #caf3d4;
+  --success-tint-text: #005829;
+  --warning: #835b00;
+  --danger: #ac3857;
+  --danger-hover: #9b284a;
+  --danger-tint: #ffdfe4;
+  --danger-tint-text: #8f1a40;
+  --on-danger: #fdf4f0;
+  --focus: #984b54;
+  --overlay: rgb(37 35 41 / 0.50);
+  --viz-div-mid: #d7d4df;
+  --viz-unknown: repeating-linear-gradient(135deg, #bfbbc8 0 3px, transparent 3px 7px);
+  --shadow-1: 1px 1px 2px rgb(44 22 72 / 0.06), 2px 3px 8px -2px rgb(44 22 72 / 0.10);
+  --shadow-2: 2px 3px 8px rgb(44 22 72 / 0.11), 6px 14px 34px -10px rgb(44 22 72 / 0.24);
+}
+
+@media (prefers-color-scheme: dark) {
+:root:not([data-scheme="light"]):not([data-theme="light"]) {
+    color-scheme: dark;
+    --paper: #241f27;
+    --surface: var(--paper);
+    --bg: #130e15;
+    --surface-2: #0b1e16;
+    --surface-raised: #2e2831;
+    --surface-hover: #2c232f;
+    --anchor: #163437;
+    --anchor-2: #224042;
+    --anchor-line: #395456;
+    --on-anchor: #ece5de;
+    --on-anchor-2: #afa69d;
+    --point: #f8a1b3;
+    --point-text: #d17d8f;
+    --point-tint: #3f1f26;
+    --point-tint-text: #f09eaf;
+    --text: #ebe5df;
+    --text-2: #b2adb6;
+    --text-3: #98949b;
+    --text-inverse: #130e15;
+    --text-disabled: #5a565c;
+    --neutral-tint: #2c232f;
+    --neutral-tint-text: #b2adb6;
+    --border: #35323d;
+    --border-strong: #4a4753;
+    --border-input: #7c7780;
+    --hairline: rgb(235 229 223 / 0.15);
+    --band: #163437;
+    --on-band: #ece5de;
+    --on-band-2: #afa69d;
+    --band-line: #395456;
+    --nav-surface: #0b1e16;
+    --on-nav: #ebe5df;
+    --on-nav-2: #98949b;
+    --nav-line: #35323d;
+    --nav-selected: #241f27;
+    --on-band-3: #897f74;
+    --on-band-warning: #a98034;
+    --accent: #add5d8;
+    --accent-hover: #c4e3e6;
+    --accent-active: #f8a1b3;
+    --on-accent: #121116;
+    --accent-text: #c78383;
+    --accent-tint: #352222;
+    --accent-tint-text: #e3a2a0;
+    --brand-rose: #d39a99;
+    --brand-sage: #7f9481;
+    --sage-tint: #212b22;
+    --sage-tint-text: #94bf99;
+    --sage-text: #6a9770;
+    --success: #3ca77a;
+    --success-tint: #03301f;
+    --success-tint-text: #60c999;
+    --warning: #b98e40;
+    --warning-tint: #362505;
+    --warning-tint-text: #d9ad60;
+    --danger: #da7b66;
+    --danger-hover: #eb8b75;
+    --danger-tint: #3d2019;
+    --danger-tint-text: #fb9a83;
+    --on-danger: #0d0c12;
+    --info: var(--accent-text);
+    --info-tint: var(--accent-tint);
+    --info-tint-text: var(--accent-tint-text);
+    --focus: #c78383;
+    --overlay: rgb(4 3 7 / 0.72);
+    --selection-bg: var(--accent-tint);
+    --grain-opacity: 0.046;
+    --viz-1: #d67072;
+    --viz-2: #3c7030;
+    --viz-3: #b25e98;
+    --viz-4: #b3880f;
+    --viz-5: #488acb;
+    --viz-6: #b84455;
+    --viz-7: #169d97;
+    --viz-8: #866ec5;
+    --viz-div-mid: #35323d;
+    --viz-grid: var(--border);
+    --viz-axis: var(--text-3);
+    --viz-unknown: repeating-linear-gradient(135deg, #4a4753 0 3px, transparent 3px 7px);
+    --shadow-1: 1px 1px 2px rgb(6 0 21 / 0.50), 2px 3px 8px -2px rgb(6 0 21 / 0.46);
+    --shadow-2: 2px 3px 10px rgb(6 0 21 / 0.55), 6px 16px 38px -10px rgb(6 0 21 / 0.70);
+}
+[data-theme="plaster"]:not([data-scheme="light"]) {
+    color-scheme: dark;
+    --paper: #241f27;
+    --surface: var(--paper);
+    --bg: #130e15;
+    --surface-2: #0b1e16;
+    --point: #f8a1b3;
+    --text: #ebe5df;
+    --text-2: #b2adb6;
+    --border: #35323d;
+    --band: #163437;
+    --on-band: #ece5de;
+    --band-line: #395456;
+    --accent: #add5d8;
+    --on-accent: #121116;
+    --accent-text: #c78383;
+}
+:root[data-theme="paper"]:not([data-scheme="light"]) {
+    color-scheme: dark;
+    --paper: #1d2129;
+    --surface: var(--paper);
+    --bg: #0b1117;
+    --surface-2: #061e1e;
+    --surface-raised: #272b34;
+    --surface-hover: #1b2b25;
+    --anchor: #233041;
+    --anchor-2: #2e3b4d;
+    --anchor-line: #434f60;
+    --on-anchor: #eee4e0;
+    --on-anchor-2: #b1a5a0;
+    --point: #ff9dac;
+    --point-text: #dd7889;
+    --point-tint: #431c23;
+    --point-tint-text: #fb98a7;
+    --text: #ede4e0;
+    --text-2: #abb0b9;
+    --text-3: #93969e;
+    --text-inverse: #0b1117;
+    --text-disabled: #55585e;
+    --neutral-tint: #1b2b25;
+    --neutral-tint-text: #abb0b9;
+    --border: #2e353d;
+    --border-strong: #424a54;
+    --border-input: #757a83;
+    --hairline: rgb(237 228 224 / 0.15);
+    --band: #233041;
+    --on-band: #eee4e0;
+    --on-band-2: #b1a5a0;
+    --band-line: #434f60;
+    --nav-surface: #0b1117;
+    --on-nav: #ede4e0;
+    --on-nav-2: #93969e;
+    --nav-line: #2e353d;
+    --nav-selected: #1d2129;
+    --on-band-3: #8c7d77;
+    --on-band-warning: #a88034;
+    --accent: #f5bac2;
+    --accent-hover: #feced4;
+    --accent-active: #ff9dac;
+    --on-accent: #0e1216;
+    --accent-text: #c7848d;
+    --accent-tint: #352225;
+    --accent-tint-text: #e3a2aa;
+    --brand-rose: #d299a1;
+    --brand-sage: #7a9586;
+    --sage-tint: #1f2b24;
+    --sage-tint-text: #8ac0a2;
+    --sage-text: #5f987a;
+    --success: #33a981;
+    --success-tint: #003121;
+    --success-tint-text: #5acaa0;
+    --warning: #ba8f41;
+    --warning-tint: #362505;
+    --warning-tint-text: #d9ad60;
+    --danger: #db7c66;
+    --danger-hover: #ec8c75;
+    --danger-tint: #3d2019;
+    --danger-tint-text: #fb9a83;
+    --on-danger: #0a0e12;
+    --info: var(--accent-text);
+    --info-tint: var(--accent-tint);
+    --info-tint-text: var(--accent-tint-text);
+    --focus: #c7848d;
+    --overlay: rgb(2 4 7 / 0.72);
+    --selection-bg: var(--accent-tint);
+    --grain-opacity: 0.046;
+    --viz-1: #d67072;
+    --viz-2: #3c7030;
+    --viz-3: #b25e98;
+    --viz-4: #b3880f;
+    --viz-5: #488acb;
+    --viz-6: #b84455;
+    --viz-7: #169d97;
+    --viz-8: #866ec5;
+    --viz-div-mid: #2e353d;
+    --viz-grid: var(--border);
+    --viz-axis: var(--text-3);
+    --viz-unknown: repeating-linear-gradient(135deg, #424a54 0 3px, transparent 3px 7px);
+    --shadow-1: 1px 1px 2px rgb(0 2 23 / 0.50), 2px 3px 8px -2px rgb(0 2 23 / 0.46);
+    --shadow-2: 2px 3px 10px rgb(0 2 23 / 0.55), 6px 16px 38px -10px rgb(0 2 23 / 0.70);
+}
+[data-theme="paper"]:not([data-scheme="light"]) {
+    color-scheme: dark;
+    --paper: #1d2129;
+    --surface: var(--paper);
+    --bg: #0b1117;
+    --surface-2: #061e1e;
+    --point: #ff9dac;
+    --text: #ede4e0;
+    --text-2: #abb0b9;
+    --border: #2e353d;
+    --band: #233041;
+    --on-band: #eee4e0;
+    --band-line: #434f60;
+    --accent: #f5bac2;
+    --on-accent: #0e1216;
+    --accent-text: #c7848d;
+}
+:root[data-theme="ink"]:not([data-scheme="light"]) {
+    color-scheme: dark;
+    --paper: #251e26;
+    --surface: var(--paper);
+    --bg: #081314;
+    --surface-2: #201522;
+    --surface-raised: #2e2831;
+    --surface-hover: #1c2932;
+    --anchor: #322b3f;
+    --anchor-2: #3d364b;
+    --anchor-line: #514b5e;
+    --on-anchor: #ece5de;
+    --on-anchor-2: #afa69e;
+    --point: #ffa37f;
+    --point-text: #e0794f;
+    --point-tint: #441d0d;
+    --point-tint-text: #ff9a73;
+    --text: #ece5df;
+    --text-2: #b4acb4;
+    --text-3: #9a939a;
+    --text-inverse: #081314;
+    --text-disabled: #5b565b;
+    --neutral-tint: #1c2932;
+    --neutral-tint-text: #b4acb4;
+    --border: #35323c;
+    --border-strong: #4a4752;
+    --border-input: #7e777e;
+    --hairline: rgb(236 229 223 / 0.15);
+    --band: #322b3f;
+    --on-band: #ece5de;
+    --on-band-2: #afa69e;
+    --band-line: #514b5e;
+    --nav-surface: #322b3f;
+    --on-nav: #ece5de;
+    --on-nav-2: #afa69e;
+    --nav-line: #514b5e;
+    --nav-selected: #3d364b;
+    --on-band-3: #897d74;
+    --on-band-warning: #a77f33;
+    --accent: #d0c6e4;
+    --accent-hover: #dfd8f0;
+    --accent-active: #ffa37f;
+    --on-accent: #121116;
+    --accent-text: #c68388;
+    --accent-tint: #352224;
+    --accent-tint-text: #e3a2a6;
+    --brand-rose: #d29a9e;
+    --brand-sage: #75968e;
+    --sage-tint: #1d2b28;
+    --sage-tint-text: #80c1b1;
+    --sage-text: #529888;
+    --success: #51a66b;
+    --success-tint: #0d3019;
+    --success-tint-text: #73c88b;
+    --warning: #b98e40;
+    --warning-tint: #362505;
+    --warning-tint-text: #d9ad60;
+    --danger: #d9788b;
+    --danger-hover: #ea879a;
+    --danger-tint: #3d1e24;
+    --danger-tint-text: #fa96a9;
+    --on-danger: #0e0c11;
+    --info: var(--accent-text);
+    --info-tint: var(--accent-tint);
+    --info-tint-text: var(--accent-tint-text);
+    --focus: #c68388;
+    --overlay: rgb(4 3 7 / 0.72);
+    --selection-bg: var(--accent-tint);
+    --grain-opacity: 0.046;
+    --viz-1: #d67072;
+    --viz-2: #3c7030;
+    --viz-3: #b25e98;
+    --viz-4: #b3880f;
+    --viz-5: #488acb;
+    --viz-6: #b84455;
+    --viz-7: #169d97;
+    --viz-8: #866ec5;
+    --viz-div-mid: #35323c;
+    --viz-grid: var(--border);
+    --viz-axis: var(--text-3);
+    --viz-unknown: repeating-linear-gradient(135deg, #4a4752 0 3px, transparent 3px 7px);
+    --shadow-1: 1px 1px 2px rgb(7 0 20 / 0.50), 2px 3px 8px -2px rgb(7 0 20 / 0.46);
+    --shadow-2: 2px 3px 10px rgb(7 0 20 / 0.55), 6px 16px 38px -10px rgb(7 0 20 / 0.70);
+}
+[data-theme="ink"]:not([data-scheme="light"]) {
+    color-scheme: dark;
+    --paper: #251e26;
+    --surface: var(--paper);
+    --bg: #081314;
+    --surface-2: #201522;
+    --point: #ffa37f;
+    --text: #ece5df;
+    --text-2: #b4acb4;
+    --border: #35323c;
+    --band: #322b3f;
+    --on-band: #ece5de;
+    --band-line: #514b5e;
+    --accent: #d0c6e4;
+    --on-accent: #121116;
+    --accent-text: #c68388;
+}
+}
+
+/* Legacy alias. Must stay a standalone, line-start block: a token-migration script
+   outside this repository locates the dark values with ^:root\[data-theme="dark"\]\s*\{
+   and would silently read light values as dark if this were folded into a selector list. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #241f27;
+  --surface: var(--paper);
+  --bg: #130e15;
+  --surface-2: #0b1e16;
+  --surface-raised: #2e2831;
+  --surface-hover: #2c232f;
+  --anchor: #163437;
+  --anchor-2: #224042;
+  --anchor-line: #395456;
+  --on-anchor: #ece5de;
+  --on-anchor-2: #afa69d;
+  --point: #f8a1b3;
+  --point-text: #d17d8f;
+  --point-tint: #3f1f26;
+  --point-tint-text: #f09eaf;
+  --text: #ebe5df;
+  --text-2: #b2adb6;
+  --text-3: #98949b;
+  --text-inverse: #130e15;
+  --text-disabled: #5a565c;
+  --neutral-tint: #2c232f;
+  --neutral-tint-text: #b2adb6;
+  --border: #35323d;
+  --border-strong: #4a4753;
+  --border-input: #7c7780;
+  --hairline: rgb(235 229 223 / 0.15);
+  --band: #163437;
+  --on-band: #ece5de;
+  --on-band-2: #afa69d;
+  --band-line: #395456;
+  --nav-surface: #0b1e16;
+  --on-nav: #ebe5df;
+  --on-nav-2: #98949b;
+  --nav-line: #35323d;
+  --nav-selected: #241f27;
+  --on-band-3: #897f74;
+  --on-band-warning: #a98034;
+  --accent: #add5d8;
+  --accent-hover: #c4e3e6;
+  --accent-active: #f8a1b3;
+  --on-accent: #121116;
+  --accent-text: #c78383;
+  --accent-tint: #352222;
+  --accent-tint-text: #e3a2a0;
+  --brand-rose: #d39a99;
+  --brand-sage: #7f9481;
+  --sage-tint: #212b22;
+  --sage-tint-text: #94bf99;
+  --sage-text: #6a9770;
+  --success: #3ca77a;
+  --success-tint: #03301f;
+  --success-tint-text: #60c999;
+  --warning: #b98e40;
+  --warning-tint: #362505;
+  --warning-tint-text: #d9ad60;
+  --danger: #da7b66;
+  --danger-hover: #eb8b75;
+  --danger-tint: #3d2019;
+  --danger-tint-text: #fb9a83;
+  --on-danger: #0d0c12;
+  --info: var(--accent-text);
+  --info-tint: var(--accent-tint);
+  --info-tint-text: var(--accent-tint-text);
+  --focus: #c78383;
+  --overlay: rgb(4 3 7 / 0.72);
+  --selection-bg: var(--accent-tint);
+  --grain-opacity: 0.046;
+  --viz-1: #d67072;
+  --viz-2: #3c7030;
+  --viz-3: #b25e98;
+  --viz-4: #b3880f;
+  --viz-5: #488acb;
+  --viz-6: #b84455;
+  --viz-7: #169d97;
+  --viz-8: #866ec5;
+  --viz-div-mid: #35323d;
+  --viz-grid: var(--border);
+  --viz-axis: var(--text-3);
+  --viz-unknown: repeating-linear-gradient(135deg, #4a4753 0 3px, transparent 3px 7px);
+  --shadow-1: 1px 1px 2px rgb(6 0 21 / 0.50), 2px 3px 8px -2px rgb(6 0 21 / 0.46);
+  --shadow-2: 2px 3px 10px rgb(6 0 21 / 0.55), 6px 16px 38px -10px rgb(6 0 21 / 0.70);
+}
+
+:root[data-scheme="dark"] {
+  color-scheme: dark;
+  --paper: #241f27;
+  --surface: var(--paper);
+  --bg: #130e15;
+  --surface-2: #0b1e16;
+  --surface-raised: #2e2831;
+  --surface-hover: #2c232f;
+  --anchor: #163437;
+  --anchor-2: #224042;
+  --anchor-line: #395456;
+  --on-anchor: #ece5de;
+  --on-anchor-2: #afa69d;
+  --point: #f8a1b3;
+  --point-text: #d17d8f;
+  --point-tint: #3f1f26;
+  --point-tint-text: #f09eaf;
+  --text: #ebe5df;
+  --text-2: #b2adb6;
+  --text-3: #98949b;
+  --text-inverse: #130e15;
+  --text-disabled: #5a565c;
+  --neutral-tint: #2c232f;
+  --neutral-tint-text: #b2adb6;
+  --border: #35323d;
+  --border-strong: #4a4753;
+  --border-input: #7c7780;
+  --hairline: rgb(235 229 223 / 0.15);
+  --band: #163437;
+  --on-band: #ece5de;
+  --on-band-2: #afa69d;
+  --band-line: #395456;
+  --nav-surface: #0b1e16;
+  --on-nav: #ebe5df;
+  --on-nav-2: #98949b;
+  --nav-line: #35323d;
+  --nav-selected: #241f27;
+  --on-band-3: #897f74;
+  --on-band-warning: #a98034;
+  --accent: #add5d8;
+  --accent-hover: #c4e3e6;
+  --accent-active: #f8a1b3;
+  --on-accent: #121116;
+  --accent-text: #c78383;
+  --accent-tint: #352222;
+  --accent-tint-text: #e3a2a0;
+  --brand-rose: #d39a99;
+  --brand-sage: #7f9481;
+  --sage-tint: #212b22;
+  --sage-tint-text: #94bf99;
+  --sage-text: #6a9770;
+  --success: #3ca77a;
+  --success-tint: #03301f;
+  --success-tint-text: #60c999;
+  --warning: #b98e40;
+  --warning-tint: #362505;
+  --warning-tint-text: #d9ad60;
+  --danger: #da7b66;
+  --danger-hover: #eb8b75;
+  --danger-tint: #3d2019;
+  --danger-tint-text: #fb9a83;
+  --on-danger: #0d0c12;
+  --info: var(--accent-text);
+  --info-tint: var(--accent-tint);
+  --info-tint-text: var(--accent-tint-text);
+  --focus: #c78383;
+  --overlay: rgb(4 3 7 / 0.72);
+  --selection-bg: var(--accent-tint);
+  --grain-opacity: 0.046;
+  --viz-1: #d67072;
+  --viz-2: #3c7030;
+  --viz-3: #b25e98;
+  --viz-4: #b3880f;
+  --viz-5: #488acb;
+  --viz-6: #b84455;
+  --viz-7: #169d97;
+  --viz-8: #866ec5;
+  --viz-div-mid: #35323d;
+  --viz-grid: var(--border);
+  --viz-axis: var(--text-3);
+  --viz-unknown: repeating-linear-gradient(135deg, #4a4753 0 3px, transparent 3px 7px);
+  --shadow-1: 1px 1px 2px rgb(6 0 21 / 0.50), 2px 3px 8px -2px rgb(6 0 21 / 0.46);
+  --shadow-2: 2px 3px 10px rgb(6 0 21 / 0.55), 6px 16px 38px -10px rgb(6 0 21 / 0.70);
+}
+
+[data-theme="plaster"][data-scheme="dark"] {
+  color-scheme: dark;
+  --paper: #241f27;
+  --surface: var(--paper);
+  --bg: #130e15;
+  --surface-2: #0b1e16;
+  --point: #f8a1b3;
+  --text: #ebe5df;
+  --text-2: #b2adb6;
+  --border: #35323d;
+  --band: #163437;
+  --on-band: #ece5de;
+  --band-line: #395456;
+  --accent: #add5d8;
+  --on-accent: #121116;
+  --accent-text: #c78383;
+}
+
+:root[data-theme="paper"][data-scheme="dark"], [data-theme="paper"][data-scheme="dark"] {
+  color-scheme: dark;
+  --paper: #1d2129;
+  --surface: var(--paper);
+  --bg: #0b1117;
+  --surface-2: #061e1e;
+  --surface-raised: #272b34;
+  --surface-hover: #1b2b25;
+  --anchor: #233041;
+  --anchor-2: #2e3b4d;
+  --anchor-line: #434f60;
+  --on-anchor: #eee4e0;
+  --on-anchor-2: #b1a5a0;
+  --point: #ff9dac;
+  --point-text: #dd7889;
+  --point-tint: #431c23;
+  --point-tint-text: #fb98a7;
+  --text: #ede4e0;
+  --text-2: #abb0b9;
+  --text-3: #93969e;
+  --text-inverse: #0b1117;
+  --text-disabled: #55585e;
+  --neutral-tint: #1b2b25;
+  --neutral-tint-text: #abb0b9;
+  --border: #2e353d;
+  --border-strong: #424a54;
+  --border-input: #757a83;
+  --hairline: rgb(237 228 224 / 0.15);
+  --band: #233041;
+  --on-band: #eee4e0;
+  --on-band-2: #b1a5a0;
+  --band-line: #434f60;
+  --nav-surface: #0b1117;
+  --on-nav: #ede4e0;
+  --on-nav-2: #93969e;
+  --nav-line: #2e353d;
+  --nav-selected: #1d2129;
+  --on-band-3: #8c7d77;
+  --on-band-warning: #a88034;
+  --accent: #f5bac2;
+  --accent-hover: #feced4;
+  --accent-active: #ff9dac;
+  --on-accent: #0e1216;
+  --accent-text: #c7848d;
+  --accent-tint: #352225;
+  --accent-tint-text: #e3a2aa;
+  --brand-rose: #d299a1;
+  --brand-sage: #7a9586;
+  --sage-tint: #1f2b24;
+  --sage-tint-text: #8ac0a2;
+  --sage-text: #5f987a;
+  --success: #33a981;
+  --success-tint: #003121;
+  --success-tint-text: #5acaa0;
+  --warning: #ba8f41;
+  --warning-tint: #362505;
+  --warning-tint-text: #d9ad60;
+  --danger: #db7c66;
+  --danger-hover: #ec8c75;
+  --danger-tint: #3d2019;
+  --danger-tint-text: #fb9a83;
+  --on-danger: #0a0e12;
+  --info: var(--accent-text);
+  --info-tint: var(--accent-tint);
+  --info-tint-text: var(--accent-tint-text);
+  --focus: #c7848d;
+  --overlay: rgb(2 4 7 / 0.72);
+  --selection-bg: var(--accent-tint);
+  --grain-opacity: 0.046;
+  --viz-1: #d67072;
+  --viz-2: #3c7030;
+  --viz-3: #b25e98;
+  --viz-4: #b3880f;
+  --viz-5: #488acb;
+  --viz-6: #b84455;
+  --viz-7: #169d97;
+  --viz-8: #866ec5;
+  --viz-div-mid: #2e353d;
+  --viz-grid: var(--border);
+  --viz-axis: var(--text-3);
+  --viz-unknown: repeating-linear-gradient(135deg, #424a54 0 3px, transparent 3px 7px);
+  --shadow-1: 1px 1px 2px rgb(0 2 23 / 0.50), 2px 3px 8px -2px rgb(0 2 23 / 0.46);
+  --shadow-2: 2px 3px 10px rgb(0 2 23 / 0.55), 6px 16px 38px -10px rgb(0 2 23 / 0.70);
+}
+
+:root[data-theme="ink"][data-scheme="dark"], [data-theme="ink"][data-scheme="dark"] {
+  color-scheme: dark;
+  --paper: #251e26;
+  --surface: var(--paper);
+  --bg: #081314;
+  --surface-2: #201522;
+  --surface-raised: #2e2831;
+  --surface-hover: #1c2932;
+  --anchor: #322b3f;
+  --anchor-2: #3d364b;
+  --anchor-line: #514b5e;
+  --on-anchor: #ece5de;
+  --on-anchor-2: #afa69e;
+  --point: #ffa37f;
+  --point-text: #e0794f;
+  --point-tint: #441d0d;
+  --point-tint-text: #ff9a73;
+  --text: #ece5df;
+  --text-2: #b4acb4;
+  --text-3: #9a939a;
+  --text-inverse: #081314;
+  --text-disabled: #5b565b;
+  --neutral-tint: #1c2932;
+  --neutral-tint-text: #b4acb4;
+  --border: #35323c;
+  --border-strong: #4a4752;
+  --border-input: #7e777e;
+  --hairline: rgb(236 229 223 / 0.15);
+  --band: #322b3f;
+  --on-band: #ece5de;
+  --on-band-2: #afa69e;
+  --band-line: #514b5e;
+  --nav-surface: #322b3f;
+  --on-nav: #ece5de;
+  --on-nav-2: #afa69e;
+  --nav-line: #514b5e;
+  --nav-selected: #3d364b;
+  --on-band-3: #897d74;
+  --on-band-warning: #a77f33;
+  --accent: #d0c6e4;
+  --accent-hover: #dfd8f0;
+  --accent-active: #ffa37f;
+  --on-accent: #121116;
+  --accent-text: #c68388;
+  --accent-tint: #352224;
+  --accent-tint-text: #e3a2a6;
+  --brand-rose: #d29a9e;
+  --brand-sage: #75968e;
+  --sage-tint: #1d2b28;
+  --sage-tint-text: #80c1b1;
+  --sage-text: #529888;
+  --success: #51a66b;
+  --success-tint: #0d3019;
+  --success-tint-text: #73c88b;
+  --warning: #b98e40;
+  --warning-tint: #362505;
+  --warning-tint-text: #d9ad60;
+  --danger: #d9788b;
+  --danger-hover: #ea879a;
+  --danger-tint: #3d1e24;
+  --danger-tint-text: #fa96a9;
+  --on-danger: #0e0c11;
+  --info: var(--accent-text);
+  --info-tint: var(--accent-tint);
+  --info-tint-text: var(--accent-tint-text);
+  --focus: #c68388;
+  --overlay: rgb(4 3 7 / 0.72);
+  --selection-bg: var(--accent-tint);
+  --grain-opacity: 0.046;
+  --viz-1: #d67072;
+  --viz-2: #3c7030;
+  --viz-3: #b25e98;
+  --viz-4: #b3880f;
+  --viz-5: #488acb;
+  --viz-6: #b84455;
+  --viz-7: #169d97;
+  --viz-8: #866ec5;
+  --viz-div-mid: #35323c;
+  --viz-grid: var(--border);
+  --viz-axis: var(--text-3);
+  --viz-unknown: repeating-linear-gradient(135deg, #4a4752 0 3px, transparent 3px 7px);
+  --shadow-1: 1px 1px 2px rgb(7 0 20 / 0.50), 2px 3px 8px -2px rgb(7 0 20 / 0.46);
+  --shadow-2: 2px 3px 10px rgb(7 0 20 / 0.55), 6px 16px 38px -10px rgb(7 0 20 / 0.70);
+}
+
+@media (pointer: coarse) { :root { --control-h: 40px; --row-h: 44px; } }
+
+/* Reduced motion: keep the feedback, drop the movement.
+   Not a blanket kill switch - colour and opacity still transition (they carry meaning),
+   only transforms and travel distance are removed. */
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-slow: 120ms; --motion-distance: 0px; --flash-dur: 1ms; }
+  *, *::before, *::after { transition-property: opacity, background-color, border-color, color, box-shadow, outline-color !important; }
+  *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; }
+}
+/* ---- base ---- */
+/* ===== Fallback faces: until the web fonts load (or if they never do), system fonts are scaled to the measured widths so line lengths and column widths do not jump ===== */
+@font-face{font-family:"Fraunces Fallback";src:local("Georgia"),local("Times New Roman");size-adjust:93.3%}
+@font-face{font-family:"Fraunces Fallback";src:local("Georgia Bold"),local("Georgia-Bold"),local("Times New Roman Bold");font-weight:600 700;size-adjust:92.3%}
+@font-face{font-family:"Inter Fallback";src:local("Helvetica Neue"),local("Arial"),local("Segoe UI");size-adjust:106.5%}
+@font-face{font-family:"Space Mono Fallback";src:local("Menlo Regular"),local("Menlo-Regular"),local("Consolas"),local("DejaVu Sans Mono");size-adjust:101.7%}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:var(--weight-regular) var(--text-md)/var(--leading-normal) var(--font-sans);-webkit-tap-highlight-color:transparent;touch-action:manipulation;font-variant-numeric:lining-nums}
+::selection{background:var(--selection-bg)}
+:focus-visible{outline:var(--border-focus-width) solid var(--focus);outline-offset:2px;border-radius:var(--radius-xs)}
+button,input,select{font:inherit;color:inherit}
+a{color:var(--accent-text);text-underline-offset:.18em;text-decoration-thickness:from-font}
+code,kbd,.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums lining-nums}
+h1,h2,h3{margin:0;font-family:var(--font-display);font-weight:var(--display-weight);line-height:var(--leading-tight);text-wrap:balance;letter-spacing:var(--tracking-title);font-variation-settings:"opsz" var(--opsz-title)}
+p{margin:0}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;white-space:nowrap;clip-path:inset(50%)}
+.skip{position:absolute;left:var(--space-2);top:-48px;background:var(--surface);padding:var(--space-2) var(--space-3);border:1px solid var(--border-input);border-radius:var(--radius-sm);z-index:var(--z-toast)}
+.skip:focus-visible{outline-color:var(--on-band)}   /* the link shows on top of the dark top bar, so its ring is drawn on the band */
+.skip:focus{top:var(--space-2)}
+[hidden]{display:none!important}
+.muted{color:var(--text-2)}.faint{color:var(--text-3)}
+/* ---- topbar ---- */
+.topbar{position:sticky;top:0;z-index:var(--z-sticky);height:var(--topbar-h);display:flex;flex-wrap:nowrap;align-items:center;gap:var(--space-2);padding:0 var(--gutter);background:var(--band);border-bottom:1px solid var(--band-line);color:var(--on-band)}
+.brand{display:flex;align-items:center;gap:var(--space-2);color:inherit;text-decoration:none;min-width:0;flex:0 1 auto}
+.brand svg{flex:none}.brand b{white-space:nowrap;font-weight:var(--display-weight);flex:none;font-family:var(--font-display);font-variation-settings:"opsz" var(--opsz-title);font-size:var(--text-xl);letter-spacing:-0.014em}
+.brand span{color:var(--on-band-2);font-size:var(--text-xs);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill{display:inline-flex;align-items:center;gap:var(--space-1);height:22px;padding:0 var(--space-2);border-radius:var(--radius-full);font:var(--weight-medium) var(--text-2xs)/1 var(--font-mono);letter-spacing:.02em;border:1px solid var(--warning);color:var(--warning-tint-text);background:var(--warning-tint);white-space:nowrap;flex:none}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--warning)}
+.pill.live{border-color:var(--success);color:var(--success-tint-text);background:var(--success-tint)}.pill.live::before{background:var(--success)}
+.spacer{flex:1}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--space-1);height:var(--control-h);padding:0 var(--space-4);border-radius:var(--radius-sm);border:1px solid var(--border-input);background:var(--paper);color:var(--text);cursor:pointer;font-size:var(--text-sm);font-weight:var(--weight-medium);white-space:nowrap;text-decoration:none;transition:background-color var(--dur-fast) var(--ease-out),transform var(--dur-fast) var(--ease-out)}
+@media (hover:hover) and (pointer:fine){.btn:hover{background:var(--surface-hover)}}.btn:active{transform:scale(var(--press-scale))}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}@media (hover:hover) and (pointer:fine){.btn-primary:hover{background:var(--accent-hover)}}
+.btn-ghost{border-color:transparent;background:transparent}@media (hover:hover) and (pointer:fine){.btn-ghost:hover{background:var(--neutral-tint)}}
+.btn-icon{width:var(--control-h);padding:0}.btn-sm{height:26px;font-size:var(--text-xs);padding:0 var(--space-2)}
+.btn[disabled]{color:var(--text-disabled);background:var(--neutral-tint);border-color:var(--border);cursor:not-allowed;transform:none;box-shadow:none}
+.switch{display:inline-flex;align-items:center;gap:var(--space-2);height:var(--control-h);padding:0 var(--space-2);border:1px solid var(--border-input);border-radius:var(--radius-sm);background:var(--surface);cursor:pointer;font-size:var(--text-sm);transition:background-color var(--dur-fast) var(--ease-out),transform var(--dur-fast) var(--ease-out)}
+.switch i{width:28px;height:16px;border-radius:999px;background:var(--border-strong);position:relative;transition:background-color var(--dur-fast) var(--ease-out)}
+.switch i::after{content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:var(--surface);transition:transform var(--dur-fast) var(--ease-out)}
+.switch[aria-checked="true"] i{background:var(--success)}.switch[aria-checked="true"] i::after{transform:translateX(12px)}
+/* ---- layout ---- */
+.main-col{max-width:960px;margin:0 auto;padding:var(--space-5) var(--gutter) var(--space-10);display:grid;grid-template-columns:minmax(0,1fr);gap:var(--space-4)}
+#digestPlate .plate-in{max-width:calc(960px - 2 * var(--gutter));margin:0 auto}
+/* the Classify switch: in the top bar from 768px, first row of the page below that (it needs its visible label) */
+.page-switch{display:none}
+@media (max-width:767px){.page-switch{display:flex}}
+.connect-acts{margin-top:var(--space-3)}
+/* repo connection, as a section of the Settings dialog */
+.nl-connect h3{margin:0 0 var(--space-2);font-size:var(--text-md);font-weight:var(--weight-medium)}
+.nl-connect .row{margin-top:var(--space-3)}
+.nl-connect #setStatus{margin-top:var(--space-2);min-height:1.2em}
+.card{background:var(--paper);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-5);box-shadow:var(--shadow-1)}
+.card h2{font-size:var(--text-md);font-weight:var(--weight-medium);margin-bottom:var(--space-2)}
+.hint{font-size:var(--text-xs);color:var(--text-2);max-width:var(--measure)}
+.row{display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center}
+input[type=password],input[type=search]{height:var(--control-h);padding:0 var(--space-2);border:1px solid var(--border-input);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-size:var(--text-sm);flex:1 1 200px;min-width:0}
+/* strip */
+.strip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border:1px solid var(--border);border-radius:var(--radius-md);background:var(--paper);box-shadow:var(--shadow-1)}
+.strip>div{padding:var(--space-3) var(--space-4);border-right:1px solid var(--hairline);min-width:0}
+.strip>div:last-child{border-right:0}
+.strip .k{font-size:var(--text-2xs);color:var(--text-3);text-transform:uppercase;letter-spacing:var(--tracking-caps);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.strip .v{font:var(--weight-semibold) var(--text-2xl)/1.1 var(--font-mono);font-variant-numeric:tabular-nums;margin-top:2px}
+.strip .v small{font:var(--weight-regular) var(--text-xs)/1 var(--font-mono);color:var(--text-3)}
+/* sum strip (where the digest went) */
+.sum-bar{display:flex;height:8px;border-radius:var(--radius-xs);overflow:hidden;gap:2px;background:var(--surface-2);margin-top:var(--space-2)}
+.sum-bar>span{display:block;height:100%}
+.sum-legend{display:flex;flex-wrap:wrap;gap:var(--space-2) var(--space-6);margin-top:var(--space-4);font-size:var(--text-xs);color:var(--text-2)}
+.sum-legend i{display:inline-block;width:9px;height:9px;border-radius:2px;vertical-align:-1px;margin-right:var(--space-2)}
+.sum-eq{margin-top:var(--space-3);font:var(--weight-regular) var(--text-xs)/1.6 var(--font-mono);color:var(--text-2);overflow-wrap:anywhere;padding-top:var(--space-3);border-top:1px solid var(--hairline);font-variant-numeric:tabular-nums}
+/* trend */
+.trend{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:var(--space-1);align-items:end;height:64px}
+.trend div{display:grid;gap:2px;align-content:end;height:100%}
+.trend i{display:block;background:var(--viz-seq-400);border-radius:2px 2px 0 0;min-height:2px}
+.trend i.act{background:var(--warning)}
+.trend-x{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:var(--space-1);font:var(--weight-regular) var(--text-2xs)/1 var(--font-mono);color:var(--text-3);text-align:center;margin-top:4px}
+/* filters + list */
+.filters{display:flex;flex-wrap:wrap;gap:var(--space-1)}
+.filters button{height:24px;padding:0 var(--space-2);border-radius:var(--radius-full);border:1px solid var(--border);background:var(--surface);font-size:var(--text-2xs);cursor:pointer;white-space:nowrap;color:var(--text)}
+.filters button[aria-pressed="true"]{background:var(--accent-tint);border-color:var(--accent-text);color:var(--accent-tint-text)}
+.filters button .n{font-family:var(--font-mono);color:var(--text-3);margin-left:4px}
+.list{border:1px solid var(--border);border-radius:var(--radius-md);background:var(--paper);overflow:hidden;box-shadow:var(--shadow-1)}
+.mail{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:var(--space-1) var(--space-3);padding:var(--space-2) var(--space-3);border-bottom:1px solid var(--hairline);align-items:center}
+.mail:last-child{border-bottom:0}
+.mail .flag{width:18px;text-align:center;color:var(--warning);font-weight:var(--weight-semibold)}
+.mail .flag svg{display:block;margin:0 auto}
+.mail .subj{font-size:var(--text-sm);font-weight:var(--weight-medium);color:var(--text);text-decoration:none;overflow-wrap:anywhere}
+@media (hover:hover) and (pointer:fine){.mail .subj:hover{text-decoration:underline}}
+.mail .meta{grid-column:2;font-size:var(--text-xs);color:var(--text-2);display:flex;flex-wrap:wrap;gap:var(--space-1) var(--space-2);align-items:center}
+.mail .when{font:var(--weight-regular) var(--text-xs)/1 var(--font-mono);color:var(--text-3);white-space:nowrap;grid-row:span 2}
+.tag{display:inline-flex;align-items:center;gap:var(--space-1);height:21px;padding:0 var(--space-2);border-radius:var(--radius-full);font-size:var(--text-2xs);font-weight:var(--weight-medium);border:1px solid transparent;white-space:nowrap}
+.tag::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor}
+.tag-neutral{background:var(--neutral-tint);color:var(--neutral-tint-text);border-color:var(--border)}.tag-warning{background:var(--warning-tint);color:var(--warning-tint-text)}
+.chip{display:inline-flex;align-items:center;gap:var(--space-1);height:19px;padding:0 var(--space-2);border-radius:var(--radius-xs);border:1px solid var(--border);background:var(--neutral-tint);color:var(--text-3);font:var(--weight-regular) var(--text-2xs)/1 var(--font-mono);white-space:nowrap}
+.chip b{color:var(--text-2);font-weight:700}
+.reason{font-size:var(--text-2xs);color:var(--text-2);overflow-wrap:anywhere}
+.empty{border:1px dashed var(--border-input);border-radius:var(--radius-md);padding:var(--space-10) var(--space-4);text-align:center;color:var(--text-2);display:grid;gap:var(--space-2);justify-items:center;background:var(--paper)}
+.empty h3{font-size:var(--text-xl);color:var(--text)}
+.error{border:1px solid var(--danger);border-radius:var(--radius-md);padding:var(--space-4);background:var(--paper);display:grid;gap:var(--space-2)}
+.error h2{font-size:var(--text-md);color:var(--danger)}
+.error .row{display:flex;flex-wrap:wrap;gap:var(--space-2)}
+/* a switch that cannot be used looks like a disabled button (family .btn[disabled]): it had the hand cursor and full colour */
+.switch[disabled]{color:var(--text-disabled);background:var(--neutral-tint);border-color:var(--border);cursor:not-allowed;transform:none}
+.switch[disabled] i{opacity:.5}
+.topbar .switch[disabled]{color:var(--on-band-2);background:transparent;border-color:var(--band-line)}
+.steps{display:grid;gap:var(--space-2);font-size:var(--text-sm)}
+.steps li{display:grid;grid-template-columns:24px minmax(0,1fr);gap:var(--space-2)}
+.steps li b{font-family:var(--font-mono);color:var(--accent-text)}
+.steps code{background:var(--surface-2);padding:0 4px;border-radius:var(--radius-xs);font-size:var(--text-xs)}
+.honest{border-top:1px solid var(--band-line);font-size:var(--text-xs);color:var(--on-band-2);background:var(--band);padding:var(--space-10) var(--gutter) var(--space-12)}
+.honest dl{margin-block:0}.honest dt{font-weight:var(--weight-semibold);color:var(--on-band);font-family:var(--font-sans);font-size:var(--text-2xs);letter-spacing:var(--tracking-caps);text-transform:uppercase;margin-bottom:var(--space-2)}.honest dd{margin:0;max-width:var(--measure);line-height:var(--leading-relaxed)}
+.toast{position:fixed;right:var(--space-4);bottom:var(--space-4);z-index:var(--z-toast);background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--radius-md);box-shadow:var(--shadow-2);padding:var(--space-3) var(--space-4);font-size:var(--text-sm);max-width:min(420px,calc(100vw - 2*var(--gutter)));opacity:0;transform:translateY(var(--motion-distance));transition:opacity var(--dur-base) var(--ease-out),transform var(--dur-base) var(--ease-out);pointer-events:none}
+.toast.show{opacity:1;transform:none}.toast.err{border-color:var(--danger)}
+@media (max-width:899px){.strip{grid-template-columns:repeat(3,minmax(0,1fr))}.strip>div:nth-child(3){border-right:0}.strip>div:nth-child(n+4){border-top:1px solid var(--border)}}
+@media (max-width:639px){.brand span{display:none}.brand{flex:1 1 auto}.pill .long{display:none}.topbar .gh,.topbar #theme,.topbar #refresh{display:none}.strip{grid-template-columns:repeat(2,minmax(0,1fr))}.strip>div:nth-child(3){border-right:1px solid var(--border)}.strip>div:nth-child(2n){border-right:0}.strip>div:nth-child(n+3){border-top:1px solid var(--border)}.mail{grid-template-columns:auto minmax(0,1fr)}.mail .when{grid-row:auto;grid-column:2}}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+/* ===== Family layer v3.1: band surfaces, pressed and focus states, touch targets =====
+   The band (top bar, signature panel, footer) is the anchor surface: deep in Plaster and Ink, a whiter paper in
+   Paper. Everything on it uses the --on-band pair; focus rings and text selection get their own colours there
+   because --focus and --selection-bg are solved for light surfaces. Hover sits behind (hover:hover) so a tap on
+   a touch screen does not leave a stuck highlight. */
+.topbar .pill{border-color:var(--band-line);color:var(--on-band-2);background:transparent;font-weight:var(--weight-regular)}
+.topbar .pill::before{background:var(--warning)}
+.topbar .btn,.plate .btn{background:transparent;border-color:var(--band-line);color:var(--on-band)}
+.topbar .btn-ghost,.plate .btn-ghost{border-color:transparent}
+.topbar .btn-primary,.plate .btn-primary{background:var(--on-band);border-color:var(--on-band);color:var(--band)}
+/* a disabled primary on the band keeps the disabled look: the band rule above has the same weight as .btn[disabled]
+   and comes later, so without this it would paint a disabled button like a live one (hover too) */
+.topbar .btn.btn-primary[disabled],.plate .btn.btn-primary[disabled]{color:var(--text-disabled);background:var(--neutral-tint);border-color:var(--border)}
+@media (hover:hover) and (pointer:fine){
+  .topbar .btn:hover,.plate .btn:hover{background:var(--band-line);border-color:var(--band-line)}
+  .topbar .btn-primary:hover,.plate .btn-primary:hover{background:var(--on-band-2);border-color:var(--on-band-2)}
+}
+.topbar :focus-visible,.plate :focus-visible,.honest :focus-visible{outline-color:var(--on-band)}
+/* Focus scrolls clear of the sticky top bar: a control reached by Tab, or <main> after the skip link, never lands under
+   the bar (2026-09-16: the ring of <main> and most of a button sat behind it). A product whose sticky
+   chrome is taller than the bar, or wraps, sets --sticky-top to its measured height. */
+html{scroll-padding-top:calc(var(--sticky-top,var(--topbar-h)) + var(--space-3))}
+/* Native checkboxes and radios take the palette's accent instead of the browser's blue (contrast:
+   checked fill against its surface 4.55–16.17:1, tick against the fill 4.71–16.34:1 across the three palettes, light and dark). */
+:root{accent-color:var(--accent)}
+.topbar ::selection,.plate ::selection,.honest ::selection{background:var(--on-band-2);color:var(--band)}
+.honest-in{max-width:var(--content-max);margin:0 auto;display:grid;gap:var(--space-6);grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr))}
+.honest a{color:var(--on-band);text-decoration-color:var(--band-line)}
+.honest code{color:var(--on-band)}
+/* Pressed: the whole control scales, content included (reads as pushed in, not moved). Reduced motion keeps a
+   colour change instead of the scale. */
+.filters button:active,.switch:active{transform:scale(var(--press-scale))}
+@media (prefers-reduced-motion:reduce){.btn:active,.filters button:active,.switch:active{transform:none;background:var(--neutral-tint)}}
+/* Touch: 44px targets on coarse pointers. */
+@media (pointer:coarse){.btn,.nav a{min-height:var(--touch-min)}.btn-icon{min-width:var(--touch-min)}}
+/* Text fields: the edge darkens and a same-hue ring appears; the outline is for keyboard focus. */
+input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),select,textarea{transition:border-color var(--dur-fast) var(--ease-out),box-shadow var(--dur-fast) var(--ease-out)}
+input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):focus,select:focus,textarea:focus{outline:none;border-color:var(--accent-text);box-shadow:0 0 0 3px var(--accent-tint)}
+input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):focus-visible,select:focus-visible,textarea:focus-visible{outline:var(--border-focus-width) solid var(--focus);outline-offset:1px}
+::placeholder{color:var(--text-3)}
+/* Numeric columns: header text and figures share one right edge, by rule rather than by accident. */
+table.data th.num,table.data td.num{text-align:right}
+table.data th.num button{justify-content:flex-end;width:100%}
+/* Top bar by width. Controls never shrink; only the tagline truncates. The right-hand
+   group starts after the Demo pill. Compact (≤767px): mark, name, short pill, the one control the product needs, Settings.
+   Middle (768–1023px): add light/dark, GitHub and help. Full (≥1024px): everything. Never hidden: mark, name, pill, Settings. */
+.topbar > :not(.brand):not(.spacer){flex:none;white-space:nowrap}
+.topbar .spacer{display:none}
+.topbar .pill{margin-inline-end:auto}
+.topbar .brand{flex:0 1 auto;min-width:0}
+.topbar .brand b{flex:none}
+#nl-settings-button{flex:none}
+@media (pointer:coarse){#nl-settings-button{min-width:var(--touch-min);min-height:var(--touch-min)}}
+@media (max-width:767px){.topbar #theme,.topbar .gh,.topbar #help,.topbar .brand span,.topbar .pill .long{display:none}.topbar .brand b{font-size:var(--text-lg)}}
+@media (min-width:768px) and (max-width:1023px){.topbar .brand span,.topbar .pill .long{display:none}}
+@media (max-width:767px){.topbar #refresh,.topbar #togBtn{display:none}}
+/* Signature panel: the page title and the reconciliation bar share one plate on the band. The point colour
+   appears in three places only: the seal, the 56px rule under the title, and the first key of the bar. */
+.plate{background:var(--band);color:var(--on-band);padding:var(--space-8) var(--gutter) var(--space-6);border-bottom:1px solid var(--band-line)}
+.plate-in{max-width:var(--content-max);display:grid;gap:var(--space-5)}
+.eyebrow{font-family:var(--font-sans);font-size:var(--text-2xs);font-weight:var(--weight-semibold);letter-spacing:var(--tracking-caps);text-transform:uppercase;color:var(--text-3)}
+.display{font-size:var(--text-4xl);font-variation-settings:"opsz" var(--opsz-display);letter-spacing:var(--tracking-display);margin-left:-0.028em}
+.caption{font-family:var(--font-display);font-style:var(--caption-style);font-weight:400;font-variation-settings:"opsz" var(--opsz-caption);font-size:var(--text-sm);line-height:var(--leading-relaxed);color:var(--text-2);max-width:var(--measure)}
+.plate .eyebrow,.plate .caption{color:var(--on-band-2)}
+.eyebrow .tag{margin-left:var(--space-2);text-transform:none;letter-spacing:normal}
+.plate h1{color:var(--on-band)}
+.plate .lede{margin:var(--space-3) 0 0;color:var(--on-band-2);max-width:var(--measure);font-size:var(--text-lg);line-height:var(--leading-lede)}
+.plate .rule{width:56px;height:2px;background:var(--point);margin-top:var(--space-4);border-radius:1px}
+.plate .sum-bar{background:transparent}
+.plate .sum-legend{color:var(--on-band-2)}
+.plate .sum-legend b{color:var(--on-band);font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.plate .sum-eq{border-top-color:var(--band-line);color:var(--on-band-2)}
+.plate .sum-eq .ok{color:var(--on-band);font-weight:var(--weight-semibold)}
+.plate .sum-eq .bad{background:var(--danger-tint);color:var(--danger-tint-text);font-weight:var(--weight-semibold);padding:0 var(--space-1);border-radius:var(--radius-xs)}
+.plate .caption{margin-top:var(--space-3)}
+.plate .chip{background:transparent;border-color:var(--band-line);color:var(--on-band-2)}
+.plate .chip b{color:var(--on-band)}
+/* the head row carries the page's own action; it stays compact so the band keeps within the reference share of the
+   first screen (47% at 1280x900, 75% at 375x812, as measured on the reference page) */
+.plate-head{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2) var(--space-3);margin-bottom:var(--space-1)}
+.plate-head .btn{margin-inline-start:auto;height:26px;padding:0 var(--space-3);font-size:var(--text-xs)}
+.hatch{background-image:repeating-linear-gradient(135deg,var(--on-band-2) 0 2px,transparent 2px 6px)}
+/* Classification labels are not status pills: a small sage square and the label, no fill, no border */
+.cat{display:inline-flex;align-items:center;gap:var(--space-2);font-size:var(--text-xs);color:var(--text-2)}
+.cat::before{content:"";width:7px;height:7px;border-radius:2px;background:var(--brand-sage);flex:none}
+/* Headersort: a short page keeps the footer band at the bottom; the footer grid matches the 960px column */
+body{min-height:100vh;display:flex;flex-direction:column}
+main{width:100%;flex:1 0 auto}
+.honest-in{max-width:calc(960px - 2 * var(--gutter))}
+/* The on/off switch: state is carried by fill and knob position, not by green alone.
+   Page: off = ring in --border-input + --text-2 knob; on = --success fill + paper knob.
+   Band: off = ring in --on-band-2 + --on-band-2 knob; on = --on-band fill + --band knob. */
+.switch i{background:transparent;box-shadow:inset 0 0 0 1px var(--border-input)}
+.switch i::after{background:var(--text-2)}
+.switch[aria-checked="true"] i{background:var(--success);box-shadow:none}
+.switch[aria-checked="true"] i::after{background:var(--paper)}
+@media (pointer:coarse){.switch{min-height:var(--touch-min)}}
+.topbar .switch{background:transparent;border-color:var(--band-line);color:var(--on-band)}
+.topbar .switch i{background:transparent;box-shadow:inset 0 0 0 1px var(--on-band-2)}
+.topbar .switch i::after{background:var(--on-band-2)}
+.topbar .switch[aria-checked="true"] i{background:var(--on-band);box-shadow:none}
+.topbar .switch[aria-checked="true"] i::after{background:var(--band)}
+.topbar .pill.live{border-color:var(--band-line);color:var(--on-band-2);background:transparent}
+.topbar .pill.live::before{background:var(--success)}
+@media (hover:hover) and (pointer:fine){.topbar .switch:hover{background:var(--band-line)}}
+/* ===== end of family layer v3.1 ===== */
+</style>
+<link rel="stylesheet" href="board/cleanup.css">
+</head>
+<body>
+<a class="skip" href="#main" data-i18n="skip">Skip to content</a>
+<header class="topbar">
+  <a class="brand" href="./" aria-label="Headersort home">
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true" focusable="false"><rect x="2.5" y="2.5" width="19" height="19" rx="5" stroke="currentColor" stroke-width="2"/><rect x="14" y="6" width="4" height="4" rx="1" fill="var(--point)"/><path d="M6 10l6 4 6-4M6 13v3h12v-3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <b>Headersort</b><span data-i18n="tagline">Sort what matters. Review outdated mail before cleanup.</span>
+  </a>
+  <span class="pill" id="pill" title="">Demo<span class="long" id="pillLong"> · fictional mail</span></span>
+  <span class="spacer"></span>
+  <button class="switch" id="togBtn" role="switch" aria-checked="false" data-act="toggleEnabled" data-i18n-title="togT" title=""><i aria-hidden="true"></i><span id="togText">—</span></button>
+  <button class="btn btn-ghost" id="refresh" data-act="loadAll" data-i18n="refresh">Refresh</button>
+  <button class="btn btn-ghost" id="langBtn" data-act="toggleLang" aria-label="Switch language">中</button>
+  <button class="btn btn-ghost btn-icon" id="theme" aria-label="Dark mode" aria-pressed="false" title="Dark mode" data-i18n-aria="darkMode" data-i18n-title="darkMode"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg></button>
+  <button type="button" class="btn btn-ghost btn-icon" id="nl-settings-button" aria-haspopup="dialog" aria-label="Settings" title="Settings" data-i18n-aria="settingsBtn" data-i18n-title="settingsBtn"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10.34 5.10L10.58 2.51L13.42 2.51L13.66 5.10A7.1 7.1 0 0 1 15.71 5.95L17.71 4.28L19.72 6.29L18.05 8.29A7.1 7.1 0 0 1 18.90 10.34L21.49 10.58L21.49 13.42L18.90 13.66A7.1 7.1 0 0 1 18.05 15.71L19.72 17.71L17.71 19.72L15.71 18.05A7.1 7.1 0 0 1 13.66 18.90L13.42 21.49L10.58 21.49L10.34 18.90A7.1 7.1 0 0 1 8.29 18.05L6.29 19.72L4.28 17.71L5.95 15.71A7.1 7.1 0 0 1 5.10 13.66L2.51 13.42L2.51 10.58L5.10 10.34A7.1 7.1 0 0 1 5.95 8.29L4.28 6.29L6.29 4.28L8.29 5.95A7.1 7.1 0 0 1 10.34 5.10Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+  <a class="btn btn-ghost gh" href="https://github.com/NickkkLian/Mail-Sorter" rel="noopener">GitHub</a>
+</header>
+
+<main id="main" tabindex="-1">
+  <section class="plate" id="digestPlate" aria-labelledby="digestT" hidden>
+    <div class="plate-in">
+      <div>
+        <div class="plate-head">
+          <span class="eyebrow" id="digestEyebrow"></span>
+          <button class="btn btn-primary" id="actionBtn" type="button" data-act="showAction" hidden></button>
+        </div>
+        <h1 class="display" id="digestT" data-i18n="digestT">Where the digest went</h1>
+        <p class="lede" data-i18n="digestLede">Your recent mail, organized for later. Body reading and cleanup follow your settings.</p>
+        <div class="rule" aria-hidden="true"></div>
+      </div>
+      <div role="group" aria-labelledby="digestT">
+        <div class="sum-bar" id="sumBar" aria-hidden="true"></div>
+        <div class="sum-legend" id="sumLegend"></div>
+        <div class="sum-eq" id="sumEq"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="main-col">
+  <h1 class="sr-only" id="pageT">Headersort</h1>
+  <div class="page-switch">
+    <button class="switch" id="togBtnPage" role="switch" aria-checked="false" data-act="toggleEnabled" data-i18n-title="togT" title=""><i aria-hidden="true"></i><span id="togTextPage">—</span></button>
+  </div>
+
+  <section class="card" id="connectCard" hidden>
+    <h2 data-i18n="setT">Connect your private data repo</h2>
+    <p class="hint" data-i18n="connHint">Connect your private GitHub repo to see your digest and cleanup reviews. The demo shows the same board with fictional mail.</p>
+    <div class="row connect-acts">
+      <button class="btn btn-primary" type="button" data-act="openSettings" data-i18n="connBtn">Connect…</button>
+      <a class="btn" href="?demo=1" data-i18n="tryDemo">Try the demo</a>
+    </div>
+  </section>
+
+  <section class="error" id="loadError" role="alert" hidden></section>
+
+  <section class="card" id="setupBox" hidden>
+    <h2 data-i18n="setupT">Not set up yet — three one-time steps (about 5 minutes)</h2>
+    <ol class="steps" data-i18n-html="setupB"></ol>
+  </section>
+
+  <section id="cleanup-panel" aria-label="Cleanup review" hidden></section>
+  <div id="stats"></div>
+  <section class="card" id="trendCard" hidden>
+    <h2 data-i18n="trendT">Last 7 days</h2>
+    <div class="trend" id="trend" role="img"></div><div class="trend-x" id="trendX"></div>
+    <p class="hint" style="margin-top:8px" data-i18n="trendHint">Bars are emails per day in the digest; the amber part needs action.</p>
+  </section>
+  <div class="row" id="filterRow" hidden>
+    <input type="search" id="q" placeholder="Search subject or sender…" aria-label="Search" data-i18n-ph="searchPh">
+    <div class="filters" id="filter" role="group" aria-label="Filter by category"></div>
+  </div>
+  <div id="list"></div>
+  </div>
+</main>
+<footer class="honest">
+  <dl class="honest-in">
+    <div><dt data-i18n="aboutT">About this board</dt>
+    <dd data-i18n="aboutD">In demo mode every email is fictional and every address ends in the reserved .example TLD; nothing is fetched and nothing is sent. Connected, this board reads private metadata and writes settings, approval selections and undo requests. Mail changes only in the runner after revalidation.</dd></div>
+    <div><dt data-i18n="nvT">Not verified here</dt>
+    <dd data-i18n="nvD">The scheduled classifier runs in your own repo (a template is in template/); the board cannot see whether it ran. Category quality depends on the model and on subject lines alone. The digest is capped by keep_items, so the board never shows more than that many emails.</dd></div>
+    <div><dt data-i18n="srcT">Source</dt>
+    <dd><a href="https://github.com/NickkkLian/Mail-Sorter">github.com/NickkkLian/Mail-Sorter</a> · MIT · <span data-i18n="by">built by Nick Lian</span></dd></div>
+  </dl>
+</footer>
+<div class="toast" id="toast" role="status"></div>
+
+<script>/* ---- appearance.js (inlined; source: design system theme kit) ---- */
+/* appearance.js — palette (Plaster · Paper · Ink) and light/dark for every Nick Lian product page.
+   Contract with design-tokens.css (v3.1):
+     <html>                                  Plaster, follows the OS light/dark setting
+     <html data-theme="paper|ink">           another palette
+     <html data-scheme="light|dark">         forced light or dark
+   Defaults write no attribute: an attribute present means the person chose something.
+   The choice is stored in localStorage (nl-theme, nl-scheme). The inline boot snippet at the top of <head> applies it
+   before the first paint, so there is no flash; this file keeps everything in sync afterwards.
+
+   Two controls, one writer (Appearance.set):
+     Appearance.bindToggle(button)            the top-bar ◐: light/dark only, never the palette. Its name stays
+                                              "Dark mode"; aria-pressed says whether dark is on.
+     Appearance.bindSettings(button, opts)    the top-bar gear: opens the Settings dialog. `opts` (or a function
+                                              returning it, read on every open) may carry `strings` (see STRINGS)
+                                              and `sections` (extra nodes after Appearance, e.g. a connection form).
+     Appearance.settings(opts)                the Theme and Appearance controls alone, for mounting elsewhere.
+     Single-key shortcuts (products that have them pass `shortcuts`, a one-line description of their keys): an On | Off
+     group after Appearance, stored as nl-shortcuts ("off" turns them off; anything else, or nothing, is on). Products
+     read Appearance.shortcutsOn() before acting on a page-level single key (WCAG 2.1.4).
+   No dependencies. Styles use design tokens only. */
+(function (root) {
+  'use strict';
+  var KEY_THEME = 'nl-theme', KEY_SCHEME = 'nl-scheme', KEY_SHORTCUTS = 'nl-shortcuts';
+  var THEMES = ['plaster', 'paper', 'ink'];
+  var THEME_NAMES = { plaster: 'Plaster', paper: 'Paper', ink: 'Ink' };   // names, not translated
+  var SCHEMES = ['system', 'light', 'dark'];
+  var STRINGS = {
+    en: { title: 'Settings', theme: 'Theme', appearance: 'Appearance', system: 'System', light: 'Light', dark: 'Dark',
+          shortcuts: 'Single-key shortcuts', on: 'On', off: 'Off',
+          caption: 'Saved in this browser only. Plaster and System are the defaults.', done: 'Done' },
+    zh: { title: '设置', theme: '配色', appearance: '明暗', system: '跟随系统', light: '浅色', dark: '深色',
+          shortcuts: '单键快捷键', on: '开', off: '关',
+          caption: '只保存在这个浏览器里。Plaster 与「跟随系统」是默认值。', done: '完成' }
+  };
+  var doc = document, html = doc.documentElement;
+  var toggles = [], uid = 0;
+
+  function get() {
+    var t = html.getAttribute('data-theme'), s = html.getAttribute('data-scheme');
+    return { theme: t === 'paper' || t === 'ink' ? t : 'plaster', scheme: s === 'light' || s === 'dark' ? s : 'system' };
+  }
+  function isDark() {
+    var s = get().scheme;
+    return s === 'dark' || (s === 'system' && !!root.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+  }
+  function syncMeta() {
+    var bg = getComputedStyle(html).getPropertyValue('--bg').trim();
+    if (!bg) return;
+    var metas = doc.querySelectorAll('meta[name="theme-color"]');
+    for (var i = 0; i < metas.length; i++) metas[i].setAttribute('content', bg);
+  }
+  function shortcutsOn() { try { return localStorage.getItem(KEY_SHORTCUTS) !== 'off'; } catch (e) { return true; } }
+  function setShortcuts(on) {
+    try { localStorage.setItem(KEY_SHORTCUTS, on ? 'on' : 'off'); } catch (e) { /* private mode: nothing to keep */ }
+    syncControls();
+    try { doc.dispatchEvent(new CustomEvent('shortcutschange', { detail: { on: shortcutsOn() } })); } catch (e) {}
+    return shortcutsOn();
+  }
+  function syncControls() {
+    var cur = get(), dark = String(isDark()), i, sc = shortcutsOn() ? 'on' : 'off';
+    for (i = 0; i < toggles.length; i++) toggles[i].setAttribute('aria-pressed', dark);
+    var radios = doc.querySelectorAll('.nl-settings input[type="radio"]');
+    for (i = 0; i < radios.length; i++) {
+      var r = radios[i], kind = r.getAttribute('data-nl');
+      r.checked = kind === 'theme' ? r.value === cur.theme : kind === 'shortcuts' ? r.value === sc : r.value === cur.scheme;
+    }
+    // swatches preview each palette in the light/dark that is currently forced (system: the OS decides)
+    var sw = doc.querySelectorAll('.nl-swatch');
+    for (i = 0; i < sw.length; i++) {
+      if (cur.scheme === 'system') sw[i].removeAttribute('data-scheme'); else sw[i].setAttribute('data-scheme', cur.scheme);
+    }
+  }
+  function set(next) {
+    var cur = get();
+    var t = next && next.theme ? next.theme : cur.theme, s = next && next.scheme ? next.scheme : cur.scheme;
+    if (t === 'plaster') html.removeAttribute('data-theme'); else html.setAttribute('data-theme', t);
+    if (s === 'system') html.removeAttribute('data-scheme'); else html.setAttribute('data-scheme', s);
+    try { localStorage.setItem(KEY_THEME, t); localStorage.setItem(KEY_SCHEME, s); } catch (e) { /* private mode: still applies for this page */ }
+    syncMeta();
+    syncControls();
+    try { doc.dispatchEvent(new CustomEvent('appearancechange', { detail: get() })); } catch (e) {}
+    return get();
+  }
+  // From "follow the system" a press picks an explicit Light or Dark; going back to System is done in Settings.
+  function toggleScheme() { return set({ scheme: isDark() ? 'light' : 'dark' }); }
+  function bindToggle(btn) {
+    if (!btn || toggles.indexOf(btn) !== -1) return btn;
+    toggles.push(btn);
+    btn.removeAttribute('aria-haspopup');
+    btn.addEventListener('click', function () { toggleScheme(); });
+    btn.setAttribute('aria-pressed', String(isDark()));
+    return btn;
+  }
+
+  var styled = false;
+  function injectStyle() {
+    if (styled) return; styled = true;
+    var css = [
+      '.nl-settings{display:grid;gap:var(--space-5);min-width:0}',
+      '.nl-pickset{border:0;margin:0;padding:0;display:grid;gap:var(--space-3);min-width:0}',
+      '.nl-pickset legend{padding:0;margin-bottom:var(--space-3);font:var(--weight-semibold) var(--text-2xs)/1 var(--font-sans);letter-spacing:var(--tracking-caps);text-transform:uppercase;color:var(--text-3)}',
+      '.nl-picks{display:flex;flex-wrap:wrap;gap:var(--space-3);justify-self:start}',
+      '.nl-pick{position:relative;display:inline-flex;align-items:center;gap:var(--space-3);cursor:pointer;padding:var(--space-2) var(--space-3) var(--space-2) var(--space-2);',
+      'border:1px solid var(--border);border-radius:var(--radius-md);background:var(--paper);color:var(--text);font-size:var(--text-sm);',
+      'transition:border-color var(--dur-fast) var(--ease-out),background-color var(--dur-fast) var(--ease-out),transform var(--dur-fast) var(--ease-out)}',
+      '.nl-pick:active{transform:scale(var(--press-scale))}',
+      '.nl-pick input,.nl-seg input{position:absolute;opacity:0;width:1px;height:1px;margin:0}',
+      '.nl-pick:has(input:checked){border-color:var(--accent-text);background:var(--accent-tint);color:var(--accent-tint-text)}',
+      '.nl-pick:has(input:focus-visible),.nl-seg label:has(input:focus-visible){outline:var(--border-focus-width) solid var(--focus);outline-offset:2px}',
+      '.nl-swatch{display:grid;grid-template-columns:repeat(3,1fr);width:46px;height:26px;border-radius:var(--radius-xs);overflow:hidden;border:1px solid var(--border);flex:none}',
+      '.nl-swatch i{display:block}',
+      '.nl-swatch i:nth-child(1){background:var(--bg)}.nl-swatch i:nth-child(2){background:var(--band)}.nl-swatch i:nth-child(3){background:var(--point)}',
+      '.nl-seg{display:inline-flex;width:fit-content;max-width:100%;justify-self:start;padding:2px;gap:2px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--surface-2)}',
+      '.nl-seg label{position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:72px;height:28px;padding:0 var(--space-2);border-radius:var(--radius-sm);',
+      'cursor:pointer;font-size:var(--text-xs);color:var(--text-2);transition:background-color var(--dur-fast) var(--ease-out),color var(--dur-fast) var(--ease-out)}',
+      // the selected segment needs a ring: paper on the sunken track alone is 1.03-1.25:1; the ring is 3.29-4.19:1
+      '.nl-seg label:has(input:checked){background:var(--paper);color:var(--text);font-weight:var(--weight-medium);box-shadow:var(--shadow-1),inset 0 0 0 1px var(--border-input)}',
+      '.nl-caption{margin:0;font-family:var(--font-display);font-style:var(--caption-style);font-weight:400;font-variation-settings:"opsz" var(--opsz-caption);',
+      'font-size:var(--text-sm);line-height:var(--leading-relaxed);color:var(--text-2);max-width:var(--measure)}',
+      '.nl-note{margin:0;font-size:var(--text-xs);line-height:var(--leading-normal);color:var(--text-2);max-width:var(--measure)}',
+      '@media (pointer:coarse){.nl-seg label{height:var(--touch-min)}.nl-pick{min-height:var(--touch-min)}.nl-dialog .nl-done{min-height:var(--touch-min);min-width:var(--touch-min)}}',
+      '@media (prefers-reduced-motion:reduce){.nl-pick:active,.nl-dialog .nl-done:active{transform:none;background:var(--neutral-tint)}}',
+      '.nl-dialog{border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface-raised);color:var(--text);box-shadow:var(--shadow-2);',
+      'padding:var(--space-5);width:min(460px,calc(100vw - 2 * var(--gutter,16px)));max-width:100%;max-height:calc(100dvh - 2 * var(--gutter,16px));overflow:auto;overscroll-behavior:contain}',
+      '.nl-dialog::backdrop{background:var(--overlay)}',
+      '.nl-dialog h2{margin:0 0 var(--space-5);font:var(--display-weight,600) var(--text-lg)/var(--leading-tight) var(--font-display);font-variation-settings:"opsz" var(--opsz-title)}',
+      '.nl-dialog .nl-section{margin-top:var(--space-6);padding-top:var(--space-5);border-top:1px solid var(--hairline)}',
+      '.nl-dialog .nl-acts{display:flex;justify-content:flex-end;margin-top:var(--space-6)}',
+      // Done commits nothing, so it is the neutral button, not the filled primary
+      '.nl-dialog .nl-done{min-height:var(--control-h);padding:0 var(--space-4);border-radius:var(--radius-sm);border:1px solid var(--border-input);background:var(--paper);color:var(--text);',
+      'font:inherit;font-size:var(--text-sm);font-weight:var(--weight-medium);cursor:pointer;transition:background-color var(--dur-fast) var(--ease-out),transform var(--dur-fast) var(--ease-out)}',
+      '.nl-dialog .nl-done:active{transform:scale(var(--press-scale))}',
+      '.nl-dialog .nl-done:focus-visible{outline:var(--border-focus-width) solid var(--focus);outline-offset:2px}',
+      '@media (hover:hover) and (pointer:fine){.nl-pick:hover{border-color:var(--border-strong)}.nl-seg label:hover{color:var(--text)}.nl-dialog .nl-done:hover{background:var(--surface-hover)}}'
+    ].join('');
+    var st = doc.createElement('style'); st.setAttribute('data-nl-appearance', ''); st.textContent = css; doc.head.appendChild(st);
+  }
+
+  function el(tag, attrs, kids) {
+    var n = doc.createElement(tag), k;
+    for (k in attrs || {}) if (Object.prototype.hasOwnProperty.call(attrs, k)) n.setAttribute(k, attrs[k]);
+    (kids || []).forEach(function (c) { if (c != null) n.appendChild(typeof c === 'string' ? doc.createTextNode(c) : c); });
+    return n;
+  }
+  function radio(kind, name, value, checked) {
+    var input = el('input', { type: 'radio', name: name, value: value, 'data-nl': kind });
+    input.checked = checked;
+    input.addEventListener('change', function () { if (!input.checked) return; if (kind === 'shortcuts') { setShortcuts(value === 'on'); return; } var n = {}; n[kind] = value; set(n); });
+    return input;
+  }
+  function strings(opts) {
+    var s = {}, base = STRINGS.en, over = (opts && opts.strings) || {}, k;
+    for (k in base) s[k] = over[k] || base[k];
+    return s;
+  }
+
+  /* The Theme and Appearance controls. Each group is named once, by its fieldset legend. Options: { strings, caption:false } */
+  function settings(opts) {
+    injectStyle();
+    opts = opts || {};
+    var S = strings(opts), cur = get(), n = ++uid;
+    var picks = el('div', { class: 'nl-picks' });
+    THEMES.forEach(function (t) {
+      var sw = el('span', { class: 'nl-swatch', 'data-theme': t, 'aria-hidden': 'true' }, [el('i'), el('i'), el('i')]);
+      if (cur.scheme !== 'system') sw.setAttribute('data-scheme', cur.scheme);
+      picks.appendChild(el('label', { class: 'nl-pick' }, [radio('theme', 'nl-theme-' + n, t, t === cur.theme), sw, THEME_NAMES[t]]));
+    });
+    var seg = el('div', { class: 'nl-seg' });
+    SCHEMES.forEach(function (s) { seg.appendChild(el('label', {}, [radio('scheme', 'nl-scheme-' + n, s, s === cur.scheme), S[s]])); });
+    var box = el('div', { class: 'nl-settings' }, [
+      el('fieldset', { class: 'nl-pickset' }, [el('legend', {}, [S.theme]), picks]),
+      el('fieldset', { class: 'nl-pickset' }, [el('legend', {}, [S.appearance]), seg])
+    ]);
+    if (opts.shortcuts) {
+      var on = shortcutsOn(), keys = el('div', { class: 'nl-seg' }), note = el('p', { class: 'nl-note', id: 'nl-shortcuts-note-' + n }, [String(opts.shortcuts)]);
+      ['on', 'off'].forEach(function (v) { keys.appendChild(el('label', {}, [radio('shortcuts', 'nl-shortcuts-' + n, v, (v === 'on') === on), S[v]])); });
+      box.appendChild(el('fieldset', { class: 'nl-pickset', 'aria-describedby': 'nl-shortcuts-note-' + n }, [el('legend', {}, [S.shortcuts]), keys, note]));
+    }
+    if (opts.caption !== false) box.appendChild(el('p', { class: 'nl-caption' }, [S.caption]));
+    return box;
+  }
+
+  function openSettings(opener, opts) {
+    injectStyle();
+    opts = opts || {};
+    var S = strings(opts);
+    var old = doc.getElementById('nl-settings-dialog'); if (old) old.remove();
+    var dlg = el('dialog', { id: 'nl-settings-dialog', class: 'nl-dialog', 'aria-labelledby': 'nl-settings-h' });
+    var done = el('button', { type: 'button', class: 'nl-done' }, [S.done]);
+    done.addEventListener('click', function () { dlg.close(); });
+    dlg.appendChild(el('h2', { id: 'nl-settings-h' }, [S.title]));
+    dlg.appendChild(settings(opts));
+    (opts.sections || []).forEach(function (sec) {
+      var node = typeof sec === 'function' ? sec(dlg) : sec;
+      if (node) dlg.appendChild(el('div', { class: 'nl-section' }, [node]));
+    });
+    dlg.appendChild(el('div', { class: 'nl-acts' }, [done]));
+    dlg.addEventListener('close', function () {
+      dlg.remove();
+      if (typeof opts.onClose === 'function') opts.onClose();
+      if (opener && opener.focus) opener.focus();
+    });
+    // Escape closes even where the native close watcher does not fire (non-modal fallback, synthetic key events).
+    dlg.addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); dlg.close(); } });
+    // A pointer click on the backdrop closes. Judged by coordinates: the dialog's own padding is also the dialog
+    // element, and keyboard-made clicks (detail 0, coordinates 0,0) must never count.
+    dlg.addEventListener('click', function (e) {
+      if (e.target !== dlg || !e.detail) return;
+      var r = dlg.getBoundingClientRect();
+      if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) dlg.close();
+    });
+    doc.body.appendChild(dlg);
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+    var first = (opts.focus && dlg.querySelector(opts.focus)) || dlg.querySelector('input[data-nl="theme"]:checked');
+    if (first) first.focus();
+    return dlg;
+  }
+  function bindSettings(btn, opts) {
+    if (!btn || btn.getAttribute('data-nl-settings') === 'bound') return btn;
+    btn.setAttribute('data-nl-settings', 'bound');
+    btn.setAttribute('aria-haspopup', 'dialog');
+    btn.addEventListener('click', function () { openSettings(btn, typeof opts === 'function' ? opts() : opts); });
+    return btn;
+  }
+
+  // Keep theme-color metas and the toggle right when the OS flips light/dark while the page follows it.
+  if (root.matchMedia) {
+    var mq = matchMedia('(prefers-color-scheme: dark)');
+    var onFlip = function () { if (get().scheme === 'system') { syncMeta(); syncControls(); } };
+    if (mq.addEventListener) mq.addEventListener('change', onFlip); else if (mq.addListener) mq.addListener(onFlip);
+  }
+  if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', syncMeta); else syncMeta();
+
+  root.Appearance = {
+    get: get, set: set, isDark: isDark, toggleScheme: toggleScheme, bindToggle: bindToggle, bindSettings: bindSettings,
+    settings: settings, openSettings: openSettings, STRINGS: STRINGS, shortcutsOn: shortcutsOn, setShortcuts: setShortcuts,
+    THEMES: THEMES, SCHEMES: SCHEMES, KEYS: { theme: KEY_THEME, scheme: KEY_SCHEME, shortcuts: KEY_SHORTCUTS }
+  };
+})(typeof self !== 'undefined' ? self : this);
+
+</script>
+<script>
+/* safe-merge v1 — source of truth: the safe-merge library, kept outside this app. This block, from this comment to the
+   closing "})();", is a verbatim copy of it; a check compares every copy with the library byte for byte, so change the
+   library and copy it again rather than editing a copy. The library has its own tests.
+   Why (2026-09-23): GitHub rejects a save whose sha is out of date (409).
+   The apps used to fetch the new sha and send the same stale data again, which silently erased whatever had been written
+   elsewhere since the page loaded (another tab, another device, a script). Now a stale save
+   re-reads the file, merges three ways, and asks only when both sides changed the same thing:
+     base   = the file as this page last read or saved it
+     theirs = the file as it is now
+     ours   = this page's data now
+   A value changed on one side only takes that side's change. Objects merge key by key; arrays whose items all carry a
+   unique `id` merge item by item, in the file's order, or in this page's order when only this page reordered them;
+   when both sides reordered them differently, the dialog asks which order to keep.
+   Timestamp fields (updatedAt and the like) changed on both sides take the later one.
+   Two helpers for the apps: formChanges() so that an edit form opened before a merge writes back only the fields the
+   owner changed in it, and fetchFile() to read a file past the browser cache, including files over 1 MiB.
+   Anything else changed on both sides, to different values, is a conflict that the owner resolves in a dialog. */
+const SafeMerge = (() => {
+  const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
+  /** JSON with sorted keys: the same data in another key order counts as unchanged */
+  const canon = (v) => JSON.stringify(v, (k, x) => (isObj(x)
+    ? Object.keys(x).sort().reduce((o, key) => { o[key] = x[key]; return o; }, {})
+    : x));
+  const same = (a, b) => canon(a) === canon(b);
+  const TIME_KEY = /^(updated_?at|modified_?at|date_?modified|last_?modified|last_?update(d|_?time)?|saved_?at|synced_?at|generated_?at|updated|modified)$/i;
+  const idOf = (x) => (isObj(x) && (typeof x.id === 'string' || typeof x.id === 'number') && x.id !== '' ? String(x.id) : null);
+  const byIdArray = (a) => Array.isArray(a) && a.every((x) => idOf(x) !== null) && new Set(a.map(idOf)).size === a.length;
+  // what the conflict dialog calls an item: its first short text field, else its id
+  const LABEL_KEYS = ['title', 'name', 'label', 'zh', 'en', 'book', 'merchant', 'payee', 'company', 'desc', 'note', 'text', 'content'];
+  const labelOf = (x) => {
+    if (!isObj(x)) return '';
+    const k = LABEL_KEYS.find((key) => (typeof x[key] === 'string' && x[key].trim()) || typeof x[key] === 'number');
+    const s = String(k ? x[k] : x.id).trim().replace(/\s+/g, ' ');
+    return s.length > 40 ? s.slice(0, 40) + '…' : s;
+  };
+
+  /** Three-way merge. opt.pick: 'mine' | 'theirs' decides conflicts; without it conflicts are collected into
+   *  opt.conflicts ({ path, theirs, ours }) and theirs is kept for now. Returns the merged value (undefined = removed). */
+  function merge3(base, theirs, ours, opt = {}, path = []) {
+    if (same(ours, base)) return theirs;                       // this page did not change it
+    if (same(theirs, base) || same(ours, theirs)) return ours; // only this page changed it, or both made the same change
+    if (isObj(base) && isObj(theirs) && isObj(ours)) {
+      const out = {};
+      for (const k of new Set([...Object.keys(theirs), ...Object.keys(ours), ...Object.keys(base)])) {
+        const v = merge3(base[k], theirs[k], ours[k], opt, [...path, k]);
+        if (v !== undefined) out[k] = v;
+      }
+      return out;
+    }
+    if (byIdArray(base) && byIdArray(theirs) && byIdArray(ours)) return mergeById(base, theirs, ours, opt, path);
+    const key = path[path.length - 1];
+    if (typeof key === 'string' && TIME_KEY.test(key) && typeof theirs === 'string' && typeof ours === 'string') {
+      return ours > theirs ? ours : theirs;                    // both sides touched a timestamp: keep the later one
+    }
+    if (opt.pick === 'mine') return ours;
+    if (opt.pick === 'theirs') return theirs;
+    if (opt.conflicts) opt.conflicts.push({ path, theirs, ours });
+    return theirs;
+  }
+
+  function mergeById(base, theirs, ours, opt, path) {
+    const B = new Map(base.map((x) => [idOf(x), x]));
+    const T = new Map(theirs.map((x) => [idOf(x), x]));
+    const O = new Map(ours.map((x) => [idOf(x), x]));
+    const merged = new Map();
+    for (const id of new Set([...T.keys(), ...O.keys(), ...B.keys()])) {
+      const label = labelOf(T.get(id) || O.get(id) || B.get(id));
+      merged.set(id, merge3(B.get(id), T.get(id), O.get(id), opt, [...path, { id, label }]));
+    }
+    // Order: the file's, unless only this page reordered the items it shares with the base. Items missing from the
+    // side whose order wins go right after their neighbour on the other side.
+    const shared = (a, b) => { const inB = new Set(b.map(idOf)); return a.map(idOf).filter((id) => inB.has(id)); };
+    const reordered = (side) => canon(shared(base, side)) !== canon(shared(side, base));
+    let first = theirs, second = ours;
+    if (reordered(ours) && !reordered(theirs)) { first = ours; second = theirs; }
+    else if (reordered(ours) && reordered(theirs) && canon(shared(ours, theirs)) !== canon(shared(theirs, ours))) {
+      // both sides reordered, differently: a conflict like any other, shown as the two orders
+      const order = (list) => list.map((x, i) => `${i + 1}. ${labelOf(x)}`).join('\n');
+      let pick = opt.pick;
+      if (!pick) { if (opt.conflicts) opt.conflicts.push({ path: [...path, { id: '#order', label: '顺序 / order' }], theirs: order(theirs), ours: order(ours) }); pick = 'theirs'; }
+      if (pick === 'mine') { first = ours; second = theirs; }
+    }
+    const out = first.map(idOf).filter((id) => merged.get(id) !== undefined).map((id) => merged.get(id));
+    const placed = new Set(out.map(idOf));
+    second.forEach((x, i) => {
+      const id = idOf(x);
+      if (placed.has(id) || merged.get(id) === undefined) return;
+      let j = i - 1;
+      while (j >= 0 && !placed.has(idOf(second[j]))) j--;
+      const at = j < 0 ? 0 : out.findIndex((y) => idOf(y) === idOf(second[j])) + 1;
+      out.splice(at, 0, merged.get(id));
+      placed.add(id);
+    });
+    return out;
+  }
+
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const show = (v, T) => {
+    if (v === undefined) return T('（没有／已删除）', '(absent / deleted)');
+    const s = typeof v === 'string' ? v : JSON.stringify(v, null, 2);
+    return s.length > 600 ? s.slice(0, 600) + ' …' : s;
+  };
+  const where = (path) => path.map((p) => (typeof p === 'object' ? `「${p.label}」` : p)).join(' › ') || '（整个文件）';
+
+  /** The conflict dialog. It must be answered: Esc is swallowed and clicking outside does nothing. */
+  function ask(conflicts, T) {
+    return new Promise((resolve) => {
+      const ov = document.createElement('div');
+      ov.setAttribute('data-no-esc', '');
+      ov.style.cssText = 'position:fixed;inset:0;z-index:2147483000;background:rgba(20,28,24,.5);display:flex;align-items:center;justify-content:center;padding:16px;';
+      const box = document.createElement('div');
+      box.setAttribute('role', 'dialog');
+      box.setAttribute('aria-modal', 'true');
+      box.style.cssText = 'background:#fff;color:#1f2a24;width:100%;max-width:720px;max-height:90vh;overflow:auto;border-radius:12px;padding:20px 22px;box-shadow:0 12px 40px rgba(0,0,0,.28);font:14px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans SC",sans-serif;';
+      const pre = 'white-space:pre-wrap;overflow-wrap:anywhere;margin:4px 0 0;padding:8px 10px;border-radius:8px;border:1px solid #d9e2dc;background:#f4f7f5;font:12.5px/1.55 ui-monospace,Menlo,monospace;max-height:30vh;overflow:auto;';
+      const items = conflicts.slice(0, 20).map((c) => `<li style="margin:0 0 14px;">
+        <div style="font-weight:600;">${esc(where(c.path))}</div>
+        <div style="margin-top:6px;color:#55655b;">${esc(T('别处存下的', 'Saved elsewhere'))}</div><pre style="${pre}">${esc(show(c.theirs, T))}</pre>
+        <div style="margin-top:6px;color:#55655b;">${esc(T('这个页面的', 'On this page'))}</div><pre style="${pre}">${esc(show(c.ours, T))}</pre></li>`).join('');
+      const more = conflicts.length > 20 ? `<p style="color:#55655b;">${esc(T(`还有 ${conflicts.length - 20} 处没列出，按同一个选择处理。`, `${conflicts.length - 20} more not listed; the same choice applies.`))}</p>` : '';
+      const btn = 'font:inherit;padding:8px 14px;border-radius:8px;cursor:pointer;margin-left:8px;';
+      box.innerHTML = `<h3 style="margin:0 0 8px;font-size:17px;">${esc(T('这个文件在别处也改过', 'This file was also changed elsewhere'))}</h3>
+        <p style="margin:0 0 14px;color:#3f5047;">${esc(T(
+          '这个页面打开之后，文件在别处（别的页面、别的设备，或直接写进仓库）也改过。没撞上的改动两边都已保留；下面这几处两边改得不一样，请选一边保留，另一边的会被丢掉（需要的话先把文字复制出来）。',
+          'After this page loaded, the file was also changed elsewhere (another page, another device, or a direct write to the repo). Changes that don’t collide are kept from both sides. The places below were changed differently on each side: choose which side to keep; the other side’s version is discarded, so copy any text you need first.'))}</p>
+        <ol style="padding-left:20px;margin:0;">${items}</ol>${more}
+        <div style="text-align:right;margin-top:10px;">
+          <button type="button" data-choice="theirs" style="${btn}border:1px solid #b9c8be;background:#fff;color:#1f2a24;">${esc(T('保留别处的', 'Keep the saved version'))}</button>
+          <button type="button" data-choice="mine" style="${btn}border:1px solid #2f6f4a;background:#2f6f4a;color:#fff;">${esc(T('用这个页面的', 'Use this page’s version'))}</button>
+        </div>`;
+      const swallowEsc = (e) => { if (e.key === 'Escape') { e.stopImmediatePropagation(); e.preventDefault(); } };
+      document.addEventListener('keydown', swallowEsc, true);
+      box.querySelectorAll('button[data-choice]').forEach((b) => b.addEventListener('click', () => {
+        document.removeEventListener('keydown', swallowEsc, true);
+        ov.remove();
+        resolve(b.getAttribute('data-choice'));
+      }));
+      ov.appendChild(box);
+      document.body.appendChild(ov);
+    });
+  }
+
+  /** Save with conflict handling.
+   *  put(data, sha) → fetch Response of the PUT; get() → { json, sha } of the file now (must bypass the browser cache);
+   *  base: the file as this page last read or saved it (null when this page never read it); T(zh, en) for text.
+   *  Resolves { sha, data, merged, wrote }: the file's new sha, the data now in the file, whether a merge happened, and
+   *  whether anything was written. Throws on other HTTP errors, or when the page never read the file. */
+  async function save({ data, sha, base, put, get, T, tries = 4, askFn = ask }) {
+    let merged = false;
+    for (let i = 0; i < tries; i++) {
+      const r = await put(data, sha);
+      if (r.ok) {
+        const j = await r.json().catch(() => ({}));
+        return { sha: (j.content && j.content.sha) || null, data, merged, wrote: true };
+      }
+      if (!(r.status === 409 || (r.status === 422 && !sha))) {
+        const e = await r.json().catch(() => ({}));
+        throw new Error(e.message || 'HTTP ' + r.status);
+      }
+      if (base == null) {
+        throw new Error(T('这个页面没能读到仓库里的版本；为免覆盖别处的内容，这次没有保存。请刷新页面后再改。',
+          'This page never read the file from the repo, so it did not save, to avoid overwriting changes made elsewhere. Reload the page and make the change again.'));
+      }
+      const remote = await get();
+      const conflicts = [];
+      let next = merge3(base, remote.json, data, { conflicts });
+      if (conflicts.length) next = merge3(base, remote.json, data, { pick: await askFn(conflicts, T) });
+      merged = true;
+      base = remote.json;
+      sha = remote.sha;
+      data = next;
+      if (same(next, remote.json)) return { sha, data, merged, wrote: false };
+    }
+    throw new Error(T('文件在别处一直在变，请刷新页面后再试。', 'The file keeps changing elsewhere. Reload the page and try again.'));
+  }
+
+  /** Changes made on this page while a save was in flight: put them on top of what the save left in the file.
+   *  sent = the data the save started with; saved = save().data; now = this page's data now. */
+  const rebase = (sent, saved, now) => merge3(sent, saved, now, { pick: 'mine' });
+
+  /** Run an async function one call at a time: two saves in flight would carry the same sha and one would get 409. */
+  function serial(fn) {
+    let chain = Promise.resolve();
+    return (...args) => {
+      const run = chain.then(() => fn(...args));
+      chain = run.catch(() => {});
+      return run;
+    };
+  }
+
+  /** A deep copy for `base` (structuredClone is not in every browser this runs in) */
+  const snapshot = (v) => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
+
+  /** An edit form opened on a record and submitted later: only the fields whose value the owner changed in the form.
+   *  Assign these onto the record as it is now; a merge that landed while the form was open may have changed the rest,
+   *  and writing the form's old copy of those fields back would undo it. openedWith = snapshot of the record at open. */
+  const formChanges = (openedWith, formValues) => Object.fromEntries(
+    Object.entries(formValues).filter(([k, v]) => !same(v, openedWith ? openedWith[k] : undefined)));
+
+  /** Read a file through the Contents API, past the browser cache: { text, sha }, or null when it does not exist.
+   *  Over 1 MiB that API answers encoding "none" with no content; read as an empty file, the next save replaced the whole
+   *  file with the few rows on the page. The same blob is read through the Git Blobs API instead (up to 100 MB).
+   *  An empty text comes back only for a file of 0 bytes. Any other read that comes back empty (a Git Blobs answer of 200
+   *  without content, an answer without a size) throws: a caller that took it for an empty file would overwrite the file. */
+  async function fetchFile(contentsUrl, headers) {
+    const r = await fetch(contentsUrl + (contentsUrl.includes('?') ? '&' : '?') + 't=' + Date.now(), { headers, cache: 'no-store' });
+    if (r.status === 404) return null;
+    if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message || 'HTTP ' + r.status); }
+    const j = await r.json();
+    let b64 = j.content;
+    if (!b64 && j.sha && j.size > 0) {
+      const repo = contentsUrl.match(/^(https:\/\/api\.github\.com\/repos\/[^/]+\/[^/]+)\/contents\//)[1];
+      const br = await fetch(`${repo}/git/blobs/${j.sha}`, { headers, cache: 'no-store' });
+      if (!br.ok) { const e = await br.json().catch(() => ({})); throw new Error(e.message || 'HTTP ' + br.status); }
+      b64 = (await br.json()).content;
+    }
+    const bin = atob(String(b64 || '').replace(/\s/g, ''));
+    const text = new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)));
+    if (!text && j.size !== 0) throw new Error('Read failed: ' + (j.path || 'the file') + ' came back empty' + (j.size > 0 ? ` (it has ${j.size} bytes)` : ''));
+    return { text, sha: j.sha };
+  }
+
+  return { merge3, same, canon, ask, save, rebase, serial, snapshot, formChanges, fetchFile };
+})();
+/* ============ connection (owner / repo / token live only in this browser; shared with the product family via pha-config) ============ */
+// On GitHub Pages every public demo shares the origin nickkklian.github.io, so a shared key would let a token entered in
+// one demo connect the others: there this demo keeps its own key (a trailing dot in the host name is the same site).
+// Elsewhere the product family shares one connection on purpose.
+const PHA_KEY=/\.github\.io\.?$/.test(location.hostname)?'pha-config:Mail-Sorter':'pha-config';
+const DEFAULTS={owner:'',repo:'',token:''};
+let MAIL=null, CONF=null, SHA_CONF=null;
+// mail/config.json as this page last read or saved it: the base a stale save merges against. It stays null until a read
+// succeeds, and a page without it refuses to write over the file.
+let BASE_CONF=null;
+let filter='all', query='';
+// Filter and search live in the address, so a filtered board survives a reload and can be shared (?demo=1 is kept).
+try{ const p0=new URLSearchParams(location.search); filter=p0.get('filter')||'all'; const q0=p0.get('q')||''; query=q0.trim().toLowerCase();
+  if(q0) document.addEventListener('DOMContentLoaded',()=>{ const b=document.getElementById('q'); if(b) b.value=q0; }); }catch(e){}
+function syncURL(raw){ try{ const u=new URL(location.href);
+  if(filter==='all') u.searchParams.delete('filter'); else u.searchParams.set('filter',filter);
+  const q=raw!==undefined?raw.trim():(document.getElementById('q')||{value:''}).value.trim(); if(q) u.searchParams.set('q',q); else u.searchParams.delete('q');
+  history.replaceState(null,'',u); }catch(e){} }
+
+function cfg(){ try{ const c=JSON.parse(localStorage.getItem(PHA_KEY)||'null'); return Object.assign({},DEFAULTS,c||{}); }catch(e){ return Object.assign({},DEFAULTS); } }
+function configured(){ const c=cfg(); return Boolean(c.owner&&c.token); }
+
+/* ============ language (pha-lang shared; English by default) ============ */
+let lang=(()=>{ try{ return localStorage.getItem('pha-lang')==='zh'?'zh':'en'; }catch(e){ return 'en'; } })();
+const T=(zh,en)=>lang==='en'?en:zh;
+const I18N={
+  skip:{zh:'跳到内容',en:'Skip to content'},
+  tagline:{zh:'整理值得保留的邮件，确认后再清理过期邮件。',en:'Sort what matters. Review outdated mail before cleanup.'},
+  refresh:{zh:'刷新',en:'Refresh'},
+  togT:{zh:'开/关定时自动分类（GitHub Actions 每天给 Gmail 新邮件打 AI/xx 标签）',en:'Toggle the scheduled classification (a GitHub Action labels new Gmail as AI/… each run)'},
+  setT:{zh:'连接你的私有数据仓库',en:'Connect your private data repo'},
+  setHint:{zh:'令牌只存在这个浏览器里（<code>localStorage</code>），只需要对<b>你的数据仓库</b>的 Contents 读写权限。',en:'The token is stored only in this browser (<code>localStorage</code>) and needs Contents read/write on <b>your data repo</b> — nothing else.'},
+  saveConnect:{zh:'保存并连接',en:'Save & connect'},
+  setupT:{zh:'还没配置 —— 三步开通（一次性，约 5 分钟）',en:'Not set up yet — three one-time steps (about 5 minutes)'},
+  setupB:{zh:'<li><b>1</b><span>Google 账号 → 安全 → 两步验证 → 应用专用密码 → 生成一个。</span></li><li><b>2</b><span>把 <code>template/</code> 拷进<b>你的数据仓库</b>，在 Settings → Secrets and variables → Actions 添加 <code>GMAIL_USER</code>、<code>GMAIL_APP_PASSWORD</code>、<code>ANTHROPIC_API_KEY</code>。</span></li><li><b>3</b><span>Actions → Mail Classify → Run workflow；想把现有收件箱一次整理完就填 backfill_days。之后它每天自己跑，这里点「刷新」即可。</span></li>',
+         en:'<li><b>1</b><span>Google Account → Security → 2-Step Verification → App passwords → create one.</span></li><li><b>2</b><span>Copy <code>template/</code> into <b>your private data repo</b> and add <code>GMAIL_USER</code>, <code>GMAIL_APP_PASSWORD</code> and <code>ANTHROPIC_API_KEY</code> under Settings → Secrets and variables → Actions.</span></li><li><b>3</b><span>Actions → Mail Classify → Run workflow; set backfill_days to sort the existing inbox in one pass. It then runs on its own — press Refresh here.</span></li>'},
+  digestT:{zh:'摘要去了哪里',en:'Where the digest went'},
+  trendT:{zh:'近 7 天',en:'Last 7 days'},
+  trendHint:{zh:'柱＝摘要里每天的邮件数；琥珀色部分需要处理。',en:'Bars are emails per day in the digest; the amber part needs action.'},
+  searchPh:{zh:'搜主题或发件人…',en:'Search subject or sender…'},
+  aboutT:{zh:'关于这个看板',en:'About this board'},
+  aboutD:{zh:'演示模式下所有邮件都是虚构的、地址都以保留的 .example 结尾；不抓取、不发送。连接后，看板读取私有摘要，保存设置、审批和撤销请求；后台重新核验后才改动邮件。',en:'In demo mode every email is fictional and every address ends in the reserved .example TLD; nothing is fetched and nothing is sent. Connected, this board reads private metadata and writes settings, approval selections and undo requests. Mail changes only in the runner after revalidation.'},
+  nvT:{zh:'这里验证不了的',en:'Not verified here'},
+  nvD:{zh:'定时分类脚本跑在你自己的仓库里（模板在 template/），看板看不到它跑没跑；分类质量取决于模型和主题行本身；摘要被 keep_items 封顶，看板最多显示这么多封。',en:'The scheduled classifier runs in your own repo (a template is in template/); the board cannot see whether it ran. Category quality depends on the model and on subject lines alone. The digest is capped by keep_items, so the board never shows more than that many emails.'},
+  srcT:{zh:'来源',en:'Source'},
+  by:{zh:'Nick Lian 制作',en:'built by Nick Lian'},
+  langBtn:{zh:'EN',en:'中'},
+  darkMode:{zh:'深色模式',en:'Dark mode'},
+  settingsBtn:{zh:'设置',en:'Settings'},
+  connHint:{zh:'连接你的私有 GitHub 仓库后，可查看摘要和清理审批。演示版用虚构邮件展示同一个看板。',en:'Connect your private GitHub repo to see your digest and cleanup reviews. The demo shows the same board with fictional mail.'},
+  connBtn:{zh:'连接…',en:'Connect…'},
+  tryDemo:{zh:'看演示',en:'Try the demo'},
+  digestLede:{zh:'近期邮件按保留类别整理；正文读取与清理遵循你的设置。',en:'Your recent mail, organized for later. Body reading and cleanup follow your settings.'},
+};
+const Ls=k=>(I18N[k]||{zh:k,en:k})[lang];
+function applyStatic(){
+  document.documentElement.lang=lang==='en'?'en':'zh-CN';
+  document.title=lang==='en'?'Headersort':'Headersort · 邮件分拣台';
+  document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent=Ls(el.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-html]').forEach(el=>{ el.innerHTML=Ls(el.dataset.i18nHtml); });
+  document.querySelectorAll('[data-i18n-title]').forEach(el=>{ el.title=Ls(el.dataset.i18nTitle); });
+  document.querySelectorAll('[data-i18n-aria]').forEach(el=>{ el.setAttribute('aria-label',Ls(el.dataset.i18nAria)); });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{ el.placeholder=Ls(el.dataset.i18nPh); });
+  const lb=document.getElementById('langBtn'); if(lb) lb.textContent=Ls('langBtn');
+}
+function toggleLang(){ lang=lang==='en'?'zh':'en'; try{localStorage.setItem('pha-lang',lang);}catch(e){} applyStatic(); render(); }
+
+/* ============ helpers ============ */
+const $=id=>document.getElementById(id);
+const esc=s=>(s==null?'':String(s)).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let toastTimer=null;
+function toast(msg,isErr){ const t=$('toast'); t.textContent=msg; t.className='toast show'+(isErr?' err':''); t.setAttribute('role',isErr?'alert':'status'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.className='toast'+(isErr?' err':''),isErr?6000:3000); }
+function b64decode(b64){ const bin=atob(String(b64).replace(/\s/g,'')); const bytes=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i); return new TextDecoder().decode(bytes); }
+function b64encode(str){ const bytes=new TextEncoder().encode(str); let bin=''; bytes.forEach(b=>bin+=String.fromCharCode(b)); return btoa(bin); }
+
+/* ============ GitHub Contents API (same paths, same fields; a save whose sha is out of date is merged by SafeMerge) ============ */
+// fresh: skip the browser cache (a save re-reading the file must see what is there now, not a copy up to 60 s old)
+async function ghGet(path,fresh){
+  const c=cfg();
+  const r=await fetch(`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${path}`,
+    {headers:{Authorization:`Bearer ${c.token}`,Accept:'application/vnd.github+json'},...(fresh?{cache:'no-store'}:{})});
+  if(r.status===404) return {data:null,sha:null};
+  if(r.status===401||r.status===403) throw Object.assign(new Error('GitHub '+r.status),{kind:'auth',reason:T('GitHub 拒绝了这个令牌（'+r.status+'）','GitHub refused the token ('+r.status+')'),fix:T('粘贴一个对这个仓库有 Contents 读写权限的新令牌。','Paste a new fine-grained token with Contents read and write on this repo.')});
+  if(!r.ok) throw Object.assign(new Error('GitHub '+r.status),{kind:'http',reason:T('GitHub 返回 '+r.status,'GitHub answered '+r.status),fix:T('过一分钟再试。','Try again in a minute.')});
+  const j=await r.json();let content=j.content;
+  if(j.encoding!=='base64'&&j.sha&&j.size>0){
+    const br=await fetch(`https://api.github.com/repos/${c.owner}/${c.repo}/git/blobs/${j.sha}`,{headers:{Authorization:`Bearer ${c.token}`,Accept:'application/vnd.github+json'},cache:'no-store'});
+    if(!br.ok)throw Error('Private state blob unavailable');content=(await br.json()).content;
+  }
+  try{ if(typeof content!=='string'||(!content&&j.size!==0))throw Error('Empty state');return {data:JSON.parse(b64decode(content)),sha:j.sha}; }
+  catch{ throw {kind:'data',reason:T(path+' 不是有效的 JSON',path+' is not valid JSON'),fix:T('刷新重试；未改动任何文件。','Refresh and retry; no file was changed.')}; }
+}
+// One PUT; returns the Response. A 409 used to be retried here with the same body, which wrote this tab's copy of
+// config.json over whatever had been changed since it loaded (found 2026-09-23). SafeMerge.save now handles it.
+function ghPut(path,obj,sha,message){
+  const c=cfg();
+  const body={message,content:b64encode(JSON.stringify(obj,null,2))};
+  if(sha) body.sha=sha;
+  return fetch(`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${path}`,
+    {method:'PUT',headers:{Authorization:`Bearer ${c.token}`,Accept:'application/vnd.github+json','Content-Type':'application/json'},body:JSON.stringify(body)});
+}
+// Save config.json: a stale save re-reads the file and merges three ways (base = as this page last read or saved it);
+// only a value changed on both sides asks. One save at a time, so two clicks never race on one sha.
+const saveConf=SafeMerge.serial(async message=>{
+  const sent=SafeMerge.snapshot(CONF);
+  const r=await SafeMerge.save({data:sent,sha:SHA_CONF,base:BASE_CONF,T,
+    put:(d,sha)=>ghPut('mail/config.json',d,sha,message),
+    get:async()=>{ const g=await ghGet('mail/config.json',true); return {json:g.data,sha:g.sha}; }});
+  SHA_CONF=r.sha; BASE_CONF=SafeMerge.snapshot(r.data);
+  // merged: the page takes the merged file plus anything changed here meanwhile (otherwise the next save would treat
+  // what came from elsewhere as deleted here)
+  if(r.merged){ CONF=SafeMerge.rebase(sent,r.data,CONF); render(); }
+  return r;
+});
+
+/* ============ settings ============ */
+/* Settings dialog (design system v3.1): palette and light/dark first, then the repo connection. The token field
+   lives only in the dialog; a visitor on the public page gets the connect card instead of a pop-up. */
+function setStatus(msg){ const st=$('setStatus'); if(st) st.textContent=msg; }
+function connectSection(){
+  const box=document.createElement('div'); box.className='nl-connect';
+  box.innerHTML=`<h3>${esc(Ls('setT'))}</h3><p class="hint">${Ls('setHint')}</p>
+    <div class="row"><input id="tokenInput" type="password" placeholder="github_pat_…" autocomplete="off" aria-label="${esc(T('GitHub 令牌','GitHub token'))}">
+    <button type="button" class="btn btn-primary" id="saveTokenBtn">${esc(Ls('saveConnect'))}</button></div>
+    <p class="hint" id="setStatus" role="status"></p>`;
+  box.querySelector('#saveTokenBtn').addEventListener('click',saveToken);
+  box.querySelector('#tokenInput').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); saveToken(); } });
+  box.querySelector('#setStatus').textContent=connectionStatus();
+  return box;
+}
+function settingsOptions(focusToken){ return { strings:Appearance.STRINGS[lang], sections:[connectSection], focus:focusToken?'#tokenInput':null }; }
+// Esc or Done returns focus to whatever opened the dialog: the gear, or the Connect… button on the page
+function openSettings(focusToken,opener){ Appearance.openSettings(opener||$('nl-settings-button'),settingsOptions(focusToken)); }
+// "✓ Connected" is said only after the two files have actually been read (it used to follow every save, loaded or not)
+function connectionStatus(){
+  if(DEMO) return T('演示数据（全部虚构，未连接任何仓库）','Demo data — all fictional, nothing connected');
+  if(LOAD_ERROR) return T('✗ 加载失败：','✗ Could not load: ')+LOAD_ERROR.reason;
+  if(LOADED) return T('✓ 已连接 ','✓ Connected to ')+cfg().owner+'/'+(cfg().repo||'…');
+  if(cfg().token&&!cfg().owner) return T('令牌已保存，但这个页面没有设置仓库（owner/repo），没有东西可加载。见 README「Running your own」。','Token saved, but this page has no repository set (owner/repo), so there is nothing to load. See "Running your own" in the README.');
+  if(configured()) return T('已保存，加载中…','Saved, loading…');
+  return T('先粘贴 GitHub 令牌','Paste a GitHub token');
+}
+async function saveToken(){
+  const token=$('tokenInput').value.trim();
+  if(!token){ setStatus(T('请输入令牌','Enter a token')); return; }
+  if(DEMO){ $('tokenInput').value=''; setStatus(T('演示模式不连接任何仓库，令牌没有保存。去掉地址里的 ?demo=1 再连接。','Demo mode never connects, so the token was not saved. Open the board without ?demo=1 to connect.')); return; }
+  const cur=cfg(); const next=Object.assign({},JSON.parse(localStorage.getItem(PHA_KEY)||'{}'),{owner:cur.owner||DEFAULTS.owner,repo:cur.repo||DEFAULTS.repo,token});
+  localStorage.setItem(PHA_KEY,JSON.stringify(next));
+  $('tokenInput').value='';
+  setStatus(connectionStatus());
+  await loadAll();
+  setStatus(connectionStatus());
+}
+
+/* ============ load + render ============ */
+// A file that is not there (404) means "not set up yet". Anything else — a refused token, no network, GitHub failing — is an
+// error the page shows with what to do (2026-09-16: both reads swallowed every error, so an expired token
+// showed the setup guide and the settings said "✓ Connected"). Data already on screen stays while the error shows.
+let LOADED=false, LOAD_ERROR=null;
+async function loadAll(){
+  if(DEMO){ MAIL=DEMO_MAIL; CONF=DEMO_CONF; SHA_CONF=null; render(); return true; }
+  if(!configured()){ render(); return false; }
+  try{
+    const [m,c]=await Promise.all([ghGet('mail/mail.json'),ghGet('mail/config.json')]);
+    MAIL=m.data; CONF=c.data; SHA_CONF=c.sha; BASE_CONF=SafeMerge.snapshot(CONF); LOADED=true; LOAD_ERROR=null;
+  }catch(e){ LOAD_ERROR=e.kind?e:{kind:'network',reason:T('连不上 GitHub（','Could not reach GitHub (')+(e.message||e)+')',fix:T('检查网络后重试。','Check the connection, then try again.')}; }
+  render();
+  return !LOAD_ERROR;
+}
+function loadErrorCard(){
+  const box=$('loadError'); box.hidden=!LOAD_ERROR||DEMO;
+  if(box.hidden){ box.innerHTML=''; return; }
+  box.innerHTML=`<h2>${T('没能读到你的摘要','Could not load your digest')}</h2><p>${esc(LOAD_ERROR.reason)} — ${esc(LOAD_ERROR.fix)}</p>
+    <div class="row">${LOAD_ERROR.kind==='auth'?`<button class="btn btn-sm" type="button" data-act="openSettings">${T('打开设置','Open settings')}</button>`:`<button class="btn btn-sm" type="button" data-act="loadAll">${T('重试','Try again')}</button>`}</div>`;
+}
+/* Category names come from YOUR config.json, so they are whatever you typed — often Chinese.
+   The key is the stable identifier (the model classifies into keys, not labels), so the board
+   can show an English name for the keys the template ships without touching your data.
+   Order: your own `label_en` if you added one → the shipped English name for that key →
+   your label verbatim. A category we do not know still shows exactly what you wrote. */
+/* Category names come out of mail/config.json in your own private repo — the Gmail labels the classifier creates,
+   read back — so a board wired to a mailbox kept in another language shows that language. English mode looks in
+   three places, in order, and shows what your config says if it finds none:
+     1. label_en, if you wrote one — your words beat anything here;
+     2. CAT_EN, by key: the keys this project's classifier creates, plus the template's. A key is an identifier and
+        reads the same in every language, which is why the table is keyed on it rather than on the label;
+     3. the label as it is — a category you add later keeps its own words rather than going blank.
+   A mailbox sorted by an older generation of the classifier can carry keys this table does not know. The answer for
+   that is label_en in your own config: it is yours to write, and it does not put your label names in a public file. */
+const CAT_EN={
+  action:'To do', job:'Jobs', school:'School', security:'Accounts', newsletter:'Newsletters',
+  people:'People', official:'Official', health:'Health', work:'Work', finance:'Money', life:'Life', travel:'Travel', logistics:'Shipping',
+  account:'Accounts', promo:'Promotions', reading:'Reading', other:'Unsorted'};
+function catLabel(key){
+  const cats=(CONF&&CONF.categories)||[]; const c=cats.find(x=>x.key===key);
+  const label=c?c.label:key;
+  if(lang==='en') return (c&&c.label_en)||CAT_EN[key]||label;
+  return (c&&c.label_zh)||label;
+}
+/* The reason under each row is not the mail and not the interface: it is a clause the classifier wrote into your
+   digest, in whatever language its prompt asked for. English mode shows reason_en when the classifier wrote one; for
+   rows written before it did, it shows the stored reason only if there is no CJK in it, and otherwise shows no reason
+   at all — the category still says what the row is, so nothing goes blank. Chinese mode shows what was stored. */
+const CJK=/[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af\uf900-\ufaff]/;
+function reasonFor(i){
+  if(lang==='en') return i.reason_en || (i.reason && !CJK.test(i.reason) ? i.reason : '');
+  return i.reason || i.reason_en || '';
+}
+/* A mail client puts its own reply/forward marker in front of the subject, in the language of that client's
+   interface ("转发:", "回复:"). The marker is not part of what the sender wrote, so English mode shows it as Fwd:/Re:;
+   the rest of the subject is the email's own text and is left exactly as it is. Display only: the digest, the search
+   and the Gmail link all keep using the stored subject. A chain such as "Re: 转发: …" is read marker by marker. */
+const SUBJ_MARKS=[[/^(?:转发|轉發|转寄|轉寄)\s*[:：]\s*/,'Fwd: '],[/^(?:回复|回覆|答复|答覆)\s*[:：]\s*/,'Re: '],
+  [/^(?:re|fwd?|aw|wg|sv|tr|rv)\s*[:：]\s*/i,null]];
+function subjectFor(subj){
+  if(lang!=='en'||!subj) return subj;
+  let out='', rest=String(subj);
+  for(let guard=0; guard<8; guard++){
+    const hit=SUBJ_MARKS.map(([rx,to])=>[rest.match(rx),to]).find(([m])=>m);
+    if(!hit) break;
+    out+=hit[1]===null?hit[0][0]:hit[1]; rest=rest.slice(hit[0][0].length);
+  }
+  return out+rest;
+}
+async function toggleEnabled(){
+  if(DEMO){ CONF.enabled=!(CONF.enabled!==false); render(); toast(T('演示模式：开关不会真的写入','Demo mode — the toggle is not persisted')); return; }
+  if(!CONF){ toast(T('仓库里还没有 mail/config.json','No mail/config.json in the repo yet'),true); return; }
+  const next=!(CONF.enabled!==false);
+  CONF.enabled=next; render();
+  try{ await saveConf(`mail: classify ${next?'ON':'OFF'}`);
+    // after a merge the switch shows what the file says, which is not always `next` (both sides changed it, the other kept)
+    toast(CONF&&CONF.enabled!==false?T('已开启定时自动分类','Scheduled classification ON'):T('已关闭（定时任务将直接跳过）','OFF — the scheduled job skips itself')); }
+  catch(e){ CONF.enabled=!next; render(); toast(T('切换失败: ','Toggle failed: ')+e.message,true); }
+}
+function setFilter(c){ filter=c; syncURL(); render(); }
+// category keys come from the digest, so they never go into an inline handler: the chip carries the key in data-filter
+// (HTML-escaped) and this one listener reads it back as plain text
+document.getElementById('filter').addEventListener('click',e=>{ const b=e.target.closest('button[data-filter]'); if(b) setFilter(b.dataset.filter); });
+function showAction(){ setFilter('__action'); const first=document.querySelector('#list .mail a.subj'); if(first) first.focus(); }
+function onSearch(v){ query=v.trim().toLowerCase(); syncURL(v); renderList(); }
+function clearFilters(){ query=''; $('q').value=''; setFilter('all'); $('q').focus(); }
+// The page's Content-Security-Policy runs no inline event-handler attribute, so buttons name their action in data-act
+// and this one listener calls it; the search box gets its own listener.
+const ACTIONS={ toggleEnabled:()=>toggleEnabled(), loadAll:()=>loadAll(), toggleLang:()=>toggleLang(), showAction:()=>showAction(),
+  openSettings:(b)=>openSettings(true,b), clearFilters:()=>clearFilters() };
+document.addEventListener('click',e=>{ const b=e.target.closest('[data-act]'); if(b && Object.prototype.hasOwnProperty.call(ACTIONS,b.dataset.act)) ACTIONS[b.dataset.act](b); });
+$('q').addEventListener('input',e=>onSearch(e.target.value));
+const fmtDay=d=>d.toLocaleDateString(lang==='en'?'en-CA':'zh-CN',{month:'short',day:'numeric'});
+// render() rebuilds the chips, counts and list, so the control a keyboard user was on disappears and focus drops to <body>:
+// no focus ring, and Tab starts again from the top (found 2026-09-16 with real key presses). The wrapper puts focus back on
+// the same control (same attribute, or the same kind of control at the same position, keeping a text field's caret) or,
+// when that control is gone, on the first visible heading of the page.
+function focusKey(el){
+  if(!el||el===document.body||el===document.documentElement) return null;
+  const scope=el.parentElement&&el.parentElement.closest('[id]'), within=scope?'#'+CSS.escape(scope.id)+' ':'', tag=el.tagName.toLowerCase();
+  const quote=v=>'"'+v.replace(/["\\]/g,'\\$&')+'"';
+  const tries=['id','data-id','data-key','data-sort','href','name'].filter(a=>el.getAttribute(a)).map(a=>within+tag+'['+a+'='+quote(el.getAttribute(a))+']');
+  const kind=tag+(typeof el.className==='string'&&el.className.trim()?'.'+el.className.trim().split(/\s+/).map(c=>CSS.escape(c)).join('.'):'');
+  // a control inside a record (data-id) is looked for in that record first, then in the record now at its place, then nowhere
+  const rec=el.parentElement&&el.parentElement.closest('[data-id]'), recs=rec?within+rec.tagName.toLowerCase()+'[data-id]':null;
+  const recId=rec&&rec.getAttribute('data-id'), recAt=rec?[...document.querySelectorAll(recs)].indexOf(rec):-1, inRec=rec?[...rec.querySelectorAll(kind)].indexOf(el):-1;
+  const index=[...document.querySelectorAll(within+kind)].indexOf(el);
+  const find=()=>{ for(const s of tries){ const x=document.querySelector(s); if(x) return x; }
+    if(rec){ const r=document.querySelector(within+rec.tagName.toLowerCase()+'[data-id='+quote(recId)+']')||document.querySelectorAll(recs)[recAt]; return r?r.querySelectorAll(kind)[inRec]||null:null; }
+    return index<0?null:document.querySelectorAll(within+kind)[index]||null; };
+  find.caret=typeof el.selectionStart==='number'?[el.selectionStart,el.selectionEnd]:null;
+  return find;
+}
+// Where focus goes when there is no control to go back to, and where the skip link sends it: the first visible h1 in main,
+// else the first visible h2, else main (after Clear filters focus used to go to the whole
+// <main>, whose ring was off screen)
+function firstHeading(){
+  const seen=x=>{ const r=x.getBoundingClientRect(), cs=getComputedStyle(x); return r.width>2&&r.height>2&&cs.visibility!=='hidden'&&!/inset\(50%\)|rect\(0/.test(cs.clipPath+cs.clip); };
+  const x=[...document.querySelectorAll('main h1')].find(seen)||[...document.querySelectorAll('main h2')].find(seen)||document.getElementById('main');
+  if(x&&!x.hasAttribute('tabindex')) x.setAttribute('tabindex','-1');
+  return x;
+}
+function restoreFocus(find){
+  if(!find||(document.activeElement&&document.activeElement!==document.body)) return;
+  let el=find();
+  if(!el||!el.getClientRects().length) el=firstHeading();
+  if(el){ el.focus(); if(document.activeElement!==el&&(el=firstHeading())) el.focus(); }   // a disabled control does not take focus
+  if(el&&find.caret&&el.setSelectionRange) try{ el.setSelectionRange(find.caret[0],find.caret[1]); }catch(e){ /* not a text field */ }
+}
+function render(){ const find=focusKey(document.activeElement); renderPage(); restoreFocus(find); document.dispatchEvent(new Event("headersort-data")); }
+function renderPage(){
+  const on=CONF?CONF.enabled!==false:false;
+  const togLabel=!CONF?T('分类: —','Classify: —'):(on?T('分类: 开','Classify: on'):T('分类: 关','Classify: off'));
+  ['togBtn','togBtnPage'].forEach(id=>{ const b=$(id); b.setAttribute('aria-checked',String(!!CONF&&on)); b.disabled=!CONF; });
+  ['togText','togTextPage'].forEach(id=>{ $(id).textContent=togLabel; });
+  $('connectCard').hidden=DEMO||configured();
+  $('setupBox').hidden=!(configured()&&!MAIL&&!DEMO&&!LOAD_ERROR);
+  loadErrorCard();
+  const pill=$('pill'); pill.classList.toggle('live',!DEMO&&LOADED&&!LOAD_ERROR); pill.firstChild.textContent=DEMO?'Demo':LOAD_ERROR?T('未加载','Not loaded'):LOADED?T('已连接','Connected'):configured()?T('加载中…','Loading…'):'Demo'; $('pillLong').textContent=DEMO?T(' · 虚构邮件',' · fictional mail'):(configured()?' · '+esc(cfg().owner)+'/'+esc(cfg().repo||'…'):T(' · 未连接',' · not connected')); pill.title=DEMO?T('全部虚构，不连接任何东西','All fictional; connects to nothing'):'';
+  const m=MAIL||{items:[]}; const items=m.items||[];
+  const now=Date.now(),dayMs=864e5;
+  const total=Number(m.total_classified||0), floor=!!m.total_is_floor, keep=Number(m.keep_items||(CONF&&CONF.keep_items)||500);
+  const today=items.filter(i=>now-new Date(i.date).getTime()<dayMs).length;
+  const week=items.filter(i=>now-new Date(i.date).getTime()<7*dayMs).length;
+  const action=items.filter(i=>i.action).length;
+  $('stats').innerHTML=items.length?`<div class="strip" role="group" aria-label="${T('摘要计数','Digest counts')}">
+    <div><div class="k">${T('24 小时','Last 24 h')}</div><div class="v">${today}</div></div>
+    <div><div class="k">${T('近 7 天','Last 7 days')}</div><div class="v">${week}</div></div>
+    <div><div class="k">${T('待处理','Needs action')}</div><div class="v" style="color:${action?'var(--warning)':'inherit'}">${action}</div></div>
+    <div title="${T('摘要只保留最近 '+keep+' 封（config.json 的 keep_items），不封顶 mail.json 会无限膨胀。','The digest keeps only the latest '+keep+' emails (keep_items in config.json) so mail.json cannot grow without bound.')}"><div class="k">${T('摘要窗口','In digest')}</div><div class="v">${items.length}<small> / ${keep}</small></div></div>
+    <div title="${total?T('分类脚本累计处理过的邮件数，不受摘要窗口封顶影响。'+(floor?'首次记账时早期数据已不可考，所以这是下限。':''),'Total emails the classifier has processed, unaffected by the digest cap.'+(floor?' Seeded from the window at first bookkeeping, so it is a lower bound.':'')):T('还没有累计数据——下一次定时任务跑完就有了。','No cumulative figure yet — appears after the next scheduled run.')}"><div class="k">${T('累计已分类','Classified')}</div><div class="v">${total?(floor?'≥':'')+total:'—'}</div></div></div>`:'';
+  // where the digest went: one segment per category (a sum strip: counts add up to the window)
+  const counts={}; items.forEach(i=>{ counts[i.category]=(counts[i.category]||0)+1; });
+  const cats=Object.keys(counts).sort((a,b)=>counts[b]-counts[a]);
+  $('digestPlate').hidden=!items.length; $('pageT').hidden=!!items.length;  // one h1 on the page: the plate's when it shows
+  // when the classifier last wrote the digest, in the browser's own time zone and language; the Action writes UTC, and the
+  // board before v3.1 showed that UTC string as if it were local
+  const eb=$('digestEyebrow'), ran=lastRun(m);
+  eb.replaceChildren(DEMO?T('摘要 · 虚构邮件','Digest · fictional mail'):T('摘要 · ','Digest · ')+cfg().owner+'/'+(cfg().repo||'…'));
+  if(ran){ const t=document.createElement('time'); t.dateTime=m.updated_at; t.textContent=ran; eb.append(T(' · 更新于 ',' · updated '),t); }
+  // the Action runs twice a day (template/.github/workflows/mail-sync.yml); more than 36 hours since the last write means runs have stopped or are failing
+  const idle=ran?(Date.now()-new Date(m.updated_at).getTime())/3600000:0;
+  if(idle>36){ const n=idle<72?Math.floor(idle):Math.floor(idle/24), w=document.createElement('span'); w.className='tag tag-warning';
+    w.textContent=idle<72?T('已 '+n+' 小时没有运行','No run for '+n+' hours'):T('已 '+n+' 天没有运行','No run for '+n+' days'); eb.append(w); }
+  if(items.length){ const seq=['--viz-seq-600','--viz-seq-500','--viz-seq-450','--viz-seq-400','--viz-seq-350','--viz-seq-300','--viz-seq-250','--viz-seq-200','--viz-seq-150'];
+    $('sumBar').innerHTML=cats.map((k,i)=>`<span style="width:${counts[k]/items.length*100}%;background:var(${seq[Math.min(i,seq.length-1)]})"></span>`).join('');
+    $('sumLegend').innerHTML=cats.map((k,i)=>`<span><i style="background:var(${seq[Math.min(i,seq.length-1)]})"></i>${esc(catLabel(k))} <b class="mono">${counts[k]}</b></span>`).join('');
+    $('sumEq').textContent=cats.map(k=>counts[k]).join(' + ')+' = '+items.length+' '+T('封在摘要里','in the digest')+' · '+action+' '+T('待处理','need action');
+    // the board's main next step: the mail marked as needing action (hidden when there is none)
+    const ab=$('actionBtn'); ab.hidden=!action; ab.textContent=T('只看待处理（'+action+'）','Show what needs action ('+action+')'); }
+  // 7-day trend
+  $('trendCard').hidden=!items.length;
+  if(items.length){ const days=[...Array(7)].map((_,i)=>{ const d=new Date(now-(6-i)*dayMs); d.setHours(0,0,0,0); return d; });
+    const per=days.map(d=>{ const a=d.getTime(), b=a+dayMs; const dayItems=items.filter(i=>{ const t=new Date(i.date).getTime(); return t>=a&&t<b; }); return {n:dayItems.length,act:dayItems.filter(i=>i.action).length,d}; });
+    const max=Math.max(1,...per.map(p=>p.n));
+    $('trend').innerHTML=per.map(p=>`<div title="${fmtDay(p.d)}: ${p.n} (${p.act} ${T('待处理','action')})"><i class="act" style="height:${p.act/max*60}px${p.act?'':';display:none'}"></i><i style="height:${Math.max(2,(p.n-p.act)/max*60)}px"></i></div>`).join('');
+    $('trend').setAttribute('aria-label',per.map(p=>`${fmtDay(p.d)}: ${p.n}`).join(', '));
+    $('trendX').innerHTML=per.map(p=>`<span>${fmtDay(p.d)}</span>`).join(''); }
+  $('filterRow').hidden=!items.length;
+  const chip=(key,label,n)=>`<button type="button" aria-pressed="${filter===key?'true':'false'}" data-filter="${esc(key)}">${label}<span class="n">${n}</span></button>`;
+  $('filter').innerHTML=items.length?[chip('all',T('全部','All'),items.length),chip('__action',T('待处理','Action'),action)].concat(cats.map(k=>chip(k,esc(catLabel(k)),counts[k]))).join(''):'';
+  renderList();
+}
+// the digest stores senders as "Name <address>" (template classify.mjs); both parts are shown, as on the board before v3.1
+const senderAddress=f=>{ const m=String(f==null?'':f).match(/<([^>]*)>/); return m?m[1]:String(f==null?'':f).trim(); };
+const senderName=f=>{ const n=String(f==null?'':f).replace(/<[^>]*>/,'').trim(); return n||senderAddress(f); };
+const lastRun=m=>{ const d=new Date(m&&m.updated_at); if(!m||!m.updated_at||isNaN(d)) return null;
+  return new Intl.DateTimeFormat(lang==='en'?'en-US':'zh-CN',lang==='en'?{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}:{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(d); };
+function renderList(){
+  const m=MAIL||{items:[]}; let items=m.items||[];
+  if(!(m.items||[]).length){ $('list').innerHTML=DEMO||configured()?`<div class="empty"><h3>${T('摘要还是空的','The digest is empty')}</h3><p>${lastRun(m)?T('上次运行（'+lastRun(m)+'）没有新邮件可加。','Last run '+lastRun(m)+' found nothing to add.'):T('定时任务跑完第一次后这里会出现邮件。','Emails appear here after the first scheduled run.')}</p><button class="btn btn-sm" data-act="loadAll">${T('刷新','Refresh')}</button></div>`:''; return; }
+  if(filter==='__action') items=items.filter(i=>i.action); else if(filter!=='all') items=items.filter(i=>i.category===filter);
+  if(query) items=items.filter(i=>(i.subject+' '+i.from).toLowerCase().includes(query));
+  if(!items.length){ $('list').innerHTML=`<div class="empty"><h3>${T('没有匹配的邮件','No mail matches')}</h3><p>${T('换个类别或清空搜索。','Pick another category or clear the search.')}</p><button class="btn btn-sm" data-act="clearFilters">${T('清除筛选','Clear filters')}</button></div>`; return; }
+  $('list').innerHTML='<div class="list">'+items.slice(0,150).map(i=>{
+    const gurl=i.msgid?`https://mail.google.com/mail/u/0/#search/rfc822msgid:${encodeURIComponent(i.msgid)}`:'https://mail.google.com';
+    const d=new Date(i.date); const when=isNaN(d)?'':`${fmtDay(d)} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    return `<div class="mail">${i.action?`<span class="flag" role="img" aria-label="${T('需要处理','Action needed')}" title="${T('需要处理','Action needed')}">${BOLT}</span>`:'<span class="flag"></span>'}
+      <a class="subj" href="${gurl}" target="_blank" rel="noopener">${esc(subjectFor(i.subject))}</a>
+      <span class="when">${when}</span>
+      <div class="meta"><span class="cat">${esc(catLabel(i.category))}</span><span class="chip">from <b>${esc(senderName(i.from))}</b>${senderName(i.from)!==senderAddress(i.from)?' '+esc(senderAddress(i.from)):''}</span>${reasonFor(i)?`<span class="reason">${esc(reasonFor(i))}</span>`:''}</div></div>`;
+  }).join('')+'</div>'+(items.length>150?`<p class="hint" style="margin-top:8px">${T('只显示前 150 封。','Showing the first 150.')}</p>`:'');
+}
+
+/* the action flag: a line bolt drawn like the top bar's icons (24-unit box, 2 px stroke, round joins); the span around it
+   carries the name (role=img + aria-label), so a screen reader says "Action needed" instead of reading an emoji */
+const BOLT='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/></svg>';
+
+/* ============ ?demo=1 — 60 fictional emails over the last 7 days, generated in code; every address ends in .example ============ */
+function makeDemo(){
+  const now=new Date(); now.setHours(9,15,0,0);
+  const T7=[['statements@bank.example','Your monthly statement is ready','finance',false,'recurring statement'],['billing@utility.example','Invoice 88213 due in 5 days','finance',true,'due date in the subject'],['noreply@tax-office.example','Action required: confirm your tax residency','finance',true,'hard deadline'],
+   ['pm@studio.example','Design review — Thursday 14:00','work',true,'meeting invite awaiting a reply'],['ci@build.example','Build #4471 failed on main','work',true,'failing build'],['hr@corp.example','Q3 objectives: draft due Friday','work',true,'deadline'],['calendar@corp.example','Updated invitation: sprint planning','work',false,'calendar update'],
+   ['landlord@rent.example','Re: apartment viewing on Saturday','life',true,'question waiting on you'],['clinic@dentist.example','Reminder: appointment tomorrow 9:30','life',false,'reminder, no reply needed'],['library@campus.example','Overdue: book due 3 days ago','life',true,'already past due'],
+   ['noreply@air.example','Your flight is now boarding at gate C48','travel',false,'time-sensitive, no action'],['stay@hotel.example','Booking confirmed: 2 nights','travel',false,'confirmation'],
+   ['ship@parcel.example','Your package has shipped — tracking 1Z9X','logistics',false,'tracking number'],['delivery@courier.example','Out for delivery today 2–4pm','logistics',false,'delivery window'],['returns@shop.example','Return label for order 5512','logistics',false,'label attached'],
+   ['security@account.example','Security alert: new sign-in from Chrome on macOS','account',false,'informational alert'],['noreply@id.example','Your verification code is 482913','account',false,'one-time code'],['admin@cloud.example','Your storage is 90% full','account',false,'usage warning'],
+   ['deals@shop.example','70% off everything — 48 hours only','promo',false,'marketing blast'],['news@brand.example','New arrivals you will love','promo',false,'newsletter'],['offers@airline.example','Flash sale: fares from 89','promo',false,'promotion'],
+   ['digest@papers.example','Weekly digest: 12 new papers in your feed','reading',false,'newsletter'],['newsletter@blog.example','Issue #142: on writing less','reading',false,'newsletter'],['editor@magazine.example','This week\'s long reads','reading',false,'newsletter']];
+  const items=[]; for(let i=0;i<60;i++){ const t=T7[i%T7.length]; const d=new Date(now.getTime()-Math.floor(i/9)*864e5-(i%9)*3600e3*1.3); items.push({subject:t[1]+(i>=T7.length?' ('+(Math.floor(i/T7.length)+1)+')':''),from:t[0],date:d.toISOString(),category:t[2],action:t[3]&&i<40,reason:t[4],msgid:'<demo-'+i+'@mail.example>'}); }
+  return {updated_at:now.toISOString(),keep_items:300,total_classified:1240,total_is_floor:true,items};
+}
+const DEMO=(()=>{ try{ return new URLSearchParams(location.search).get('demo')==='1'; }catch(e){ return false; } })();
+const DEMO_MAIL=DEMO?makeDemo():null;
+const DEMO_CONF={enabled:true, keep_items:300, categories:[
+  {key:"work",label:"Work"},{key:"finance",label:"Finance"},{key:"life",label:"Life"},
+  {key:"travel",label:"Travel"},{key:"logistics",label:"Shipping"},{key:"account",label:"Accounts"},
+  {key:"promo",label:"Promotions"},{key:"reading",label:"Reading"}]};
+
+/* ============ theme ============ */
+Appearance.bindToggle($('theme'));   // ◐ switches light/dark only (inlined appearance.js)
+Appearance.bindSettings($('nl-settings-button'),()=>settingsOptions(false));   // the gear: palette, light/dark, repo connection
+
+/* ============ start ============ */
+document.querySelector('.skip').addEventListener('click',e=>{ e.preventDefault(); firstHeading().focus(); });   // no #main in the address
+globalThis.HeadersortBoard={
+  demo:DEMO, available:()=>DEMO||Boolean(CONF&&configured()&&!LOAD_ERROR),
+  getConfig:()=>CONF,
+  get:(path,fresh)=>ghGet(path,fresh),
+  put:async(path,data,sha,message)=>{const r=await ghPut(path,data,sha,message);if(!r.ok)throw Error("Save conflict or unavailable");return r.json();},
+  saveConfig:async value=>{const before=CONF;CONF=value;try{await saveConf("mail: update cleanup settings");}catch{CONF=before;throw Error("Save unavailable");}},
+  subscribe:fn=>document.addEventListener("headersort-data",fn),
+  language:()=>lang
+};
+applyStatic();
+loadAll();
+</script>
+<script type="module" src="board/cleanup.mjs"></script>
+</body>
+</html>

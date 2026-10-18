@@ -1,117 +1,46 @@
-// classify.mjs — the scheduled classifier, written against the board's contract. Copy this folder into your private
-// data repo. It reads ONLY the envelope of new mail (sender + subject), asks the model for a category, ADDS a label,
-// and writes a capped digest to mail/mail.json. It never reads bodies, never deletes, never marks read, never moves
-// mail unless a category is listed in config.archive_categories.
-//
-// Pure core (sortMail) + thin adapters, so `node template/check.mjs` can run the whole thing with mocks and no credentials.
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { complete, configFromEnv, describe, extractJson } from './llm.mjs';
+import {fileURLToPath} from 'node:url';
+import {settings} from './settings.mjs';
+import {emptyState,runCycle} from './core.mjs';
+import {connectMailbox} from './imap.mjs';
 
-export const LABEL_PREFIX = 'AI/';
-
-/** Decide what the run will do. Everything that touches a mailbox goes through the adapters passed in. */
-export async function sortMail({ config, digest, fetchHeaders, labelMessage, moveMessage, classify, now = new Date(), backfillDays = 0, log = () => {} }) {
-  const out = { skipped: null, fetched: 0, labelled: 0, archived: 0, newItems: 0 };
-  if (config.enabled === false) { out.skipped = 'disabled in mail/config.json'; log('skipped: ' + out.skipped); return { digest, ...out }; }
-  const categories = (config.categories || []).map(c => c.key);
-  if (!categories.length) throw new Error('config.categories is empty');
-  const keep = Number(config.keep_items || 500);
-  const since = backfillDays > 0 ? new Date(now.getTime() - backfillDays * 864e5) : null;
-  const headers = await fetchHeaders({ sinceUid: since ? null : digest.lastUid || null, since, primaryOnly: config.primary_only !== false });
-  out.fetched = headers.length;
-  const known = new Set((digest.items || []).map(i => i.uid));
-  const fresh = headers.filter(h => !known.has(h.uid));
-  const items = [];
-  for (let i = 0; i < fresh.length; i += 25) {
-    const batch = fresh.slice(i, i + 25).map(h => ({ from: h.from, subject: h.subject })); // the ONLY fields the model sees
-    const verdicts = await classify(batch, categories);
-    fresh.slice(i, i + 25).forEach((h, j) => {
-      const v = verdicts[j] || {};
-      const category = categories.includes(v.category) ? v.category : 'other';
-      items.push({ uid: h.uid, msgid: h.msgid || null, subject: h.subject, from: h.from, date: h.date, category, action: v.action === true, reason: String(v.reason || '').slice(0, 120), reason_en: String(v.reason_en || '').slice(0, 120) });
-    });
-  }
-  for (const it of items) {
-    const label = LABEL_PREFIX + (config.categories.find(c => c.key === it.category)?.label || it.category);
-    await labelMessage(it.uid, label); out.labelled++;
-    if ((config.archive_categories || []).includes(it.category)) { await moveMessage(it.uid, config.archive_folder || '[Gmail]/All Mail'); out.archived++; }
-  }
-  out.newItems = items.length;
-  const merged = items.concat(digest.items || []).sort((a, b) => String(b.date).localeCompare(String(a.date)));
-  const next = {
-    updated_at: now.toISOString(), keep_items: keep, lastUid: Math.max(digest.lastUid || 0, ...headers.map(h => h.uid), 0),
-    total_classified: Number(digest.total_classified || (digest.items || []).length) + items.length,
-    total_is_floor: digest.total_is_floor ?? !digest.total_classified,
-    items: merged.slice(0, keep),
-  };
-  log(`fetched ${out.fetched}, new ${out.newItems}, labelled ${out.labelled}, archived ${out.archived}, digest ${next.items.length}/${keep}`);
-  return { digest: next, ...out };
+const ROOT=fileURLToPath(new URL('../',import.meta.url));
+const read=(root,name,fallback)=>{const f=path.join(root,name);return fs.existsSync(f)?JSON.parse(fs.readFileSync(f,'utf8')):fallback;};
+export function atomic(root,name,data){const f=path.join(root,name),temp=f+'.tmp';fs.mkdirSync(path.dirname(f),{recursive:true});const fd=fs.openSync(temp,'w',0o600);try{fs.writeFileSync(fd,JSON.stringify(data,null,2)+'\n');fs.fsyncSync(fd);}finally{fs.closeSync(fd);}fs.renameSync(temp,f);const dir=fs.openSync(path.dirname(f),'r');try{fs.fsyncSync(dir);}finally{fs.closeSync(dir);}}
+export async function main({root=ROOT,env=process.env,connect=connectMailbox,output=console.log}={}){
+  let lock,mailbox;
+  try{
+    let c=settings(read(root,'config.json',{}));
+    if(env.DRY_RUN==='1'||!c.enabled){output('Skipped: disabled or dry run; no connections.');return 0;}
+    const proposalOnly=env.DRY_RUN==='proposal';
+    if(proposalOnly&&env.STATE_BACKEND==='github')throw Error('Dry proposals require local state');
+    // Credentials are only consulted after the off switch. Values never enter output or persistence.
+    if(!env.GMAIL_USER||!env.GMAIL_APP_PASSWORD){output('Skipped: mailbox not configured.');return 0;}
+    lock=fs.openSync(path.join(root,'.runner.lock'),'wx',0o600);
+    const store=env.STATE_BACKEND==='github'?(await import('./storage.mjs')).githubStore({repository:env.GITHUB_REPOSITORY,key:env.GITHUB_TOKEN}):{read:async(name,fallback)=>read(root,name,fallback),write:async(name,data)=>atomic(root,name,data)};
+    c=settings(await store.read('config.json',c));if(!c.enabled){output('Skipped: disabled; no mailbox connection.');return 0;}
+    const state=emptyState();state.digest=await store.read('mail.json',state.digest);state.runtime=await store.read('runtime.json',state.runtime);state.proposal=await store.read('cleanup-proposal.json',null);state.journal=await store.read('cleanup-log.json',state.journal);
+    const persist=async s=>{await store.write('cleanup-log.json',s.journal);await store.write('cleanup-proposal.json',s.proposal);await store.write('mail.json',s.digest);await store.write('runtime.json',s.runtime);};
+    // One-time migration seeds only protective settings from pre-existing metadata. No body is accessed.
+    if(!state.runtime.protection_seeded){const {seedProtection}=await import('./core.mjs');const seeded=seedProtection(c,state.digest);if(JSON.stringify(seeded)!==JSON.stringify(c)){await store.write('config.json',seeded);c=seeded;}state.runtime.protection_seeded=true;await persist(state);}
+    mailbox=await connect(c,env);
+    const {createEvaluator,modelClassifier}=await import('./intelligence.mjs');let classify=null;
+    try{classify=modelClassifier(env,{maxRetries:c.max_retries});}catch{/* deterministic rules remain available when no model is configured */}
+    // A proposal dry run reads metadata and writes local state, but never calls a model,
+    // reads a body, labels, archives or restores mail, even with queued decisions.
+    if(proposalOnly){
+      c=settings({...c,read_bodies:false,approval_mode:'every_run',rules:Object.fromEntries(Object.entries(c.rules).map(([id,r])=>[id,{...r,auto:false}]))});
+      const real=mailbox;mailbox=new Proxy(real,{get(target,key){
+        if(key==='addLabel')return async()=>{};
+        if(['archive','trash','restore','removeLabel','readBody'].includes(key))return async()=>{throw Error('Mutation forbidden in proposal dry run');};
+        const value=Reflect.get(target,key);return typeof value==='function'?value.bind(target):value;
+      }});classify=null;
+    }
+    const now=new Date(),evaluate=createEvaluator({config:c,mailbox,classify,now});
+    const result=await runCycle({config:c,state,mailbox,persist,approval:proposalOnly?null:await store.read('cleanup-approval.json',null),undoRequests:proposalOnly?[]:(await store.read('cleanup-undo.json',{requests:[]})).requests,force:proposalOnly||env.RUN_NOW==='1',backfill:env.BACKFILL==='1',evaluate,now});
+    output(result.skipped?'Skipped: '+result.skipped:'Cycle complete. Proposed: '+result.proposed);return 0;
+  }catch{output('Run stopped safely. Check configuration, dependencies, or runner lock; no sensitive error details retained.');return 1;}
+  finally{try{await mailbox?.close();}catch{/* never print provider/mailbox errors */}if(lock!==undefined){fs.closeSync(lock);fs.unlinkSync(path.join(root,'.runner.lock'));}}
 }
-
-/** Prompt + parser for the model adapter. Kept here so the eval set scores exactly what production sends. */
-export function buildPrompt(batch, categories) {
-  return {
-    system: `You sort email by its envelope only. For each item you get a sender and a subject line — nothing else, and you must not guess at bodies. Reply with JSON only: an array, same order, of {"category": one of ${JSON.stringify(categories)} or "other", "action": true if the email is waiting on a reply from the recipient or carries a real deadline, "reason": one short clause in the language of the subject line, "reason_en": the same clause in English}. The board shows reason_en when it is set to English, so a mailbox kept in another language still reads in one language.`,
-    user: JSON.stringify(batch),
-  };
-}
-export function parseVerdicts(text, n) {
-  let arr;
-  try { arr = extractJson(text || '', 'array'); } catch { return Array(n).fill({}); }   // no array → every item falls back to "other"
-  return Array.from({ length: n }, (_, i) => (arr[i] && typeof arr[i] === 'object') ? arr[i] : {});
-}
-
-/* ---------------- adapters (only used when run as the Action) ---------------- */
-async function imapAdapters(env) {
-  const { ImapFlow } = await import('imapflow');
-  const client = new ImapFlow({ host: 'imap.gmail.com', port: 993, secure: true, auth: { user: env.GMAIL_USER, pass: env.GMAIL_APP_PASSWORD }, logger: false });
-  await client.connect(); await client.mailboxOpen('INBOX');
-  return {
-    client,
-    async fetchHeaders({ sinceUid, since, primaryOnly }) {
-      const query = since ? { since } : sinceUid ? { uid: `${sinceUid + 1}:*` } : { since: new Date(Date.now() - 7 * 864e5) };
-      if (primaryOnly) query.gmailRaw = 'category:primary';
-      const out = [];
-      for await (const msg of client.fetch(query, { uid: true, envelope: true })) { // envelope only: no body, no text
-        const env2 = msg.envelope || {}; const from = (env2.from || [])[0] || {};
-        out.push({ uid: msg.uid, msgid: env2.messageId || null, subject: env2.subject || '(no subject)', from: from.address ? `${from.name ? from.name + ' ' : ''}<${from.address}>` : '(unknown)', date: env2.date ? new Date(env2.date).toISOString() : new Date().toISOString() });
-      }
-      return out;
-    },
-    labelMessage: (uid, label) => client.messageFlagsAdd({ uid }, [label], { uid: true }).catch(() => client.messageCopy({ uid }, label, { uid: true })),
-    moveMessage: (uid, folder) => client.messageMove({ uid }, folder, { uid: true }),
-  };
-}
-/** Any provider through ./llm.mjs: Claude (default, claude-sonnet-5-5), OpenAI, Gemini, OpenAI-compatible.
- *  The output budget comes from llm.mjs: 16000 for Claude (Sonnet 5.5's thinking counts toward it), 2048 elsewhere. */
-export function modelClassifier(cfg) {
-  return async (batch, categories) => {
-    const { system, user } = buildPrompt(batch, categories);
-    const res = await complete(cfg, system, user);   // llm.mjs picks the output budget per provider
-    return parseVerdicts(res.text, batch.length);
-  };
-}
-
-const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
-if (isMain) {
-  const env = process.env, root = process.cwd();
-  const read = f => fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : null;
-  const config = read(path.join(root, 'mail/config.json')) || { enabled: false, categories: [] };
-  const digest = read(path.join(root, 'mail/mail.json')) || { items: [] };
-  if (env.DRY_RUN === '1') { console.log('DRY_RUN=1: not connecting to IMAP or the model; nothing changed.'); process.exit(0); }
-  // the switch is read before any credential or connection: with enabled:false the run touches nothing, not even the login
-  // (it used to log in to Gmail and open the inbox first, so a revoked app password failed the job while the switch was off)
-  if (config.enabled === false) { console.log('skipped: disabled in mail/config.json (no login, nothing changed)'); process.exit(0); }
-  let cfg = null, missing = [];
-  if (!env.GMAIL_USER || !env.GMAIL_APP_PASSWORD) missing.push('GMAIL_USER / GMAIL_APP_PASSWORD');
-  try { cfg = configFromEnv(env); } catch (e) { missing.push(e.message); }
-  if (missing.length) { console.log(`Not configured (${missing.join('; ')}): skipping (exit 0).`); process.exit(0); }
-  console.log(`model: ${describe(cfg)}`);
-  const imap = await imapAdapters(env);
-  try {
-    const result = await sortMail({ config, digest, fetchHeaders: imap.fetchHeaders, labelMessage: imap.labelMessage, moveMessage: imap.moveMessage, classify: modelClassifier(cfg), backfillDays: Number(env.BACKFILL_DAYS || 0), log: console.log });
-    if (!result.skipped) fs.writeFileSync(path.join(root, 'mail/mail.json'), JSON.stringify(result.digest, null, 2) + '\n');
-  } finally { await imap.client.logout(); }
-}
+if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))process.exitCode=await main();

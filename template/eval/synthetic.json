@@ -1,0 +1,4972 @@
+{
+  "schema_version": 1,
+  "synthetic": true,
+  "now": "2026-10-17T12:00:00.000Z",
+  "items": [
+    {
+      "id": "s1",
+      "message": {
+        "uid": 1,
+        "gmailId": "1001",
+        "threadId": "2001",
+        "from": "notices@service.example",
+        "subject": "Verification code for your sign-in #0",
+        "date": "2026-06-19T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O1"
+      }
+    },
+    {
+      "id": "s2",
+      "message": {
+        "uid": 2,
+        "gmailId": "1002",
+        "threadId": "2002",
+        "from": "notices@service.example",
+        "subject": "Verification code for your sign-in #1",
+        "date": "2026-06-18T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O1"
+      }
+    },
+    {
+      "id": "s3",
+      "message": {
+        "uid": 3,
+        "gmailId": "1003",
+        "threadId": "2003",
+        "from": "notices@service.example",
+        "subject": "Verification code for your sign-in #2",
+        "date": "2026-06-17T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O1"
+      }
+    },
+    {
+      "id": "s4",
+      "message": {
+        "uid": 4,
+        "gmailId": "1004",
+        "threadId": "2004",
+        "from": "notices@service.example",
+        "subject": "Verification code for your sign-in #3",
+        "date": "2026-06-16T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O1"
+      }
+    },
+    {
+      "id": "s5",
+      "message": {
+        "uid": 5,
+        "gmailId": "1005",
+        "threadId": "2005",
+        "from": "notices@service.example",
+        "subject": "Verification code for your sign-in #4",
+        "date": "2026-06-15T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O1"
+      }
+    },
+    {
+      "id": "s6",
+      "message": {
+        "uid": 6,
+        "gmailId": "1006",
+        "threadId": "2006",
+        "from": "notices@service.example",
+        "subject": "Verification code for your sign-in #5",
+        "date": "2026-06-14T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O1"
+      }
+    },
+    {
+      "id": "s7",
+      "message": {
+        "uid": 7,
+        "gmailId": "1007",
+        "threadId": "2007",
+        "from": "notices@service.example",
+        "subject": "Verification code for your sign-in #6",
+        "date": "2026-06-13T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O1"
+      }
+    },
+    {
+      "id": "s8",
+      "message": {
+        "uid": 8,
+        "gmailId": "1008",
+        "threadId": "2008",
+        "from": "notices@service.example",
+        "subject": "Verification code for your sign-in #7",
+        "date": "2026-06-12T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O1"
+      }
+    },
+    {
+      "id": "s9",
+      "message": {
+        "uid": 9,
+        "gmailId": "1009",
+        "threadId": "2009",
+        "from": "notices@service.example",
+        "subject": "Verification code for your sign-in #8",
+        "date": "2026-06-11T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O1"
+      }
+    },
+    {
+      "id": "s10",
+      "message": {
+        "uid": 10,
+        "gmailId": "1010",
+        "threadId": "2010",
+        "from": "notices@service.example",
+        "subject": "Verification code for your sign-in #9",
+        "date": "2026-06-10T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O1"
+      }
+    },
+    {
+      "id": "s11",
+      "message": {
+        "uid": 11,
+        "gmailId": "1011",
+        "threadId": "2011",
+        "from": "notices@service.example",
+        "subject": "Your package delivered #0",
+        "date": "2026-06-19T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true,
+        "shippingSender": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O2"
+      }
+    },
+    {
+      "id": "s12",
+      "message": {
+        "uid": 12,
+        "gmailId": "1012",
+        "threadId": "2012",
+        "from": "notices@service.example",
+        "subject": "Your package delivered #1",
+        "date": "2026-06-18T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true,
+        "shippingSender": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O2"
+      }
+    },
+    {
+      "id": "s13",
+      "message": {
+        "uid": 13,
+        "gmailId": "1013",
+        "threadId": "2013",
+        "from": "notices@service.example",
+        "subject": "Your package delivered #2",
+        "date": "2026-06-17T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true,
+        "shippingSender": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O2"
+      }
+    },
+    {
+      "id": "s14",
+      "message": {
+        "uid": 14,
+        "gmailId": "1014",
+        "threadId": "2014",
+        "from": "notices@service.example",
+        "subject": "Your package delivered #3",
+        "date": "2026-06-16T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true,
+        "shippingSender": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O2"
+      }
+    },
+    {
+      "id": "s15",
+      "message": {
+        "uid": 15,
+        "gmailId": "1015",
+        "threadId": "2015",
+        "from": "notices@service.example",
+        "subject": "Your package delivered #4",
+        "date": "2026-06-15T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true,
+        "shippingSender": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O2"
+      }
+    },
+    {
+      "id": "s16",
+      "message": {
+        "uid": 16,
+        "gmailId": "1016",
+        "threadId": "2016",
+        "from": "notices@service.example",
+        "subject": "Your package delivered #5",
+        "date": "2026-06-14T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true,
+        "shippingSender": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O2"
+      }
+    },
+    {
+      "id": "s17",
+      "message": {
+        "uid": 17,
+        "gmailId": "1017",
+        "threadId": "2017",
+        "from": "notices@service.example",
+        "subject": "Your package delivered #6",
+        "date": "2026-06-13T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true,
+        "shippingSender": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O2"
+      }
+    },
+    {
+      "id": "s18",
+      "message": {
+        "uid": 18,
+        "gmailId": "1018",
+        "threadId": "2018",
+        "from": "notices@service.example",
+        "subject": "Your package delivered #7",
+        "date": "2026-06-12T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true,
+        "shippingSender": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O2"
+      }
+    },
+    {
+      "id": "s19",
+      "message": {
+        "uid": 19,
+        "gmailId": "1019",
+        "threadId": "2019",
+        "from": "notices@service.example",
+        "subject": "Your package delivered #8",
+        "date": "2026-06-11T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true,
+        "shippingSender": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O2"
+      }
+    },
+    {
+      "id": "s20",
+      "message": {
+        "uid": 20,
+        "gmailId": "1020",
+        "threadId": "2020",
+        "from": "notices@service.example",
+        "subject": "Your package delivered #9",
+        "date": "2026-06-10T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true,
+        "shippingSender": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O2"
+      }
+    },
+    {
+      "id": "s21",
+      "message": {
+        "uid": 21,
+        "gmailId": "1021",
+        "threadId": "2021",
+        "from": "notices@service.example",
+        "subject": "Invitation: demo @ 2026-01-01T10:00:00Z #0",
+        "date": "2026-06-19T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O3"
+      }
+    },
+    {
+      "id": "s22",
+      "message": {
+        "uid": 22,
+        "gmailId": "1022",
+        "threadId": "2022",
+        "from": "notices@service.example",
+        "subject": "Invitation: demo @ 2026-01-01T10:00:00Z #1",
+        "date": "2026-06-18T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O3"
+      }
+    },
+    {
+      "id": "s23",
+      "message": {
+        "uid": 23,
+        "gmailId": "1023",
+        "threadId": "2023",
+        "from": "notices@service.example",
+        "subject": "Invitation: demo @ 2026-01-01T10:00:00Z #2",
+        "date": "2026-06-17T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O3"
+      }
+    },
+    {
+      "id": "s24",
+      "message": {
+        "uid": 24,
+        "gmailId": "1024",
+        "threadId": "2024",
+        "from": "notices@service.example",
+        "subject": "Invitation: demo @ 2026-01-01T10:00:00Z #3",
+        "date": "2026-06-16T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O3"
+      }
+    },
+    {
+      "id": "s25",
+      "message": {
+        "uid": 25,
+        "gmailId": "1025",
+        "threadId": "2025",
+        "from": "notices@service.example",
+        "subject": "Invitation: demo @ 2026-01-01T10:00:00Z #4",
+        "date": "2026-06-15T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O3"
+      }
+    },
+    {
+      "id": "s26",
+      "message": {
+        "uid": 26,
+        "gmailId": "1026",
+        "threadId": "2026",
+        "from": "notices@service.example",
+        "subject": "Invitation: demo @ 2026-01-01T10:00:00Z #5",
+        "date": "2026-06-14T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O3"
+      }
+    },
+    {
+      "id": "s27",
+      "message": {
+        "uid": 27,
+        "gmailId": "1027",
+        "threadId": "2027",
+        "from": "notices@service.example",
+        "subject": "Invitation: demo @ 2026-01-01T10:00:00Z #6",
+        "date": "2026-06-13T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O3"
+      }
+    },
+    {
+      "id": "s28",
+      "message": {
+        "uid": 28,
+        "gmailId": "1028",
+        "threadId": "2028",
+        "from": "notices@service.example",
+        "subject": "Invitation: demo @ 2026-01-01T10:00:00Z #7",
+        "date": "2026-06-12T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O3"
+      }
+    },
+    {
+      "id": "s29",
+      "message": {
+        "uid": 29,
+        "gmailId": "1029",
+        "threadId": "2029",
+        "from": "notices@service.example",
+        "subject": "Invitation: demo @ 2026-01-01T10:00:00Z #8",
+        "date": "2026-06-11T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O3"
+      }
+    },
+    {
+      "id": "s30",
+      "message": {
+        "uid": 30,
+        "gmailId": "1030",
+        "threadId": "2030",
+        "from": "notices@service.example",
+        "subject": "Invitation: demo @ 2026-01-01T10:00:00Z #9",
+        "date": "2026-06-10T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O3"
+      }
+    },
+    {
+      "id": "s31",
+      "message": {
+        "uid": 31,
+        "gmailId": "1031",
+        "threadId": "2031",
+        "from": "notices@service.example",
+        "subject": "Seasonal sale #0",
+        "date": "2026-06-19T12:00:00.000Z",
+        "tab": "promotions",
+        "labels": [],
+        "bulk": true,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O4"
+      }
+    },
+    {
+      "id": "s32",
+      "message": {
+        "uid": 32,
+        "gmailId": "1032",
+        "threadId": "2032",
+        "from": "notices@service.example",
+        "subject": "Seasonal sale #1",
+        "date": "2026-06-18T12:00:00.000Z",
+        "tab": "promotions",
+        "labels": [],
+        "bulk": true,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O4"
+      }
+    },
+    {
+      "id": "s33",
+      "message": {
+        "uid": 33,
+        "gmailId": "1033",
+        "threadId": "2033",
+        "from": "notices@service.example",
+        "subject": "Seasonal sale #2",
+        "date": "2026-06-17T12:00:00.000Z",
+        "tab": "promotions",
+        "labels": [],
+        "bulk": true,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O4"
+      }
+    },
+    {
+      "id": "s34",
+      "message": {
+        "uid": 34,
+        "gmailId": "1034",
+        "threadId": "2034",
+        "from": "notices@service.example",
+        "subject": "Seasonal sale #3",
+        "date": "2026-06-16T12:00:00.000Z",
+        "tab": "promotions",
+        "labels": [],
+        "bulk": true,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O4"
+      }
+    },
+    {
+      "id": "s35",
+      "message": {
+        "uid": 35,
+        "gmailId": "1035",
+        "threadId": "2035",
+        "from": "notices@service.example",
+        "subject": "Seasonal sale #4",
+        "date": "2026-06-15T12:00:00.000Z",
+        "tab": "promotions",
+        "labels": [],
+        "bulk": true,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O4"
+      }
+    },
+    {
+      "id": "s36",
+      "message": {
+        "uid": 36,
+        "gmailId": "1036",
+        "threadId": "2036",
+        "from": "notices@service.example",
+        "subject": "Seasonal sale #5",
+        "date": "2026-06-14T12:00:00.000Z",
+        "tab": "promotions",
+        "labels": [],
+        "bulk": true,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O4"
+      }
+    },
+    {
+      "id": "s37",
+      "message": {
+        "uid": 37,
+        "gmailId": "1037",
+        "threadId": "2037",
+        "from": "notices@service.example",
+        "subject": "Seasonal sale #6",
+        "date": "2026-06-13T12:00:00.000Z",
+        "tab": "promotions",
+        "labels": [],
+        "bulk": true,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O4"
+      }
+    },
+    {
+      "id": "s38",
+      "message": {
+        "uid": 38,
+        "gmailId": "1038",
+        "threadId": "2038",
+        "from": "notices@service.example",
+        "subject": "Seasonal sale #7",
+        "date": "2026-06-12T12:00:00.000Z",
+        "tab": "promotions",
+        "labels": [],
+        "bulk": true,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O4"
+      }
+    },
+    {
+      "id": "s39",
+      "message": {
+        "uid": 39,
+        "gmailId": "1039",
+        "threadId": "2039",
+        "from": "notices@service.example",
+        "subject": "Seasonal sale #8",
+        "date": "2026-06-11T12:00:00.000Z",
+        "tab": "promotions",
+        "labels": [],
+        "bulk": true,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O4"
+      }
+    },
+    {
+      "id": "s40",
+      "message": {
+        "uid": 40,
+        "gmailId": "1040",
+        "threadId": "2040",
+        "from": "notices@service.example",
+        "subject": "Seasonal sale #9",
+        "date": "2026-06-10T12:00:00.000Z",
+        "tab": "promotions",
+        "labels": [],
+        "bulk": true,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O4"
+      }
+    },
+    {
+      "id": "s41",
+      "message": {
+        "uid": 41,
+        "gmailId": "1041",
+        "threadId": "2041",
+        "from": "notices@service.example",
+        "subject": "Weekly newsletter digest #0",
+        "date": "2026-06-19T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": true,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O5"
+      }
+    },
+    {
+      "id": "s42",
+      "message": {
+        "uid": 42,
+        "gmailId": "1042",
+        "threadId": "2042",
+        "from": "notices@service.example",
+        "subject": "Weekly newsletter digest #1",
+        "date": "2026-06-18T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": true,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O5"
+      }
+    },
+    {
+      "id": "s43",
+      "message": {
+        "uid": 43,
+        "gmailId": "1043",
+        "threadId": "2043",
+        "from": "notices@service.example",
+        "subject": "Weekly newsletter digest #2",
+        "date": "2026-06-17T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": true,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O5"
+      }
+    },
+    {
+      "id": "s44",
+      "message": {
+        "uid": 44,
+        "gmailId": "1044",
+        "threadId": "2044",
+        "from": "notices@service.example",
+        "subject": "Weekly newsletter digest #3",
+        "date": "2026-06-16T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": true,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O5"
+      }
+    },
+    {
+      "id": "s45",
+      "message": {
+        "uid": 45,
+        "gmailId": "1045",
+        "threadId": "2045",
+        "from": "notices@service.example",
+        "subject": "Weekly newsletter digest #4",
+        "date": "2026-06-15T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": true,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O5"
+      }
+    },
+    {
+      "id": "s46",
+      "message": {
+        "uid": 46,
+        "gmailId": "1046",
+        "threadId": "2046",
+        "from": "notices@service.example",
+        "subject": "Weekly newsletter digest #5",
+        "date": "2026-06-14T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": true,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O5"
+      }
+    },
+    {
+      "id": "s47",
+      "message": {
+        "uid": 47,
+        "gmailId": "1047",
+        "threadId": "2047",
+        "from": "notices@service.example",
+        "subject": "Weekly newsletter digest #6",
+        "date": "2026-06-13T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": true,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O5"
+      }
+    },
+    {
+      "id": "s48",
+      "message": {
+        "uid": 48,
+        "gmailId": "1048",
+        "threadId": "2048",
+        "from": "notices@service.example",
+        "subject": "Weekly newsletter digest #7",
+        "date": "2026-06-12T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": true,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O5"
+      }
+    },
+    {
+      "id": "s49",
+      "message": {
+        "uid": 49,
+        "gmailId": "1049",
+        "threadId": "2049",
+        "from": "notices@service.example",
+        "subject": "Weekly newsletter digest #8",
+        "date": "2026-06-11T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": true,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O5"
+      }
+    },
+    {
+      "id": "s50",
+      "message": {
+        "uid": 50,
+        "gmailId": "1050",
+        "threadId": "2050",
+        "from": "notices@service.example",
+        "subject": "Weekly newsletter digest #9",
+        "date": "2026-06-10T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": true,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O5"
+      }
+    },
+    {
+      "id": "s51",
+      "message": {
+        "uid": 51,
+        "gmailId": "1051",
+        "threadId": "2051",
+        "from": "notices@service.example",
+        "subject": "Someone viewed your profile #0",
+        "date": "2026-06-19T12:00:00.000Z",
+        "tab": "social",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O6"
+      }
+    },
+    {
+      "id": "s52",
+      "message": {
+        "uid": 52,
+        "gmailId": "1052",
+        "threadId": "2052",
+        "from": "notices@service.example",
+        "subject": "Someone viewed your profile #1",
+        "date": "2026-06-18T12:00:00.000Z",
+        "tab": "social",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O6"
+      }
+    },
+    {
+      "id": "s53",
+      "message": {
+        "uid": 53,
+        "gmailId": "1053",
+        "threadId": "2053",
+        "from": "notices@service.example",
+        "subject": "Someone viewed your profile #2",
+        "date": "2026-06-17T12:00:00.000Z",
+        "tab": "social",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O6"
+      }
+    },
+    {
+      "id": "s54",
+      "message": {
+        "uid": 54,
+        "gmailId": "1054",
+        "threadId": "2054",
+        "from": "notices@service.example",
+        "subject": "Someone viewed your profile #3",
+        "date": "2026-06-16T12:00:00.000Z",
+        "tab": "social",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O6"
+      }
+    },
+    {
+      "id": "s55",
+      "message": {
+        "uid": 55,
+        "gmailId": "1055",
+        "threadId": "2055",
+        "from": "notices@service.example",
+        "subject": "Someone viewed your profile #4",
+        "date": "2026-06-15T12:00:00.000Z",
+        "tab": "social",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O6"
+      }
+    },
+    {
+      "id": "s56",
+      "message": {
+        "uid": 56,
+        "gmailId": "1056",
+        "threadId": "2056",
+        "from": "notices@service.example",
+        "subject": "Someone viewed your profile #5",
+        "date": "2026-06-14T12:00:00.000Z",
+        "tab": "social",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O6"
+      }
+    },
+    {
+      "id": "s57",
+      "message": {
+        "uid": 57,
+        "gmailId": "1057",
+        "threadId": "2057",
+        "from": "notices@service.example",
+        "subject": "Someone viewed your profile #6",
+        "date": "2026-06-13T12:00:00.000Z",
+        "tab": "social",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O6"
+      }
+    },
+    {
+      "id": "s58",
+      "message": {
+        "uid": 58,
+        "gmailId": "1058",
+        "threadId": "2058",
+        "from": "notices@service.example",
+        "subject": "Someone viewed your profile #7",
+        "date": "2026-06-12T12:00:00.000Z",
+        "tab": "social",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O6"
+      }
+    },
+    {
+      "id": "s59",
+      "message": {
+        "uid": 59,
+        "gmailId": "1059",
+        "threadId": "2059",
+        "from": "notices@service.example",
+        "subject": "Someone viewed your profile #8",
+        "date": "2026-06-11T12:00:00.000Z",
+        "tab": "social",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O6"
+      }
+    },
+    {
+      "id": "s60",
+      "message": {
+        "uid": 60,
+        "gmailId": "1060",
+        "threadId": "2060",
+        "from": "notices@service.example",
+        "subject": "Someone viewed your profile #9",
+        "date": "2026-06-10T12:00:00.000Z",
+        "tab": "social",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O6"
+      }
+    },
+    {
+      "id": "s61",
+      "message": {
+        "uid": 61,
+        "gmailId": "1061",
+        "threadId": "2061",
+        "from": "notices@service.example",
+        "subject": "New sign-in to your account #0",
+        "date": "2026-06-19T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O7"
+      }
+    },
+    {
+      "id": "s62",
+      "message": {
+        "uid": 62,
+        "gmailId": "1062",
+        "threadId": "2062",
+        "from": "notices@service.example",
+        "subject": "New sign-in to your account #1",
+        "date": "2026-06-18T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O7"
+      }
+    },
+    {
+      "id": "s63",
+      "message": {
+        "uid": 63,
+        "gmailId": "1063",
+        "threadId": "2063",
+        "from": "notices@service.example",
+        "subject": "New sign-in to your account #2",
+        "date": "2026-06-17T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O7"
+      }
+    },
+    {
+      "id": "s64",
+      "message": {
+        "uid": 64,
+        "gmailId": "1064",
+        "threadId": "2064",
+        "from": "notices@service.example",
+        "subject": "New sign-in to your account #3",
+        "date": "2026-06-16T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O7"
+      }
+    },
+    {
+      "id": "s65",
+      "message": {
+        "uid": 65,
+        "gmailId": "1065",
+        "threadId": "2065",
+        "from": "notices@service.example",
+        "subject": "New sign-in to your account #4",
+        "date": "2026-06-15T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O7"
+      }
+    },
+    {
+      "id": "s66",
+      "message": {
+        "uid": 66,
+        "gmailId": "1066",
+        "threadId": "2066",
+        "from": "notices@service.example",
+        "subject": "New sign-in to your account #5",
+        "date": "2026-06-14T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O7"
+      }
+    },
+    {
+      "id": "s67",
+      "message": {
+        "uid": 67,
+        "gmailId": "1067",
+        "threadId": "2067",
+        "from": "notices@service.example",
+        "subject": "New sign-in to your account #6",
+        "date": "2026-06-13T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O7"
+      }
+    },
+    {
+      "id": "s68",
+      "message": {
+        "uid": 68,
+        "gmailId": "1068",
+        "threadId": "2068",
+        "from": "notices@service.example",
+        "subject": "New sign-in to your account #7",
+        "date": "2026-06-12T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O7"
+      }
+    },
+    {
+      "id": "s69",
+      "message": {
+        "uid": 69,
+        "gmailId": "1069",
+        "threadId": "2069",
+        "from": "notices@service.example",
+        "subject": "New sign-in to your account #8",
+        "date": "2026-06-11T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O7"
+      }
+    },
+    {
+      "id": "s70",
+      "message": {
+        "uid": 70,
+        "gmailId": "1070",
+        "threadId": "2070",
+        "from": "notices@service.example",
+        "subject": "New sign-in to your account #9",
+        "date": "2026-06-10T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "outdated",
+        "rule": "O7"
+      }
+    },
+    {
+      "id": "s71",
+      "message": {
+        "uid": 71,
+        "gmailId": "1071",
+        "threadId": "2071",
+        "from": "notices@service.example",
+        "subject": "Hello from a colleague #0",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": true,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "people"
+      }
+    },
+    {
+      "id": "s72",
+      "message": {
+        "uid": 72,
+        "gmailId": "1072",
+        "threadId": "2072",
+        "from": "notices@service.example",
+        "subject": "Hello from a colleague #1",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": true,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "people"
+      }
+    },
+    {
+      "id": "s73",
+      "message": {
+        "uid": 73,
+        "gmailId": "1073",
+        "threadId": "2073",
+        "from": "notices@service.example",
+        "subject": "Hello from a colleague #2",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": true,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "people"
+      }
+    },
+    {
+      "id": "s74",
+      "message": {
+        "uid": 74,
+        "gmailId": "1074",
+        "threadId": "2074",
+        "from": "notices@service.example",
+        "subject": "Hello from a colleague #3",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": true,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "people"
+      }
+    },
+    {
+      "id": "s75",
+      "message": {
+        "uid": 75,
+        "gmailId": "1075",
+        "threadId": "2075",
+        "from": "notices@service.example",
+        "subject": "Hello from a colleague #4",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": true,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "people"
+      }
+    },
+    {
+      "id": "s76",
+      "message": {
+        "uid": 76,
+        "gmailId": "1076",
+        "threadId": "2076",
+        "from": "notices@service.example",
+        "subject": "Hello from a colleague #5",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": true,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "people"
+      }
+    },
+    {
+      "id": "s77",
+      "message": {
+        "uid": 77,
+        "gmailId": "1077",
+        "threadId": "2077",
+        "from": "notices@service.example",
+        "subject": "Hello from a colleague #6",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": true,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "people"
+      }
+    },
+    {
+      "id": "s78",
+      "message": {
+        "uid": 78,
+        "gmailId": "1078",
+        "threadId": "2078",
+        "from": "notices@service.example",
+        "subject": "Hello from a colleague #7",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": true,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "people"
+      }
+    },
+    {
+      "id": "s79",
+      "message": {
+        "uid": 79,
+        "gmailId": "1079",
+        "threadId": "2079",
+        "from": "notices@service.example",
+        "subject": "Hello from a colleague #8",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": true,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "people"
+      }
+    },
+    {
+      "id": "s80",
+      "message": {
+        "uid": 80,
+        "gmailId": "1080",
+        "threadId": "2080",
+        "from": "notices@service.example",
+        "subject": "Hello from a colleague #9",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": true,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "people"
+      }
+    },
+    {
+      "id": "s81",
+      "message": {
+        "uid": 81,
+        "gmailId": "1081",
+        "threadId": "2081",
+        "from": "notices@service.example",
+        "subject": "Your order confirmation receipt #0",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "finance"
+      }
+    },
+    {
+      "id": "s82",
+      "message": {
+        "uid": 82,
+        "gmailId": "1082",
+        "threadId": "2082",
+        "from": "notices@service.example",
+        "subject": "Your order confirmation receipt #1",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "finance"
+      }
+    },
+    {
+      "id": "s83",
+      "message": {
+        "uid": 83,
+        "gmailId": "1083",
+        "threadId": "2083",
+        "from": "notices@service.example",
+        "subject": "Your order confirmation receipt #2",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "finance"
+      }
+    },
+    {
+      "id": "s84",
+      "message": {
+        "uid": 84,
+        "gmailId": "1084",
+        "threadId": "2084",
+        "from": "notices@service.example",
+        "subject": "Your order confirmation receipt #3",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "finance"
+      }
+    },
+    {
+      "id": "s85",
+      "message": {
+        "uid": 85,
+        "gmailId": "1085",
+        "threadId": "2085",
+        "from": "notices@service.example",
+        "subject": "Your order confirmation receipt #4",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "finance"
+      }
+    },
+    {
+      "id": "s86",
+      "message": {
+        "uid": 86,
+        "gmailId": "1086",
+        "threadId": "2086",
+        "from": "notices@service.example",
+        "subject": "Your order confirmation receipt #5",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "finance"
+      }
+    },
+    {
+      "id": "s87",
+      "message": {
+        "uid": 87,
+        "gmailId": "1087",
+        "threadId": "2087",
+        "from": "notices@service.example",
+        "subject": "Your order confirmation receipt #6",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "finance"
+      }
+    },
+    {
+      "id": "s88",
+      "message": {
+        "uid": 88,
+        "gmailId": "1088",
+        "threadId": "2088",
+        "from": "notices@service.example",
+        "subject": "Your order confirmation receipt #7",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "finance"
+      }
+    },
+    {
+      "id": "s89",
+      "message": {
+        "uid": 89,
+        "gmailId": "1089",
+        "threadId": "2089",
+        "from": "notices@service.example",
+        "subject": "Your order confirmation receipt #8",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "finance"
+      }
+    },
+    {
+      "id": "s90",
+      "message": {
+        "uid": 90,
+        "gmailId": "1090",
+        "threadId": "2090",
+        "from": "notices@service.example",
+        "subject": "Your order confirmation receipt #9",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "finance"
+      }
+    },
+    {
+      "id": "s91",
+      "message": {
+        "uid": 91,
+        "gmailId": "1091",
+        "threadId": "2091",
+        "from": "notices@service.example",
+        "subject": "Your lease agreement #0",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "official"
+      }
+    },
+    {
+      "id": "s92",
+      "message": {
+        "uid": 92,
+        "gmailId": "1092",
+        "threadId": "2092",
+        "from": "notices@service.example",
+        "subject": "Your lease agreement #1",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "official"
+      }
+    },
+    {
+      "id": "s93",
+      "message": {
+        "uid": 93,
+        "gmailId": "1093",
+        "threadId": "2093",
+        "from": "notices@service.example",
+        "subject": "Your lease agreement #2",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "official"
+      }
+    },
+    {
+      "id": "s94",
+      "message": {
+        "uid": 94,
+        "gmailId": "1094",
+        "threadId": "2094",
+        "from": "notices@service.example",
+        "subject": "Your lease agreement #3",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "official"
+      }
+    },
+    {
+      "id": "s95",
+      "message": {
+        "uid": 95,
+        "gmailId": "1095",
+        "threadId": "2095",
+        "from": "notices@service.example",
+        "subject": "Your lease agreement #4",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "official"
+      }
+    },
+    {
+      "id": "s96",
+      "message": {
+        "uid": 96,
+        "gmailId": "1096",
+        "threadId": "2096",
+        "from": "notices@service.example",
+        "subject": "Your lease agreement #5",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "official"
+      }
+    },
+    {
+      "id": "s97",
+      "message": {
+        "uid": 97,
+        "gmailId": "1097",
+        "threadId": "2097",
+        "from": "notices@service.example",
+        "subject": "Your lease agreement #6",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "official"
+      }
+    },
+    {
+      "id": "s98",
+      "message": {
+        "uid": 98,
+        "gmailId": "1098",
+        "threadId": "2098",
+        "from": "notices@service.example",
+        "subject": "Your lease agreement #7",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "official"
+      }
+    },
+    {
+      "id": "s99",
+      "message": {
+        "uid": 99,
+        "gmailId": "1099",
+        "threadId": "2099",
+        "from": "notices@service.example",
+        "subject": "Your lease agreement #8",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "official"
+      }
+    },
+    {
+      "id": "s100",
+      "message": {
+        "uid": 100,
+        "gmailId": "1100",
+        "threadId": "2100",
+        "from": "notices@service.example",
+        "subject": "Your lease agreement #9",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "official"
+      }
+    },
+    {
+      "id": "s101",
+      "message": {
+        "uid": 101,
+        "gmailId": "1101",
+        "threadId": "2101",
+        "from": "notices@service.example",
+        "subject": "Booking confirmation and itinerary #0",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "travel"
+      }
+    },
+    {
+      "id": "s102",
+      "message": {
+        "uid": 102,
+        "gmailId": "1102",
+        "threadId": "2102",
+        "from": "notices@service.example",
+        "subject": "Booking confirmation and itinerary #1",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "travel"
+      }
+    },
+    {
+      "id": "s103",
+      "message": {
+        "uid": 103,
+        "gmailId": "1103",
+        "threadId": "2103",
+        "from": "notices@service.example",
+        "subject": "Booking confirmation and itinerary #2",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "travel"
+      }
+    },
+    {
+      "id": "s104",
+      "message": {
+        "uid": 104,
+        "gmailId": "1104",
+        "threadId": "2104",
+        "from": "notices@service.example",
+        "subject": "Booking confirmation and itinerary #3",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "travel"
+      }
+    },
+    {
+      "id": "s105",
+      "message": {
+        "uid": 105,
+        "gmailId": "1105",
+        "threadId": "2105",
+        "from": "notices@service.example",
+        "subject": "Booking confirmation and itinerary #4",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "travel"
+      }
+    },
+    {
+      "id": "s106",
+      "message": {
+        "uid": 106,
+        "gmailId": "1106",
+        "threadId": "2106",
+        "from": "notices@service.example",
+        "subject": "Booking confirmation and itinerary #5",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "travel"
+      }
+    },
+    {
+      "id": "s107",
+      "message": {
+        "uid": 107,
+        "gmailId": "1107",
+        "threadId": "2107",
+        "from": "notices@service.example",
+        "subject": "Booking confirmation and itinerary #6",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "travel"
+      }
+    },
+    {
+      "id": "s108",
+      "message": {
+        "uid": 108,
+        "gmailId": "1108",
+        "threadId": "2108",
+        "from": "notices@service.example",
+        "subject": "Booking confirmation and itinerary #7",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "travel"
+      }
+    },
+    {
+      "id": "s109",
+      "message": {
+        "uid": 109,
+        "gmailId": "1109",
+        "threadId": "2109",
+        "from": "notices@service.example",
+        "subject": "Booking confirmation and itinerary #8",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "travel"
+      }
+    },
+    {
+      "id": "s110",
+      "message": {
+        "uid": 110,
+        "gmailId": "1110",
+        "threadId": "2110",
+        "from": "notices@service.example",
+        "subject": "Booking confirmation and itinerary #9",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "travel"
+      }
+    },
+    {
+      "id": "s111",
+      "message": {
+        "uid": 111,
+        "gmailId": "1111",
+        "threadId": "2111",
+        "from": "notices@service.example",
+        "subject": "Suspicious sign-in security incident #0",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "security"
+      }
+    },
+    {
+      "id": "s112",
+      "message": {
+        "uid": 112,
+        "gmailId": "1112",
+        "threadId": "2112",
+        "from": "notices@service.example",
+        "subject": "Suspicious sign-in security incident #1",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "security"
+      }
+    },
+    {
+      "id": "s113",
+      "message": {
+        "uid": 113,
+        "gmailId": "1113",
+        "threadId": "2113",
+        "from": "notices@service.example",
+        "subject": "Suspicious sign-in security incident #2",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "security"
+      }
+    },
+    {
+      "id": "s114",
+      "message": {
+        "uid": 114,
+        "gmailId": "1114",
+        "threadId": "2114",
+        "from": "notices@service.example",
+        "subject": "Suspicious sign-in security incident #3",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "security"
+      }
+    },
+    {
+      "id": "s115",
+      "message": {
+        "uid": 115,
+        "gmailId": "1115",
+        "threadId": "2115",
+        "from": "notices@service.example",
+        "subject": "Suspicious sign-in security incident #4",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "security"
+      }
+    },
+    {
+      "id": "s116",
+      "message": {
+        "uid": 116,
+        "gmailId": "1116",
+        "threadId": "2116",
+        "from": "notices@service.example",
+        "subject": "Suspicious sign-in security incident #5",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "security"
+      }
+    },
+    {
+      "id": "s117",
+      "message": {
+        "uid": 117,
+        "gmailId": "1117",
+        "threadId": "2117",
+        "from": "notices@service.example",
+        "subject": "Suspicious sign-in security incident #6",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "security"
+      }
+    },
+    {
+      "id": "s118",
+      "message": {
+        "uid": 118,
+        "gmailId": "1118",
+        "threadId": "2118",
+        "from": "notices@service.example",
+        "subject": "Suspicious sign-in security incident #7",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "security"
+      }
+    },
+    {
+      "id": "s119",
+      "message": {
+        "uid": 119,
+        "gmailId": "1119",
+        "threadId": "2119",
+        "from": "notices@service.example",
+        "subject": "Suspicious sign-in security incident #8",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "security"
+      }
+    },
+    {
+      "id": "s120",
+      "message": {
+        "uid": 120,
+        "gmailId": "1120",
+        "threadId": "2120",
+        "from": "notices@service.example",
+        "subject": "Suspicious sign-in security incident #9",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "security"
+      }
+    },
+    {
+      "id": "s121",
+      "message": {
+        "uid": 121,
+        "gmailId": "1121",
+        "threadId": "2121",
+        "from": "notices@service.example",
+        "subject": "Course registration #0",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "school"
+      }
+    },
+    {
+      "id": "s122",
+      "message": {
+        "uid": 122,
+        "gmailId": "1122",
+        "threadId": "2122",
+        "from": "notices@service.example",
+        "subject": "Course registration #1",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "school"
+      }
+    },
+    {
+      "id": "s123",
+      "message": {
+        "uid": 123,
+        "gmailId": "1123",
+        "threadId": "2123",
+        "from": "notices@service.example",
+        "subject": "Course registration #2",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "school"
+      }
+    },
+    {
+      "id": "s124",
+      "message": {
+        "uid": 124,
+        "gmailId": "1124",
+        "threadId": "2124",
+        "from": "notices@service.example",
+        "subject": "Course registration #3",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "school"
+      }
+    },
+    {
+      "id": "s125",
+      "message": {
+        "uid": 125,
+        "gmailId": "1125",
+        "threadId": "2125",
+        "from": "notices@service.example",
+        "subject": "Course registration #4",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "school"
+      }
+    },
+    {
+      "id": "s126",
+      "message": {
+        "uid": 126,
+        "gmailId": "1126",
+        "threadId": "2126",
+        "from": "notices@service.example",
+        "subject": "Course registration #5",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "school"
+      }
+    },
+    {
+      "id": "s127",
+      "message": {
+        "uid": 127,
+        "gmailId": "1127",
+        "threadId": "2127",
+        "from": "notices@service.example",
+        "subject": "Course registration #6",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "school"
+      }
+    },
+    {
+      "id": "s128",
+      "message": {
+        "uid": 128,
+        "gmailId": "1128",
+        "threadId": "2128",
+        "from": "notices@service.example",
+        "subject": "Course registration #7",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "school"
+      }
+    },
+    {
+      "id": "s129",
+      "message": {
+        "uid": 129,
+        "gmailId": "1129",
+        "threadId": "2129",
+        "from": "notices@service.example",
+        "subject": "Course registration #8",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "school"
+      }
+    },
+    {
+      "id": "s130",
+      "message": {
+        "uid": 130,
+        "gmailId": "1130",
+        "threadId": "2130",
+        "from": "notices@service.example",
+        "subject": "Course registration #9",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "school"
+      }
+    },
+    {
+      "id": "s131",
+      "message": {
+        "uid": 131,
+        "gmailId": "1131",
+        "threadId": "2131",
+        "from": "notices@service.example",
+        "subject": "Interview invitation #0",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "job"
+      }
+    },
+    {
+      "id": "s132",
+      "message": {
+        "uid": 132,
+        "gmailId": "1132",
+        "threadId": "2132",
+        "from": "notices@service.example",
+        "subject": "Interview invitation #1",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "job"
+      }
+    },
+    {
+      "id": "s133",
+      "message": {
+        "uid": 133,
+        "gmailId": "1133",
+        "threadId": "2133",
+        "from": "notices@service.example",
+        "subject": "Interview invitation #2",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "job"
+      }
+    },
+    {
+      "id": "s134",
+      "message": {
+        "uid": 134,
+        "gmailId": "1134",
+        "threadId": "2134",
+        "from": "notices@service.example",
+        "subject": "Interview invitation #3",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "job"
+      }
+    },
+    {
+      "id": "s135",
+      "message": {
+        "uid": 135,
+        "gmailId": "1135",
+        "threadId": "2135",
+        "from": "notices@service.example",
+        "subject": "Interview invitation #4",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "job"
+      }
+    },
+    {
+      "id": "s136",
+      "message": {
+        "uid": 136,
+        "gmailId": "1136",
+        "threadId": "2136",
+        "from": "notices@service.example",
+        "subject": "Interview invitation #5",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "job"
+      }
+    },
+    {
+      "id": "s137",
+      "message": {
+        "uid": 137,
+        "gmailId": "1137",
+        "threadId": "2137",
+        "from": "notices@service.example",
+        "subject": "Interview invitation #6",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "job"
+      }
+    },
+    {
+      "id": "s138",
+      "message": {
+        "uid": 138,
+        "gmailId": "1138",
+        "threadId": "2138",
+        "from": "notices@service.example",
+        "subject": "Interview invitation #7",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "job"
+      }
+    },
+    {
+      "id": "s139",
+      "message": {
+        "uid": 139,
+        "gmailId": "1139",
+        "threadId": "2139",
+        "from": "notices@service.example",
+        "subject": "Interview invitation #8",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "job"
+      }
+    },
+    {
+      "id": "s140",
+      "message": {
+        "uid": 140,
+        "gmailId": "1140",
+        "threadId": "2140",
+        "from": "notices@service.example",
+        "subject": "Interview invitation #9",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "job"
+      }
+    },
+    {
+      "id": "s141",
+      "message": {
+        "uid": 141,
+        "gmailId": "1141",
+        "threadId": "2141",
+        "from": "notices@service.example",
+        "subject": "Prescription ready at pharmacy #0",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "health"
+      }
+    },
+    {
+      "id": "s142",
+      "message": {
+        "uid": 142,
+        "gmailId": "1142",
+        "threadId": "2142",
+        "from": "notices@service.example",
+        "subject": "Prescription ready at pharmacy #1",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "health"
+      }
+    },
+    {
+      "id": "s143",
+      "message": {
+        "uid": 143,
+        "gmailId": "1143",
+        "threadId": "2143",
+        "from": "notices@service.example",
+        "subject": "Prescription ready at pharmacy #2",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "health"
+      }
+    },
+    {
+      "id": "s144",
+      "message": {
+        "uid": 144,
+        "gmailId": "1144",
+        "threadId": "2144",
+        "from": "notices@service.example",
+        "subject": "Prescription ready at pharmacy #3",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "health"
+      }
+    },
+    {
+      "id": "s145",
+      "message": {
+        "uid": 145,
+        "gmailId": "1145",
+        "threadId": "2145",
+        "from": "notices@service.example",
+        "subject": "Prescription ready at pharmacy #4",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "health"
+      }
+    },
+    {
+      "id": "s146",
+      "message": {
+        "uid": 146,
+        "gmailId": "1146",
+        "threadId": "2146",
+        "from": "notices@service.example",
+        "subject": "Prescription ready at pharmacy #5",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "health"
+      }
+    },
+    {
+      "id": "s147",
+      "message": {
+        "uid": 147,
+        "gmailId": "1147",
+        "threadId": "2147",
+        "from": "notices@service.example",
+        "subject": "Prescription ready at pharmacy #6",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "health"
+      }
+    },
+    {
+      "id": "s148",
+      "message": {
+        "uid": 148,
+        "gmailId": "1148",
+        "threadId": "2148",
+        "from": "notices@service.example",
+        "subject": "Prescription ready at pharmacy #7",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "health"
+      }
+    },
+    {
+      "id": "s149",
+      "message": {
+        "uid": 149,
+        "gmailId": "1149",
+        "threadId": "2149",
+        "from": "notices@service.example",
+        "subject": "Prescription ready at pharmacy #8",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "health"
+      }
+    },
+    {
+      "id": "s150",
+      "message": {
+        "uid": 150,
+        "gmailId": "1150",
+        "threadId": "2150",
+        "from": "notices@service.example",
+        "subject": "Prescription ready at pharmacy #9",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "keep",
+        "category": "health"
+      }
+    },
+    {
+      "id": "s151",
+      "message": {
+        "uid": 151,
+        "gmailId": "1151",
+        "threadId": "2151",
+        "from": "notices@service.example",
+        "subject": "Unknown notice",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s152",
+      "message": {
+        "uid": 152,
+        "gmailId": "1152",
+        "threadId": "2152",
+        "from": "notices@service.example",
+        "subject": "Invitation: future event @ 2027-01-01T10:00:00Z",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s153",
+      "message": {
+        "uid": 153,
+        "gmailId": "1153",
+        "threadId": "2153",
+        "from": "notices@service.example",
+        "subject": "Verify your email",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": true,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s154",
+      "message": {
+        "uid": 154,
+        "gmailId": "1154",
+        "threadId": "2154",
+        "from": "notices@service.example",
+        "subject": "Sale receipt",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "promotions",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s155",
+      "message": {
+        "uid": 155,
+        "gmailId": "1155",
+        "threadId": "2155",
+        "from": "notices@service.example",
+        "subject": "Delivered",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true,
+        "shippingSender": false
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s156",
+      "message": {
+        "uid": 156,
+        "gmailId": "1156",
+        "threadId": "2156",
+        "from": "notices@service.example",
+        "subject": "Reminder: something sometime",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s157",
+      "message": {
+        "uid": 157,
+        "gmailId": "1157",
+        "threadId": "2157",
+        "from": "notices@service.example",
+        "subject": "New message",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "updates",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": true,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s158",
+      "message": {
+        "uid": 158,
+        "gmailId": "1158",
+        "threadId": "2158",
+        "from": "notices@service.example",
+        "subject": "Weekly newsletter",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s159",
+      "message": {
+        "uid": 159,
+        "gmailId": "1159",
+        "threadId": "2159",
+        "from": "notices@service.example",
+        "subject": "Security incident action required",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s160",
+      "message": {
+        "uid": 160,
+        "gmailId": "1160",
+        "threadId": "2160",
+        "from": "notices@service.example",
+        "subject": "Verification code",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": false,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s161",
+      "message": {
+        "uid": 161,
+        "gmailId": "1161",
+        "threadId": "2161",
+        "from": "notices@service.example",
+        "subject": "Unknown notice",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s162",
+      "message": {
+        "uid": 162,
+        "gmailId": "1162",
+        "threadId": "2162",
+        "from": "notices@service.example",
+        "subject": "Invitation: future event @ 2027-01-01T10:00:00Z",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s163",
+      "message": {
+        "uid": 163,
+        "gmailId": "1163",
+        "threadId": "2163",
+        "from": "notices@service.example",
+        "subject": "Verify your email",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": true,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s164",
+      "message": {
+        "uid": 164,
+        "gmailId": "1164",
+        "threadId": "2164",
+        "from": "notices@service.example",
+        "subject": "Sale receipt",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "promotions",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s165",
+      "message": {
+        "uid": 165,
+        "gmailId": "1165",
+        "threadId": "2165",
+        "from": "notices@service.example",
+        "subject": "Delivered",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true,
+        "shippingSender": false
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s166",
+      "message": {
+        "uid": 166,
+        "gmailId": "1166",
+        "threadId": "2166",
+        "from": "notices@service.example",
+        "subject": "Reminder: something sometime",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s167",
+      "message": {
+        "uid": 167,
+        "gmailId": "1167",
+        "threadId": "2167",
+        "from": "notices@service.example",
+        "subject": "New message",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "updates",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": true,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s168",
+      "message": {
+        "uid": 168,
+        "gmailId": "1168",
+        "threadId": "2168",
+        "from": "notices@service.example",
+        "subject": "Weekly newsletter",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s169",
+      "message": {
+        "uid": 169,
+        "gmailId": "1169",
+        "threadId": "2169",
+        "from": "notices@service.example",
+        "subject": "Security incident action required",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s170",
+      "message": {
+        "uid": 170,
+        "gmailId": "1170",
+        "threadId": "2170",
+        "from": "notices@service.example",
+        "subject": "Verification code",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": false,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s171",
+      "message": {
+        "uid": 171,
+        "gmailId": "1171",
+        "threadId": "2171",
+        "from": "notices@service.example",
+        "subject": "Unknown notice",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s172",
+      "message": {
+        "uid": 172,
+        "gmailId": "1172",
+        "threadId": "2172",
+        "from": "notices@service.example",
+        "subject": "Invitation: future event @ 2027-01-01T10:00:00Z",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s173",
+      "message": {
+        "uid": 173,
+        "gmailId": "1173",
+        "threadId": "2173",
+        "from": "notices@service.example",
+        "subject": "Verify your email",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": true,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s174",
+      "message": {
+        "uid": 174,
+        "gmailId": "1174",
+        "threadId": "2174",
+        "from": "notices@service.example",
+        "subject": "Sale receipt",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "promotions",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s175",
+      "message": {
+        "uid": 175,
+        "gmailId": "1175",
+        "threadId": "2175",
+        "from": "notices@service.example",
+        "subject": "Delivered",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true,
+        "shippingSender": false
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s176",
+      "message": {
+        "uid": 176,
+        "gmailId": "1176",
+        "threadId": "2176",
+        "from": "notices@service.example",
+        "subject": "Reminder: something sometime",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s177",
+      "message": {
+        "uid": 177,
+        "gmailId": "1177",
+        "threadId": "2177",
+        "from": "notices@service.example",
+        "subject": "New message",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "updates",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": true,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s178",
+      "message": {
+        "uid": 178,
+        "gmailId": "1178",
+        "threadId": "2178",
+        "from": "notices@service.example",
+        "subject": "Weekly newsletter",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s179",
+      "message": {
+        "uid": 179,
+        "gmailId": "1179",
+        "threadId": "2179",
+        "from": "notices@service.example",
+        "subject": "Security incident action required",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s180",
+      "message": {
+        "uid": 180,
+        "gmailId": "1180",
+        "threadId": "2180",
+        "from": "notices@service.example",
+        "subject": "Verification code",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": false,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s181",
+      "message": {
+        "uid": 181,
+        "gmailId": "1181",
+        "threadId": "2181",
+        "from": "notices@service.example",
+        "subject": "Unknown notice",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s182",
+      "message": {
+        "uid": 182,
+        "gmailId": "1182",
+        "threadId": "2182",
+        "from": "notices@service.example",
+        "subject": "Invitation: future event @ 2027-01-01T10:00:00Z",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s183",
+      "message": {
+        "uid": 183,
+        "gmailId": "1183",
+        "threadId": "2183",
+        "from": "notices@service.example",
+        "subject": "Verify your email",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": true,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s184",
+      "message": {
+        "uid": 184,
+        "gmailId": "1184",
+        "threadId": "2184",
+        "from": "notices@service.example",
+        "subject": "Sale receipt",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "promotions",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s185",
+      "message": {
+        "uid": 185,
+        "gmailId": "1185",
+        "threadId": "2185",
+        "from": "notices@service.example",
+        "subject": "Delivered",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true,
+        "shippingSender": false
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s186",
+      "message": {
+        "uid": 186,
+        "gmailId": "1186",
+        "threadId": "2186",
+        "from": "notices@service.example",
+        "subject": "Reminder: something sometime",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s187",
+      "message": {
+        "uid": 187,
+        "gmailId": "1187",
+        "threadId": "2187",
+        "from": "notices@service.example",
+        "subject": "New message",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "updates",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": true,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s188",
+      "message": {
+        "uid": 188,
+        "gmailId": "1188",
+        "threadId": "2188",
+        "from": "notices@service.example",
+        "subject": "Weekly newsletter",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s189",
+      "message": {
+        "uid": 189,
+        "gmailId": "1189",
+        "threadId": "2189",
+        "from": "notices@service.example",
+        "subject": "Security incident action required",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s190",
+      "message": {
+        "uid": 190,
+        "gmailId": "1190",
+        "threadId": "2190",
+        "from": "notices@service.example",
+        "subject": "Verification code",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": false,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s191",
+      "message": {
+        "uid": 191,
+        "gmailId": "1191",
+        "threadId": "2191",
+        "from": "notices@service.example",
+        "subject": "Unknown notice",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s192",
+      "message": {
+        "uid": 192,
+        "gmailId": "1192",
+        "threadId": "2192",
+        "from": "notices@service.example",
+        "subject": "Invitation: future event @ 2027-01-01T10:00:00Z",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s193",
+      "message": {
+        "uid": 193,
+        "gmailId": "1193",
+        "threadId": "2193",
+        "from": "notices@service.example",
+        "subject": "Verify your email",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": true,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s194",
+      "message": {
+        "uid": 194,
+        "gmailId": "1194",
+        "threadId": "2194",
+        "from": "notices@service.example",
+        "subject": "Sale receipt",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "promotions",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s195",
+      "message": {
+        "uid": 195,
+        "gmailId": "1195",
+        "threadId": "2195",
+        "from": "notices@service.example",
+        "subject": "Delivered",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true,
+        "shippingSender": false
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s196",
+      "message": {
+        "uid": 196,
+        "gmailId": "1196",
+        "threadId": "2196",
+        "from": "notices@service.example",
+        "subject": "Reminder: something sometime",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s197",
+      "message": {
+        "uid": 197,
+        "gmailId": "1197",
+        "threadId": "2197",
+        "from": "notices@service.example",
+        "subject": "New message",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "updates",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": true,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s198",
+      "message": {
+        "uid": 198,
+        "gmailId": "1198",
+        "threadId": "2198",
+        "from": "notices@service.example",
+        "subject": "Weekly newsletter",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s199",
+      "message": {
+        "uid": 199,
+        "gmailId": "1199",
+        "threadId": "2199",
+        "from": "notices@service.example",
+        "subject": "Security incident action required",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": true,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    },
+    {
+      "id": "s200",
+      "message": {
+        "uid": 200,
+        "gmailId": "1200",
+        "threadId": "2200",
+        "from": "notices@service.example",
+        "subject": "Verification code",
+        "date": "2026-01-01T12:00:00.000Z",
+        "tab": "primary",
+        "labels": [],
+        "bulk": false,
+        "starred": false,
+        "important": false,
+        "replied": false,
+        "threadParticipated": false,
+        "everWritten": false,
+        "protectionComplete": false,
+        "inInbox": true
+      },
+      "expected": {
+        "kind": "uncertain"
+      }
+    }
+  ]
+}

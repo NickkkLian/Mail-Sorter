@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="script-src 'self' 'sha256-5nyhwSzTgu2n7ZAL4gvhru/QlXgk4oq6kTJUzThiFGQ=' 'sha256-wMCHn0OpH0CosStuYwKrHjIB5qySK0qbEbedXSkpsZQ=' 'sha256-tn5/vD2a0kQ+yKUtg7yc2HVcN/PVpNhUg2dx1pB6Qh8='">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-5nyhwSzTgu2n7ZAL4gvhru/QlXgk4oq6kTJUzThiFGQ=' 'sha256-wMCHn0OpH0CosStuYwKrHjIB5qySK0qbEbedXSkpsZQ=' 'sha256-eE7cF0r/xVIRFAe0q+w1WRruq6PPaSYUgis0kDqKOeQ='; connect-src https://api.github.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'">
 <script>/* appearance boot — runs before any stylesheet so the stored palette and light/dark apply on the first paint */(function(){try{var d=document.documentElement,L=window.localStorage,t=L.getItem('nl-theme'),s=L.getItem('nl-scheme');if(s===null){var o=L.getItem('theme')||L.getItem('qm-theme');if(o==='dark'||o==='light')s=o;}if(t==='paper'||t==='ink')d.setAttribute('data-theme',t);if(s==='dark'||s==='light')d.setAttribute('data-scheme',s);}catch(e){}})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Gmail triage that reads only sender and subject — and only adds labels. Headersort: a scheduled Action writes a capped digest to your private repo; this board reads it.">
+<meta name="description" content="Sort what matters. Review outdated mail before cleanup. Headersort: a scheduled Action writes a capped digest to your private repo; this board reads it.">
 <meta name="theme-color" content="#f7e9e8" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#130e15" media="(prefers-color-scheme: dark)">
 <title>Headersort</title>
@@ -1242,13 +1242,14 @@ main{width:100%;flex:1 0 auto}
 @media (hover:hover) and (pointer:fine){.topbar .switch:hover{background:var(--band-line)}}
 /* ===== end of family layer v3.1 ===== */
 </style>
+<link rel="stylesheet" href="board/cleanup.css">
 </head>
 <body>
 <a class="skip" href="#main" data-i18n="skip">Skip to content</a>
 <header class="topbar">
   <a class="brand" href="./" aria-label="Headersort home">
     <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true" focusable="false"><rect x="2.5" y="2.5" width="19" height="19" rx="5" stroke="currentColor" stroke-width="2"/><rect x="14" y="6" width="4" height="4" rx="1" fill="var(--point)"/><path d="M6 10l6 4 6-4M6 13v3h12v-3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    <b>Headersort</b><span data-i18n="tagline">Gmail triage that reads only sender and subject — and only adds labels.</span>
+    <b>Headersort</b><span data-i18n="tagline">Sort what matters. Review outdated mail before cleanup.</span>
   </a>
   <span class="pill" id="pill" title="">Demo<span class="long" id="pillLong"> · fictional mail</span></span>
   <span class="spacer"></span>
@@ -1269,7 +1270,7 @@ main{width:100%;flex:1 0 auto}
           <button class="btn btn-primary" id="actionBtn" type="button" data-act="showAction" hidden></button>
         </div>
         <h1 class="display" id="digestT" data-i18n="digestT">Where the digest went</h1>
-        <p class="lede" data-i18n="digestLede">Every email in the digest, split by the label the classifier gave it. Only the envelope was read: sender and subject.</p>
+        <p class="lede" data-i18n="digestLede">Your recent mail, organized for later. Body reading and cleanup follow your settings.</p>
         <div class="rule" aria-hidden="true"></div>
       </div>
       <div role="group" aria-labelledby="digestT">
@@ -1288,7 +1289,7 @@ main{width:100%;flex:1 0 auto}
 
   <section class="card" id="connectCard" hidden>
     <h2 data-i18n="setT">Connect your private data repo</h2>
-    <p class="hint" data-i18n="connHint">This board reads two files from your own private GitHub repo, so there is nothing to show until you connect one. The demo shows the same board with fictional mail.</p>
+    <p class="hint" data-i18n="connHint">Connect your private GitHub repo to see your digest and cleanup reviews. The demo shows the same board with fictional mail.</p>
     <div class="row connect-acts">
       <button class="btn btn-primary" type="button" data-act="openSettings" data-i18n="connBtn">Connect…</button>
       <a class="btn" href="?demo=1" data-i18n="tryDemo">Try the demo</a>
@@ -1302,6 +1303,7 @@ main{width:100%;flex:1 0 auto}
     <ol class="steps" data-i18n-html="setupB"></ol>
   </section>
 
+  <section id="cleanup-panel" aria-label="Cleanup review" hidden></section>
   <div id="stats"></div>
   <section class="card" id="trendCard" hidden>
     <h2 data-i18n="trendT">Last 7 days</h2>
@@ -1318,7 +1320,7 @@ main{width:100%;flex:1 0 auto}
 <footer class="honest">
   <dl class="honest-in">
     <div><dt data-i18n="aboutT">About this board</dt>
-    <dd data-i18n="aboutD">In demo mode every email is fictional and every address ends in the reserved .example TLD; nothing is fetched and nothing is sent. Connected, the board reads two JSON files from your private repo through the GitHub Contents API and can flip one switch in config.json.</dd></div>
+    <dd data-i18n="aboutD">In demo mode every email is fictional and every address ends in the reserved .example TLD; nothing is fetched and nothing is sent. Connected, this board reads private metadata and writes settings, approval selections and undo requests. Mail changes only in the runner after revalidation.</dd></div>
     <div><dt data-i18n="nvT">Not verified here</dt>
     <dd data-i18n="nvD">The scheduled classifier runs in your own repo (a template is in template/); the board cannot see whether it ran. Category quality depends on the model and on subject lines alone. The digest is capped by keep_items, so the board never shows more than that many emails.</dd></div>
     <div><dt data-i18n="srcT">Source</dt>
@@ -1821,7 +1823,7 @@ let lang=(()=>{ try{ return localStorage.getItem('pha-lang')==='zh'?'zh':'en'; }
 const T=(zh,en)=>lang==='en'?en:zh;
 const I18N={
   skip:{zh:'跳到内容',en:'Skip to content'},
-  tagline:{zh:'只看信封（发件人+主题）、只加标签的 Gmail 分拣台。',en:'Gmail triage that reads only sender and subject — and only adds labels.'},
+  tagline:{zh:'整理值得保留的邮件，确认后再清理过期邮件。',en:'Sort what matters. Review outdated mail before cleanup.'},
   refresh:{zh:'刷新',en:'Refresh'},
   togT:{zh:'开/关定时自动分类（GitHub Actions 每天给 Gmail 新邮件打 AI/xx 标签）',en:'Toggle the scheduled classification (a GitHub Action labels new Gmail as AI/… each run)'},
   setT:{zh:'连接你的私有数据仓库',en:'Connect your private data repo'},
@@ -1835,7 +1837,7 @@ const I18N={
   trendHint:{zh:'柱＝摘要里每天的邮件数；琥珀色部分需要处理。',en:'Bars are emails per day in the digest; the amber part needs action.'},
   searchPh:{zh:'搜主题或发件人…',en:'Search subject or sender…'},
   aboutT:{zh:'关于这个看板',en:'About this board'},
-  aboutD:{zh:'演示模式下所有邮件都是虚构的、地址都以保留的 .example 结尾；不抓取、不发送。连接后，看板通过 GitHub Contents API 读你私有仓库里的两个 JSON 文件，并且只能拨动 config.json 里的一个开关。',en:'In demo mode every email is fictional and every address ends in the reserved .example TLD; nothing is fetched and nothing is sent. Connected, the board reads two JSON files from your private repo through the GitHub Contents API and can flip one switch in config.json.'},
+  aboutD:{zh:'演示模式下所有邮件都是虚构的、地址都以保留的 .example 结尾；不抓取、不发送。连接后，看板读取私有摘要，保存设置、审批和撤销请求；后台重新核验后才改动邮件。',en:'In demo mode every email is fictional and every address ends in the reserved .example TLD; nothing is fetched and nothing is sent. Connected, this board reads private metadata and writes settings, approval selections and undo requests. Mail changes only in the runner after revalidation.'},
   nvT:{zh:'这里验证不了的',en:'Not verified here'},
   nvD:{zh:'定时分类脚本跑在你自己的仓库里（模板在 template/），看板看不到它跑没跑；分类质量取决于模型和主题行本身；摘要被 keep_items 封顶，看板最多显示这么多封。',en:'The scheduled classifier runs in your own repo (a template is in template/); the board cannot see whether it ran. Category quality depends on the model and on subject lines alone. The digest is capped by keep_items, so the board never shows more than that many emails.'},
   srcT:{zh:'来源',en:'Source'},
@@ -1843,10 +1845,10 @@ const I18N={
   langBtn:{zh:'EN',en:'中'},
   darkMode:{zh:'深色模式',en:'Dark mode'},
   settingsBtn:{zh:'设置',en:'Settings'},
-  connHint:{zh:'这个看板读的是你自己私有 GitHub 仓库里的两个文件，连接之前这里没有东西可显示。演示版用虚构邮件展示同一个看板。',en:'This board reads two files from your own private GitHub repo, so there is nothing to show until you connect one. The demo shows the same board with fictional mail.'},
+  connHint:{zh:'连接你的私有 GitHub 仓库后，可查看摘要和清理审批。演示版用虚构邮件展示同一个看板。',en:'Connect your private GitHub repo to see your digest and cleanup reviews. The demo shows the same board with fictional mail.'},
   connBtn:{zh:'连接…',en:'Connect…'},
   tryDemo:{zh:'看演示',en:'Try the demo'},
-  digestLede:{zh:'摘要里的每一封，按分类脚本给它的标签分开。只读了信封：发件人和主题。',en:'Every email in the digest, split by the label the classifier gave it. Only the envelope was read: sender and subject.'},
+  digestLede:{zh:'近期邮件按保留类别整理；正文读取与清理遵循你的设置。',en:'Your recent mail, organized for later. Body reading and cleanup follow your settings.'},
 };
 const Ls=k=>(I18N[k]||{zh:k,en:k})[lang];
 function applyStatic(){
@@ -1878,9 +1880,13 @@ async function ghGet(path,fresh){
   if(r.status===404) return {data:null,sha:null};
   if(r.status===401||r.status===403) throw Object.assign(new Error('GitHub '+r.status),{kind:'auth',reason:T('GitHub 拒绝了这个令牌（'+r.status+'）','GitHub refused the token ('+r.status+')'),fix:T('粘贴一个对这个仓库有 Contents 读写权限的新令牌。','Paste a new fine-grained token with Contents read and write on this repo.')});
   if(!r.ok) throw Object.assign(new Error('GitHub '+r.status),{kind:'http',reason:T('GitHub 返回 '+r.status,'GitHub answered '+r.status),fix:T('过一分钟再试。','Try again in a minute.')});
-  const j=await r.json();
-  try{ return {data:JSON.parse(b64decode(j.content)),sha:j.sha}; }
-  catch(e){ throw Object.assign(e,{kind:'data',reason:T(path+' 不是有效的 JSON（'+e.message+'）',path+' is not valid JSON ('+e.message+')'),fix:T('去仓库里看看这个文件；下一次定时任务会重写它。','Look at the file in your repo; the next scheduled run rewrites it.')}); }
+  const j=await r.json();let content=j.content;
+  if(j.encoding!=='base64'&&j.sha&&j.size>0){
+    const br=await fetch(`https://api.github.com/repos/${c.owner}/${c.repo}/git/blobs/${j.sha}`,{headers:{Authorization:`Bearer ${c.token}`,Accept:'application/vnd.github+json'},cache:'no-store'});
+    if(!br.ok)throw Error('Private state blob unavailable');content=(await br.json()).content;
+  }
+  try{ if(typeof content!=='string'||(!content&&j.size!==0))throw Error('Empty state');return {data:JSON.parse(b64decode(content)),sha:j.sha}; }
+  catch{ throw {kind:'data',reason:T(path+' 不是有效的 JSON',path+' is not valid JSON'),fix:T('刷新重试；未改动任何文件。','Refresh and retry; no file was changed.')}; }
 }
 // One PUT; returns the Response. A 409 used to be retried here with the same body, which wrote this tab's copy of
 // config.json over whatever had been changed since it loaded (found 2026-09-23). SafeMerge.save now handles it.
@@ -1980,9 +1986,9 @@ function loadErrorCard(){
    A mailbox sorted by an older generation of the classifier can carry keys this table does not know. The answer for
    that is label_en in your own config: it is yours to write, and it does not put your label names in a public file. */
 const CAT_EN={
-  action:'To do', job:'Jobs', school:'School', security:'Security', newsletter:'Newsletters',
-  work:'Work', finance:'Finance', life:'Life', travel:'Travel', logistics:'Shipping',
-  account:'Accounts', promo:'Promotions', reading:'Reading', other:'Other'};
+  action:'To do', job:'Jobs', school:'School', security:'Accounts', newsletter:'Newsletters',
+  people:'People', official:'Official', health:'Health', work:'Work', finance:'Money', life:'Life', travel:'Travel', logistics:'Shipping',
+  account:'Accounts', promo:'Promotions', reading:'Reading', other:'Unsorted'};
 function catLabel(key){
   const cats=(CONF&&CONF.categories)||[]; const c=cats.find(x=>x.key===key);
   const label=c?c.label:key;
@@ -2074,7 +2080,7 @@ function restoreFocus(find){
   if(el){ el.focus(); if(document.activeElement!==el&&(el=firstHeading())) el.focus(); }   // a disabled control does not take focus
   if(el&&find.caret&&el.setSelectionRange) try{ el.setSelectionRange(find.caret[0],find.caret[1]); }catch(e){ /* not a text field */ }
 }
-function render(){ const find=focusKey(document.activeElement); renderPage(); restoreFocus(find); }
+function render(){ const find=focusKey(document.activeElement); renderPage(); restoreFocus(find); document.dispatchEvent(new Event("headersort-data")); }
 function renderPage(){
   const on=CONF?CONF.enabled!==false:false;
   const togLabel=!CONF?T('分类: —','Classify: —'):(on?T('分类: 开','Classify: on'):T('分类: 关','Classify: off'));
@@ -2180,8 +2186,18 @@ Appearance.bindSettings($('nl-settings-button'),()=>settingsOptions(false));   /
 
 /* ============ start ============ */
 document.querySelector('.skip').addEventListener('click',e=>{ e.preventDefault(); firstHeading().focus(); });   // no #main in the address
+globalThis.HeadersortBoard={
+  demo:DEMO, available:()=>DEMO||Boolean(CONF&&configured()&&!LOAD_ERROR),
+  getConfig:()=>CONF,
+  get:(path,fresh)=>ghGet(path,fresh),
+  put:async(path,data,sha,message)=>{const r=await ghPut(path,data,sha,message);if(!r.ok)throw Error("Save conflict or unavailable");return r.json();},
+  saveConfig:async value=>{const before=CONF;CONF=value;try{await saveConf("mail: update cleanup settings");}catch{CONF=before;throw Error("Save unavailable");}},
+  subscribe:fn=>document.addEventListener("headersort-data",fn),
+  language:()=>lang
+};
 applyStatic();
 loadAll();
 </script>
+<script type="module" src="board/cleanup.mjs"></script>
 </body>
 </html>

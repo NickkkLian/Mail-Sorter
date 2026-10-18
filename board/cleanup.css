@@ -1,0 +1,14 @@
+#cleanup-panel{margin:24px 0;padding:clamp(16px,3vw,28px);border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--text)}
+#cleanup-panel h2{font-size:1.5rem;margin:0 0 8px}#cleanup-panel h3{font-size:1rem;margin:20px 0 8px}
+#cleanup-panel p{line-height:1.6;color:var(--text-2);max-width:75ch}#cleanup-panel .review-toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:16px 0}
+#cleanup-panel fieldset{border:1px solid var(--border);border-radius:9px;margin:16px 0;padding:12px;min-width:0}
+#cleanup-panel legend{padding:0 6px;font-weight:600}#cleanup-panel label{cursor:pointer;line-height:1.5}
+#cleanup-panel .review-item{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:8px;padding:12px 0;border-top:1px solid var(--border);align-items:start}
+#cleanup-panel .review-item:first-of-type{border-top:0}#cleanup-panel .review-item span{overflow-wrap:anywhere}#cleanup-panel small{display:block;color:var(--text-2);line-height:1.6}
+#cleanup-panel input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent);margin:3px}
+#cleanup-panel .review-settings{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin:16px 0}
+#cleanup-panel input[type=number],#cleanup-panel select,#cleanup-panel textarea{font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px;width:100%;box-sizing:border-box}
+#cleanup-panel textarea{min-height:80px;resize:vertical}#cleanup-panel .rule-options{display:grid;grid-template-columns:minmax(100px,1fr) 100px minmax(150px,1fr);gap:12px;align-items:center;margin:12px 0}
+#cleanup-panel .review-status{min-height:1.6em;color:var(--text)}#cleanup-panel button:active{transform:scale(.98)}
+#cleanup-panel button:focus-visible,#cleanup-panel input:focus-visible,#cleanup-panel select:focus-visible,#cleanup-panel textarea:focus-visible,#cleanup-panel summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+@media(max-width:600px){#cleanup-panel .review-item{grid-template-columns:24px minmax(0,1fr)}#cleanup-panel .review-item button{grid-column:2;justify-self:start}#cleanup-panel .rule-options{grid-template-columns:1fr 1fr}#cleanup-panel .rule-options label:last-child{grid-column:1/-1}}
