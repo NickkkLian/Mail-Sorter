@@ -29,11 +29,12 @@ export async function applyApproval({config,state,approval,mailbox,persist,now=n
   const c=settings(config),p=state.proposal; if(!c.enabled||!p||!approval)return {applied:0,skipped:'no approval'};
   if(approval.proposal_id!==p.id||approval.revision!==p.revision||p.policy!==policyHash(c)||!Array.isArray(approval.selected)||approval.selected.some(x=>!p.items.some(i=>i.gmailId===x))||new Set(approval.selected).size!==approval.selected.length)return {applied:0,skipped:'stale approval'};
   if(state.journal.runs.some(r=>r.proposal_id===p.id))return {applied:0,skipped:'consumed'};
+  if(signal?.aborted)return {applied:0,skipped:'cancelled'}; // a cancelled wake must not record a run or use up the approval
   const run={id:randomUUID(),proposal_id:p.id,at:now.toISOString(),selected_count:approval.selected.length,entries:[],status:'running'};
   state.journal.runs.push(run);const chosen=new Set(approval.selected);
   if(recordReview)for(const id of RULE_IDS){const group=p.items.filter(x=>x.rule===id);if(group.length)state.journal.reviews.push({run_id:run.id,rule:id,policy:ruleHash(c,id),at:now.toISOString(),reviewed:group.length,rejected:group.filter(x=>!chosen.has(x.gmailId)).length,complete:false});}
   await persist(state);
-  const todo=p.items.filter(x=>chosen.has(x.gmailId));let at=0;
+  const todo=p.items.filter(x=>chosen.has(x.gmailId));let at=0,notReached=0;
   while(at<todo.length&&!signal?.aborted){
     const group=[],started=Date.now();
     for(;at<todo.length&&group.length<batch.size&&(!group.length||Date.now()-started<batch.ms)&&!signal?.aborted;at++){
@@ -47,20 +48,28 @@ export async function applyApproval({config,state,approval,mailbox,persist,now=n
     await persist(state); // every intent in this group is durable before the first mailbox change
     let saved=Date.now(),next=0;
     try{
-      for(;next<group.length&&!signal?.aborted;next++){
+      while(next<group.length&&!signal?.aborted){
         const entry=group[next];
         try{await mailbox.addLabel(entry.gmailId,entry.label);await mailbox[entry.action](entry.gmailId);entry.status='done';}
         catch{entry.status='uncertain';} // journal retains intent; never blindly replay a partially applied mutation
+        next++; // counted as acted on BEFORE any save, so a failing save can never drop the record of a changed email
         if(Date.now()-saved>=batch.ms){await persist(state);saved=Date.now();}
       }
     }finally{
-      // Cancelled: entries never attempted were not touched, so they leave the journal instead of staying as intents.
-      const untouched=new Set(group.slice(next));if(untouched.size)run.entries=run.entries.filter(e=>!untouched.has(e));
+      // Only entries never attempted (cancel) are dropped: they were not touched, so they must not stay as intents.
+      const untouched=new Set(group.slice(next));if(untouched.size){run.entries=run.entries.filter(e=>!untouched.has(e));notReached+=untouched.size;}
       await persist(state); // failed or cancelled runs still keep the progress already made
     }
   }
-  run.status='finished';
-  run.skipped_count=chosen.size-run.entries.length;
+  notReached+=todo.length-at;
+  if(signal?.aborted){
+    if(!run.entries.length){ // cancelled before changing anything: leave no trace, the approval stays usable
+      state.journal.runs=state.journal.runs.filter(r=>r!==run);state.journal.reviews=state.journal.reviews.filter(r=>r.run_id!==run.id);
+      await persist(state);return {applied:0,skipped:'cancelled'};
+    }
+    run.status='cancelled';run.not_reached_count=notReached;
+  }else run.status='finished';
+  run.skipped_count=chosen.size-run.entries.length-notReached;
   for(const review of state.journal.reviews.filter(x=>x.run_id===run.id)){const selected=p.items.filter(x=>x.rule===review.rule&&chosen.has(x.gmailId));review.complete=selected.every(x=>run.entries.some(e=>e.gmailId===x.gmailId&&e.status==='done'));}
   // Do not discard incomplete operations. Older completed runs retain Gmail cleanup labels for manual restoration.
   const completed=state.journal.runs.filter(r=>r.status==='finished');
@@ -77,13 +86,14 @@ export async function undoRun({state,runId,mailbox,persist,now=new Date(),signal
     await persist(state); // same rule as cleanup: intents are durable before the first restore
     let saved=Date.now(),next=0;
     try{
-      for(;next<group.length&&!signal?.aborted;next++){
+      while(next<group.length&&!signal?.aborted){
         const e=group[next];
-        try{const m=await mailbox.get(e.gmailId);if(!m){e.undo_status='missing';continue;}
+        try{const m=await mailbox.get(e.gmailId);if(!m)e.undo_status='missing';else{
           await mailbox.restore(e.gmailId);for(const label of e.originalLabels||[])if(!label.startsWith('\\')&&!m.labels?.includes(label))await mailbox.addLabel(e.gmailId,label);if(!e.hadCleanLabel)await mailbox.removeLabel(e.gmailId,e.label);
           e.status='undone';e.undo_status='done';restored++;
-          state.journal.reviews.push({rule:e.rule,policy:state.journal.reviews.findLast(x=>x.rule===e.rule)?.policy||'',at:now.toISOString(),reviewed:1,rejected:1,complete:false});
+          state.journal.reviews.push({rule:e.rule,policy:state.journal.reviews.findLast(x=>x.rule===e.rule)?.policy||'',at:now.toISOString(),reviewed:1,rejected:1,complete:false});}
         }catch{e.undo_status='retry';}
+        next++; // counted as acted on BEFORE any save, same rule as cleanup
         if(Date.now()-saved>=batch.ms){await persist(state);saved=Date.now();}
       }
     }finally{
@@ -105,6 +115,7 @@ export async function runCycle({config,state,mailbox,persist,approval=null,undoR
   const c=settings(config);if(!c.enabled)return {skipped:'disabled'};
   if(state.runtime.afterAuto){state.proposal=state.runtime.afterAuto;delete state.runtime.afterAuto;await persist(state);}
   for(const req of undoRequests)await undoRun({state,runId:req.run_id,mailbox,persist,now,signal});
+  if(signal?.aborted)return {skipped:'cancelled'}; // cancelled during Undo: do not start the approval
   await applyApproval({config:c,state,approval,mailbox,persist,now,evaluate,signal});
   if(signal?.aborted)return {skipped:'cancelled'};
   if(!force&&state.runtime.lastProposalAt&&Date.parse(now)-Date.parse(state.runtime.lastProposalAt)<c.frequency_hours*3600000)return {skipped:'cadence'};
