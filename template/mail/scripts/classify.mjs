@@ -10,6 +10,8 @@ const read=(root,name,fallback)=>{const f=path.join(root,name);return fs.existsS
 export function atomic(root,name,data){const f=path.join(root,name),temp=f+'.tmp';fs.mkdirSync(path.dirname(f),{recursive:true});const fd=fs.openSync(temp,'w',0o600);try{fs.writeFileSync(fd,JSON.stringify(data,null,2)+'\n');fs.fsyncSync(fd);}finally{fs.closeSync(fd);}fs.renameSync(temp,f);const dir=fs.openSync(path.dirname(f),'r');try{fs.fsyncSync(dir);}finally{fs.closeSync(dir);}}
 export async function main({root=ROOT,env=process.env,connect=connectMailbox,output=console.log}={}){
   let lock,mailbox;
+  // A cancelled workflow sends SIGINT then SIGTERM: stop between mailbox changes so the batch in hand is saved.
+  const stop=new AbortController(),onSignal=()=>stop.abort();process.once('SIGINT',onSignal);process.once('SIGTERM',onSignal);
   try{
     let c=settings(read(root,'config.json',{}));
     if(env.DRY_RUN==='1'||!c.enabled){output('Skipped: disabled or dry run; no connections.');return 0;}
@@ -38,9 +40,10 @@ export async function main({root=ROOT,env=process.env,connect=connectMailbox,out
       }});classify=null;
     }
     const now=new Date(),evaluate=createEvaluator({config:c,mailbox,classify,now});
-    const result=await runCycle({config:c,state,mailbox,persist,approval:proposalOnly?null:await store.read('cleanup-approval.json',null),undoRequests:proposalOnly?[]:(await store.read('cleanup-undo.json',{requests:[]})).requests,force:proposalOnly||env.RUN_NOW==='1',backfill:env.BACKFILL==='1',evaluate,now});
+    const result=await runCycle({config:c,state,mailbox,persist,approval:proposalOnly?null:await store.read('cleanup-approval.json',null),undoRequests:proposalOnly?[]:(await store.read('cleanup-undo.json',{requests:[]})).requests,force:proposalOnly||env.RUN_NOW==='1',backfill:env.BACKFILL==='1',evaluate,now,signal:stop.signal});
+    if(stop.signal.aborted){output('Run cancelled; progress so far was saved.');return 1;}
     output(result.skipped?'Skipped: '+result.skipped:'Cycle complete. Proposed: '+result.proposed);return 0;
   }catch{output('Run stopped safely. Check configuration, dependencies, or runner lock; no sensitive error details retained.');return 1;}
-  finally{try{await mailbox?.close();}catch{/* never print provider/mailbox errors */}if(lock!==undefined){fs.closeSync(lock);fs.unlinkSync(path.join(root,'.runner.lock'));}}
+  finally{process.off('SIGINT',onSignal);process.off('SIGTERM',onSignal);try{await mailbox?.close();}catch{/* never print provider/mailbox errors */}if(lock!==undefined){fs.closeSync(lock);fs.unlinkSync(path.join(root,'.runner.lock'));}}
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))process.exitCode=await main();

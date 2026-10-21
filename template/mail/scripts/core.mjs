@@ -20,7 +20,12 @@ export async function makeProposal({messages,config,state,now=new Date(),evaluat
   proposal.revision=fingerprint({policy:proposal.policy,items});state.proposal=proposal;state.runtime.lastProposalAt=now.toISOString();return proposal;
 }
 // persist must durably record the journal BEFORE any side effect. Only these mailbox verbs are used.
-export async function applyApproval({config,state,approval,mailbox,persist,now=new Date(),recordReview=true,evaluate=async m=>decide(m,config,now)}){
+// State is saved in batches, not per email: each save is one commit in the private repository.
+// Cleanup intents for up to BATCH.size messages (or BATCH.ms of work, whichever first) are saved together BEFORE
+// any of those messages is touched; the results are saved right after. A hard crash can therefore lose at most one
+// batch of "done" marks (those entries stay as saved intents, which later runs never replay and Undo still restores).
+export const BATCH={size:25,ms:120000};
+export async function applyApproval({config,state,approval,mailbox,persist,now=new Date(),recordReview=true,evaluate=async m=>decide(m,config,now),signal=null,batch=BATCH}){
   const c=settings(config),p=state.proposal; if(!c.enabled||!p||!approval)return {applied:0,skipped:'no approval'};
   if(approval.proposal_id!==p.id||approval.revision!==p.revision||p.policy!==policyHash(c)||!Array.isArray(approval.selected)||approval.selected.some(x=>!p.items.some(i=>i.gmailId===x))||new Set(approval.selected).size!==approval.selected.length)return {applied:0,skipped:'stale approval'};
   if(state.journal.runs.some(r=>r.proposal_id===p.id))return {applied:0,skipped:'consumed'};
@@ -28,15 +33,31 @@ export async function applyApproval({config,state,approval,mailbox,persist,now=n
   state.journal.runs.push(run);const chosen=new Set(approval.selected);
   if(recordReview)for(const id of RULE_IDS){const group=p.items.filter(x=>x.rule===id);if(group.length)state.journal.reviews.push({run_id:run.id,rule:id,policy:ruleHash(c,id),at:now.toISOString(),reviewed:group.length,rejected:group.filter(x=>!chosen.has(x.gmailId)).length,complete:false});}
   await persist(state);
-  for(const x of p.items.filter(x=>chosen.has(x.gmailId))){
-    if(quarantined(state,x.gmailId))continue;
-    let m,v;try{m=await mailbox.get(x.gmailId);v=m?await evaluate(m):null;}catch{continue;}
-    if(!m||v?.rule!==x.rule||c.rules[x.rule].action!==x.action||!c.rules[x.rule].enabled)continue;
-    const entry={gmailId:x.gmailId,rule:x.rule,action:x.action,label:`${c.label_prefix}Cleaned/${x.rule}`,at:now.toISOString(),status:'intent',originalLabels:[...m.labels],hadCleanLabel:m.labels.includes(`${c.label_prefix}Cleaned/${x.rule}`)};
-    run.entries.push(entry);await persist(state);
-    try{await mailbox.addLabel(x.gmailId,entry.label);await mailbox[x.action](x.gmailId);entry.status='done';}
-    catch{entry.status='uncertain';} // journal retains intent; never blindly replay a partially applied mutation
-    await persist(state);
+  const todo=p.items.filter(x=>chosen.has(x.gmailId));let at=0;
+  while(at<todo.length&&!signal?.aborted){
+    const group=[],started=Date.now();
+    for(;at<todo.length&&group.length<batch.size&&(!group.length||Date.now()-started<batch.ms)&&!signal?.aborted;at++){
+      const x=todo[at];if(quarantined(state,x.gmailId))continue;
+      let m,v;try{m=await mailbox.get(x.gmailId);v=m?await evaluate(m):null;}catch{continue;}
+      if(!m||v?.rule!==x.rule||c.rules[x.rule].action!==x.action||!c.rules[x.rule].enabled)continue;
+      const entry={gmailId:x.gmailId,rule:x.rule,action:x.action,label:`${c.label_prefix}Cleaned/${x.rule}`,at:now.toISOString(),status:'intent',originalLabels:[...m.labels],hadCleanLabel:m.labels.includes(`${c.label_prefix}Cleaned/${x.rule}`)};
+      run.entries.push(entry);group.push(entry);
+    }
+    if(!group.length)continue;
+    await persist(state); // every intent in this group is durable before the first mailbox change
+    let saved=Date.now(),next=0;
+    try{
+      for(;next<group.length&&!signal?.aborted;next++){
+        const entry=group[next];
+        try{await mailbox.addLabel(entry.gmailId,entry.label);await mailbox[entry.action](entry.gmailId);entry.status='done';}
+        catch{entry.status='uncertain';} // journal retains intent; never blindly replay a partially applied mutation
+        if(Date.now()-saved>=batch.ms){await persist(state);saved=Date.now();}
+      }
+    }finally{
+      // Cancelled: entries never attempted were not touched, so they leave the journal instead of staying as intents.
+      const untouched=new Set(group.slice(next));if(untouched.size)run.entries=run.entries.filter(e=>!untouched.has(e));
+      await persist(state); // failed or cancelled runs still keep the progress already made
+    }
   }
   run.status='finished';
   run.skipped_count=chosen.size-run.entries.length;
@@ -47,16 +68,29 @@ export async function applyApproval({config,state,approval,mailbox,persist,now=n
   state.journal.reviews=state.journal.reviews.filter(r=>Date.parse(now)-Date.parse(r.at)<400*DAY);
   await persist(state);return {applied:run.entries.filter(x=>x.status==='done').length};
 }
-export async function undoRun({state,runId,mailbox,persist,now=new Date()}){
+export async function undoRun({state,runId,mailbox,persist,now=new Date(),signal=null,batch=BATCH}){
   const run=state.journal.runs.find(x=>x.id===runId);if(!run)return {restored:0};let restored=0;
-  for(const e of run.entries){
-    if(e.status==='undone'||(e.action==='trash'&&Date.parse(now)-Date.parse(e.at)>=30*DAY))continue;
-    e.undo_status='intent';await persist(state);
-    try{const m=await mailbox.get(e.gmailId);if(!m){e.undo_status='missing';await persist(state);continue;}
-      await mailbox.restore(e.gmailId);for(const label of e.originalLabels||[])if(!label.startsWith('\\')&&!m.labels?.includes(label))await mailbox.addLabel(e.gmailId,label);if(!e.hadCleanLabel)await mailbox.removeLabel(e.gmailId,e.label);
-      e.status='undone';e.undo_status='done';restored++;
-      state.journal.reviews.push({rule:e.rule,policy:state.journal.reviews.findLast(x=>x.rule===e.rule)?.policy||'',at:now.toISOString(),reviewed:1,rejected:1,complete:false});
-    }catch{e.undo_status='retry';}await persist(state);
+  const todo=run.entries.filter(e=>!(e.status==='undone'||(e.action==='trash'&&Date.parse(now)-Date.parse(e.at)>=30*DAY)));let at=0;
+  while(at<todo.length&&!signal?.aborted){
+    const group=todo.slice(at,at+batch.size);at+=group.length;
+    const before=new Map(group.map(e=>[e,e.undo_status]));for(const e of group)e.undo_status='intent';
+    await persist(state); // same rule as cleanup: intents are durable before the first restore
+    let saved=Date.now(),next=0;
+    try{
+      for(;next<group.length&&!signal?.aborted;next++){
+        const e=group[next];
+        try{const m=await mailbox.get(e.gmailId);if(!m){e.undo_status='missing';continue;}
+          await mailbox.restore(e.gmailId);for(const label of e.originalLabels||[])if(!label.startsWith('\\')&&!m.labels?.includes(label))await mailbox.addLabel(e.gmailId,label);if(!e.hadCleanLabel)await mailbox.removeLabel(e.gmailId,e.label);
+          e.status='undone';e.undo_status='done';restored++;
+          state.journal.reviews.push({rule:e.rule,policy:state.journal.reviews.findLast(x=>x.rule===e.rule)?.policy||'',at:now.toISOString(),reviewed:1,rejected:1,complete:false});
+        }catch{e.undo_status='retry';}
+        if(Date.now()-saved>=batch.ms){await persist(state);saved=Date.now();}
+      }
+    }finally{
+      // Entries not reached were never touched: put them back as they were before this undo started.
+      for(const e of group.slice(next)){if(before.get(e)===undefined)delete e.undo_status;else e.undo_status=before.get(e);}
+      await persist(state);
+    }
   }return {restored};
 }
 export function updateDigest(state,m,v,c,now){
@@ -67,11 +101,12 @@ export function updateDigest(state,m,v,c,now){
   d.lastUid=Math.max(d.lastUid||0,m.uid);
   d.updated_at=now.toISOString();d.keep_items=c.keep_items;
 }
-export async function runCycle({config,state,mailbox,persist,approval=null,undoRequests=[],now=new Date(),force=false,backfill=false,evaluate=async m=>decide(m,config,now)}){
+export async function runCycle({config,state,mailbox,persist,approval=null,undoRequests=[],now=new Date(),force=false,backfill=false,evaluate=async m=>decide(m,config,now),signal=null}){
   const c=settings(config);if(!c.enabled)return {skipped:'disabled'};
   if(state.runtime.afterAuto){state.proposal=state.runtime.afterAuto;delete state.runtime.afterAuto;await persist(state);}
-  for(const req of undoRequests)await undoRun({state,runId:req.run_id,mailbox,persist,now});
-  await applyApproval({config:c,state,approval,mailbox,persist,now,evaluate});
+  for(const req of undoRequests)await undoRun({state,runId:req.run_id,mailbox,persist,now,signal});
+  await applyApproval({config:c,state,approval,mailbox,persist,now,evaluate,signal});
+  if(signal?.aborted)return {skipped:'cancelled'};
   if(!force&&state.runtime.lastProposalAt&&Date.parse(now)-Date.parse(state.runtime.lastProposalAt)<c.frequency_hours*3600000)return {skipped:'cadence'};
   const page=await mailbox.scan({after:state.runtime.scanAfter||0,expectedUidValidity:state.runtime.uidValidity,limit:backfill?c.max_backfill:c.max_per_run,primaryOnly:c.primary_only});
   if(page.reset){state.runtime.scanAfter=0;state.digest.lastUid=0;state.digest.total_is_floor=true;}
