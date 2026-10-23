@@ -125,13 +125,25 @@ export async function runCycle({config,state,mailbox,persist,approval=null,undoR
   const all=[],decisions=new Map();
   // Revalidate pending items; proposals never derive from the capped digest.
   for(const id of pending.keys()){try{const m=await mailbox.get(id);if(m)all.push(m);}catch{/* unknown stays */}}
+  const classifyDigest=async m=>{
+    const v=await evaluate(m),label=c.categories.find(x=>x.key===v.category);
+    if(label&&label.key!=='other'&&!protectedReason(m,c))await mailbox.addLabel(m.gmailId,c.label_prefix+label.label);
+    updateDigest(state,m,v,c,now);return v;
+  };
   for(const m of page.messages){
-    let v;try{v=await evaluate(m);const label=c.categories.find(x=>x.key===v.category);if(label&&label.key!=='other'&&!protectedReason(m,c))await mailbox.addLabel(m.gmailId,c.label_prefix+label.label);}
+    let v;try{v=await classifyDigest(m);}
     catch{break;}
-    updateDigest(state,m,v,c,now);all.push(m);decisions.set(m.gmailId,v);state.runtime.scanAfter=m.uid;
+    all.push(m);decisions.set(m.gmailId,v);state.runtime.scanAfter=m.uid;
   }
   state.runtime.uidValidity=page.uidValidity;
   if(page.done&&page.messages.every(m=>m.uid<=(state.runtime.scanAfter||0)))state.runtime.scanAfter=0;
+  // A historical cleanup sweep must not starve the legacy digest's incremental intake.
+  // Keep its cursor and proposal unchanged; the extra digest page is independently bounded.
+  if(!page.done&&(state.digest.lastUid||0)>(state.runtime.scanAfter||0)){
+    const fresh=await mailbox.scan({after:state.digest.lastUid,expectedUidValidity:page.uidValidity,limit:c.max_per_run,primaryOnly:c.primary_only});
+    if(fresh.reset)throw Error('Mailbox UID validity changed during digest scan');
+    for(const m of fresh.messages){try{await classifyDigest(m);}catch{break;}}
+  }
   const latest=[...new Map(all.map(m=>[m.gmailId,m])).values()];
   const p=await makeProposal({messages:latest,config:c,state,now,evaluate:async m=>decisions.has(m.gmailId)?decisions.get(m.gmailId):evaluate(m)});await persist(state);
   const eligible=p.items.filter(x=>autoEligible(c,x.rule,state.journal.reviews,now));
