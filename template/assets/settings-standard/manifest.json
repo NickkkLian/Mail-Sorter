@@ -1,0 +1,14 @@
+{
+  "contractVersion": "1.1.0",
+  "htmlAppVersion": "1.2.0-public",
+  "profile": "app-scoped",
+  "app": "Mail-Sorter",
+  "files": {
+    "core.js": "c194fe24357da02490b5b171242ad2ccc22ed035b64defbcb88ae12c18d57a3c",
+    "backup.js": "b84057a574e0b3e9ae6c511282666df2b5517fbad75036bd7eebd1b9c8aed7d2",
+    "adapter-helpers.js": "8b129b057e11a589f2441515508dc1e0dbce7680ff321955af7b730f93fa1801",
+    "field-group.js": "ad7177fb508f7e848945eff04fc71cf8d79af28b4b83eeed23b1ede8de2078a3",
+    "panel.js": "0f9d980c72b12c0569c0384d84e72685f14c32619cc4899e1bbb7eeaf6196ec0",
+    "panel.css": "ff3f0d95e1efab263336eacbdeb7fee03d6c48e9b4028596f09dcc47bfdf1f13"
+  }
+}

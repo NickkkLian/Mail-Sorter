@@ -2,15 +2,18 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-5nyhwSzTgu2n7ZAL4gvhru/QlXgk4oq6kTJUzThiFGQ=' 'sha256-wMCHn0OpH0CosStuYwKrHjIB5qySK0qbEbedXSkpsZQ=' 'sha256-eE7cF0r/xVIRFAe0q+w1WRruq6PPaSYUgis0kDqKOeQ='; connect-src https://api.github.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-5nyhwSzTgu2n7ZAL4gvhru/QlXgk4oq6kTJUzThiFGQ=' 'sha256-wMCHn0OpH0CosStuYwKrHjIB5qySK0qbEbedXSkpsZQ=' 'sha256-IUT3b/WLpBF4W6xFHrtKePIuy0E8Y1KDP/RmTVUk1LY='; connect-src https://api.github.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'">
+<script src="assets/settings-standard/core.js"></script>
 <script>/* appearance boot — runs before any stylesheet so the stored palette and light/dark apply on the first paint */(function(){try{var d=document.documentElement,L=window.localStorage,t=L.getItem('nl-theme'),s=L.getItem('nl-scheme');if(s===null){var o=L.getItem('theme')||L.getItem('qm-theme');if(o==='dark'||o==='light')s=o;}if(t==='paper'||t==='ink')d.setAttribute('data-theme',t);if(s==='dark'||s==='light')d.setAttribute('data-scheme',s);}catch(e){}})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="Sort what matters. Review outdated mail before cleanup. Headersort: a scheduled Action writes a capped digest to your private repo; this board reads it.">
 <meta name="theme-color" content="#f7e9e8" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#130e15" media="(prefers-color-scheme: dark)">
 <title>Headersort</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Crect x='2.5' y='2.5' width='19' height='19' rx='5' stroke='%231d1b24' stroke-width='2'/%3E%3Crect x='14' y='6' width='4' height='4' rx='1' fill='%23ca6980'/%3E%3Cpath d='M6 10l6 4 6-4M6 13v3h12v-3' stroke='%231d1b24' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="assets/app-logo/logo.svg" type="image/svg+xml">
+<link rel="icon" href="assets/app-logo/32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="assets/app-logo/128.png" sizes="128x128">
+<link rel="manifest" href="app.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500..600;1,9..144,400&family=Inter:wght@400..600&family=Space+Mono:wght@400;700&display=swap">
@@ -1243,22 +1246,21 @@ main{width:100%;flex:1 0 auto}
 /* ===== end of family layer v3.1 ===== */
 </style>
 <link rel="stylesheet" href="board/cleanup.css">
+<link rel="stylesheet" href="assets/settings-standard/panel.css">
+<link rel="stylesheet" href="assets/settings-adapter.css">
 </head>
 <body>
 <a class="skip" href="#main" data-i18n="skip">Skip to content</a>
 <header class="topbar">
-  <a class="brand" href="./" aria-label="Headersort home">
-    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true" focusable="false"><rect x="2.5" y="2.5" width="19" height="19" rx="5" stroke="currentColor" stroke-width="2"/><rect x="14" y="6" width="4" height="4" rx="1" fill="var(--point)"/><path d="M6 10l6 4 6-4M6 13v3h12v-3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <a class="brand" href="./" aria-label="Headersort home"><img class="app-logo" src="assets/app-logo/logo.svg" width="32" height="32" alt="">
     <b>Headersort</b><span data-i18n="tagline">Sort what matters. Review outdated mail before cleanup.</span>
   </a>
   <span class="pill" id="pill" title="">Demo<span class="long" id="pillLong"> · fictional mail</span></span>
   <span class="spacer"></span>
-  <button class="switch" id="togBtn" role="switch" aria-checked="false" data-act="toggleEnabled" data-i18n-title="togT" title=""><i aria-hidden="true"></i><span id="togText">—</span></button>
+  <span class="pill" id="togBtn" role="status"><span id="togText">—</span></span>
   <button class="btn btn-ghost" id="refresh" data-act="loadAll" data-i18n="refresh">Refresh</button>
-  <button class="btn btn-ghost" id="langBtn" data-act="toggleLang" aria-label="Switch language">中</button>
-  <button class="btn btn-ghost btn-icon" id="theme" aria-label="Dark mode" aria-pressed="false" title="Dark mode" data-i18n-aria="darkMode" data-i18n-title="darkMode"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg></button>
-  <button type="button" class="btn btn-ghost btn-icon" id="nl-settings-button" aria-haspopup="dialog" aria-label="Settings" title="Settings" data-i18n-aria="settingsBtn" data-i18n-title="settingsBtn"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10.34 5.10L10.58 2.51L13.42 2.51L13.66 5.10A7.1 7.1 0 0 1 15.71 5.95L17.71 4.28L19.72 6.29L18.05 8.29A7.1 7.1 0 0 1 18.90 10.34L21.49 10.58L21.49 13.42L18.90 13.66A7.1 7.1 0 0 1 18.05 15.71L19.72 17.71L17.71 19.72L15.71 18.05A7.1 7.1 0 0 1 13.66 18.90L13.42 21.49L10.58 21.49L10.34 18.90A7.1 7.1 0 0 1 8.29 18.05L6.29 19.72L4.28 17.71L5.95 15.71A7.1 7.1 0 0 1 5.10 13.66L2.51 13.42L2.51 10.58L5.10 10.34A7.1 7.1 0 0 1 5.95 8.29L4.28 6.29L6.29 4.28L8.29 5.95A7.1 7.1 0 0 1 10.34 5.10Z"/><circle cx="12" cy="12" r="3"/></svg></button>
   <a class="btn btn-ghost gh" href="https://github.com/NickkkLian/Mail-Sorter" rel="noopener">GitHub</a>
+  <button type="button" class="btn btn-ghost btn-icon" id="nl-settings-button" aria-haspopup="dialog" aria-label="Settings" title="Settings" data-i18n-aria="settingsBtn" data-i18n-title="settingsBtn"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10.34 5.10L10.58 2.51L13.42 2.51L13.66 5.10A7.1 7.1 0 0 1 15.71 5.95L17.71 4.28L19.72 6.29L18.05 8.29A7.1 7.1 0 0 1 18.90 10.34L21.49 10.58L21.49 13.42L18.90 13.66A7.1 7.1 0 0 1 18.05 15.71L19.72 17.71L17.71 19.72L15.71 18.05A7.1 7.1 0 0 1 13.66 18.90L13.42 21.49L10.58 21.49L10.34 18.90A7.1 7.1 0 0 1 8.29 18.05L6.29 19.72L4.28 17.71L5.95 15.71A7.1 7.1 0 0 1 5.10 13.66L2.51 13.42L2.51 10.58L5.10 10.34A7.1 7.1 0 0 1 5.95 8.29L4.28 6.29L6.29 4.28L8.29 5.95A7.1 7.1 0 0 1 10.34 5.10Z"/><circle cx="12" cy="12" r="3"/></svg></button>
 </header>
 
 <main id="main" tabindex="-1">
@@ -1284,7 +1286,7 @@ main{width:100%;flex:1 0 auto}
   <div class="main-col">
   <h1 class="sr-only" id="pageT">Headersort</h1>
   <div class="page-switch">
-    <button class="switch" id="togBtnPage" role="switch" aria-checked="false" data-act="toggleEnabled" data-i18n-title="togT" title=""><i aria-hidden="true"></i><span id="togTextPage">—</span></button>
+    <span class="pill" id="togBtnPage" role="status"><span id="togTextPage">—</span></span>
   </div>
 
   <section class="card" id="connectCard" hidden>
@@ -1815,8 +1817,22 @@ function syncURL(raw){ try{ const u=new URL(location.href);
   const q=raw!==undefined?raw.trim():(document.getElementById('q')||{value:''}).value.trim(); if(q) u.searchParams.set('q',q); else u.searchParams.delete('q');
   history.replaceState(null,'',u); }catch(e){} }
 
-function cfg(){ try{ const c=JSON.parse(localStorage.getItem(PHA_KEY)||'null'); return Object.assign({},DEFAULTS,c||{}); }catch(e){ return Object.assign({},DEFAULTS); } }
-function configured(){ const c=cfg(); return Boolean(c.owner&&c.token); }
+let mailConnection={},mailCleanupDirty=false;
+function cfg(){return {...DEFAULTS,...mailConnection};}
+function initializeMailConnection(){
+  if(new URLSearchParams(location.search).get('demo')==='1')return;
+  try{
+    if(localStorage.getItem('mail_connection')===null){
+      const raw=HubSettingsRuntime.origin()===HubSettingsContract.HUB_ORIGIN?localStorage.getItem('pha-config'):localStorage.getItem('pha-config:Mail-Sorter');
+      const local=HubSettingsContract.object(raw),stored=JSON.stringify(local);
+      localStorage.setItem('mail_connection',stored);
+      if(localStorage.getItem('mail_connection')!==stored)throw new HubSettingsContract.SettingsError('readback');
+    }
+    mailConnection=HubSettingsRuntime.resolve('Mail-Sorter',HubSettingsContract.object(localStorage.getItem('mail_connection'))).config;
+  }catch{/* Settings shows invalid storage without replacing it. No data is loaded. */}
+}
+initializeMailConnection();
+function configured(){ return HubSettingsContract.complete(cfg()); }
 
 /* ============ language (pha-lang shared; English by default) ============ */
 let lang=(()=>{ try{ return localStorage.getItem('pha-lang')==='zh'?'zh':'en'; }catch(e){ return 'en'; } })();
@@ -1873,10 +1889,11 @@ function b64encode(str){ const bytes=new TextEncoder().encode(str); let bin=''; 
 
 /* ============ GitHub Contents API (same paths, same fields; a save whose sha is out of date is merged by SafeMerge) ============ */
 // fresh: skip the browser cache (a save re-reading the file must see what is there now, not a copy up to 60 s old)
-async function ghGet(path,fresh){
+async function ghGet(path,fresh){return HubSettingsRuntime.track(async()=>{/* settings workflow */
   const c=cfg();
   const r=await fetch(`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${path}`,
     {headers:{Authorization:`Bearer ${c.token}`,Accept:'application/vnd.github+json'},...(fresh?{cache:'no-store'}:{})});
+  HubSettingsRuntime.fileRead(c,path,r.status);
   if(r.status===404) return {data:null,sha:null};
   if(r.status===401||r.status===403) throw Object.assign(new Error('GitHub '+r.status),{kind:'auth',reason:T('GitHub 拒绝了这个令牌（'+r.status+'）','GitHub refused the token ('+r.status+')'),fix:T('粘贴一个对这个仓库有 Contents 读写权限的新令牌。','Paste a new fine-grained token with Contents read and write on this repo.')});
   if(!r.ok) throw Object.assign(new Error('GitHub '+r.status),{kind:'http',reason:T('GitHub 返回 '+r.status,'GitHub answered '+r.status),fix:T('过一分钟再试。','Try again in a minute.')});
@@ -1887,7 +1904,7 @@ async function ghGet(path,fresh){
   }
   try{ if(typeof content!=='string'||(!content&&j.size!==0))throw Error('Empty state');return {data:JSON.parse(b64decode(content)),sha:j.sha}; }
   catch{ throw {kind:'data',reason:T(path+' 不是有效的 JSON',path+' is not valid JSON'),fix:T('刷新重试；未改动任何文件。','Refresh and retry; no file was changed.')}; }
-}
+});}
 // One PUT; returns the Response. A 409 used to be retried here with the same body, which wrote this tab's copy of
 // config.json over whatever had been changed since it loaded (found 2026-09-23). SafeMerge.save now handles it.
 function ghPut(path,obj,sha,message){
@@ -1899,36 +1916,20 @@ function ghPut(path,obj,sha,message){
 }
 // Save config.json: a stale save re-reads the file and merges three ways (base = as this page last read or saved it);
 // only a value changed on both sides asks. One save at a time, so two clicks never race on one sha.
-const saveConf=SafeMerge.serial(async message=>{
+const saveConf=SafeMerge.serial(async message=>{return HubSettingsRuntime.track(async()=>{/* settings workflow */
   const sent=SafeMerge.snapshot(CONF);
   const r=await SafeMerge.save({data:sent,sha:SHA_CONF,base:BASE_CONF,T,
     put:(d,sha)=>ghPut('mail/config.json',d,sha,message),
-    get:async()=>{ const g=await ghGet('mail/config.json',true); return {json:g.data,sha:g.sha}; }});
+    get:async()=>{return HubSettingsRuntime.track(async()=>{/* settings workflow */ const g=await ghGet('mail/config.json',true); return {json:g.data,sha:g.sha}; });}});
   SHA_CONF=r.sha; BASE_CONF=SafeMerge.snapshot(r.data);
   // merged: the page takes the merged file plus anything changed here meanwhile (otherwise the next save would treat
   // what came from elsewhere as deleted here)
   if(r.merged){ CONF=SafeMerge.rebase(sent,r.data,CONF); render(); }
   return r;
-});
+});});
 
 /* ============ settings ============ */
-/* Settings dialog (design system v3.1): palette and light/dark first, then the repo connection. The token field
-   lives only in the dialog; a visitor on the public page gets the connect card instead of a pop-up. */
-function setStatus(msg){ const st=$('setStatus'); if(st) st.textContent=msg; }
-function connectSection(){
-  const box=document.createElement('div'); box.className='nl-connect';
-  box.innerHTML=`<h3>${esc(Ls('setT'))}</h3><p class="hint">${Ls('setHint')}</p>
-    <div class="row"><input id="tokenInput" type="password" placeholder="github_pat_…" autocomplete="off" aria-label="${esc(T('GitHub 令牌','GitHub token'))}">
-    <button type="button" class="btn btn-primary" id="saveTokenBtn">${esc(Ls('saveConnect'))}</button></div>
-    <p class="hint" id="setStatus" role="status"></p>`;
-  box.querySelector('#saveTokenBtn').addEventListener('click',saveToken);
-  box.querySelector('#tokenInput').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); saveToken(); } });
-  box.querySelector('#setStatus').textContent=connectionStatus();
-  return box;
-}
-function settingsOptions(focusToken){ return { strings:Appearance.STRINGS[lang], sections:[connectSection], focus:focusToken?'#tokenInput':null }; }
-// Esc or Done returns focus to whatever opened the dialog: the gear, or the Connect… button on the page
-function openSettings(focusToken,opener){ Appearance.openSettings(opener||$('nl-settings-button'),settingsOptions(focusToken)); }
+function openSettings(focusToken,opener){return SuiteSettings.open(focusToken?'connection':'connection');}
 // "✓ Connected" is said only after the two files have actually been read (it used to follow every save, loaded or not)
 function connectionStatus(){
   if(DEMO) return T('演示数据（全部虚构，未连接任何仓库）','Demo data — all fictional, nothing connected');
@@ -1938,24 +1939,12 @@ function connectionStatus(){
   if(configured()) return T('已保存，加载中…','Saved, loading…');
   return T('先粘贴 GitHub 令牌','Paste a GitHub token');
 }
-async function saveToken(){
-  const token=$('tokenInput').value.trim();
-  if(!token){ setStatus(T('请输入令牌','Enter a token')); return; }
-  if(DEMO){ $('tokenInput').value=''; setStatus(T('演示模式不连接任何仓库，令牌没有保存。去掉地址里的 ?demo=1 再连接。','Demo mode never connects, so the token was not saved. Open the board without ?demo=1 to connect.')); return; }
-  const cur=cfg(); const next=Object.assign({},JSON.parse(localStorage.getItem(PHA_KEY)||'{}'),{owner:cur.owner||DEFAULTS.owner,repo:cur.repo||DEFAULTS.repo,token});
-  localStorage.setItem(PHA_KEY,JSON.stringify(next));
-  $('tokenInput').value='';
-  setStatus(connectionStatus());
-  await loadAll();
-  setStatus(connectionStatus());
-}
-
 /* ============ load + render ============ */
 // A file that is not there (404) means "not set up yet". Anything else — a refused token, no network, GitHub failing — is an
 // error the page shows with what to do (2026-09-16: both reads swallowed every error, so an expired token
 // showed the setup guide and the settings said "✓ Connected"). Data already on screen stays while the error shows.
 let LOADED=false, LOAD_ERROR=null;
-async function loadAll(){
+async function loadAll(){return HubSettingsRuntime.track(async()=>{/* settings workflow */
   if(DEMO){ MAIL=DEMO_MAIL; CONF=DEMO_CONF; SHA_CONF=null; render(); return true; }
   if(!configured()){ render(); return false; }
   try{
@@ -1964,7 +1953,7 @@ async function loadAll(){
   }catch(e){ LOAD_ERROR=e.kind?e:{kind:'network',reason:T('连不上 GitHub（','Could not reach GitHub (')+(e.message||e)+')',fix:T('检查网络后重试。','Check the connection, then try again.')}; }
   render();
   return !LOAD_ERROR;
-}
+});}
 function loadErrorCard(){
   const box=$('loadError'); box.hidden=!LOAD_ERROR||DEMO;
   if(box.hidden){ box.innerHTML=''; return; }
@@ -2020,7 +2009,8 @@ function subjectFor(subj){
   }
   return out+rest;
 }
-async function toggleEnabled(){
+async function toggleEnabled(){return HubSettingsRuntime.track(async()=>{/* settings workflow */
+  if(mailCleanupDirty){toast(T('请先保存或取消清理设置。','Save or discard cleanup settings first.'),true);return;}
   if(DEMO){ CONF.enabled=!(CONF.enabled!==false); render(); toast(T('演示模式：开关不会真的写入','Demo mode — the toggle is not persisted')); return; }
   if(!CONF){ toast(T('仓库里还没有 mail/config.json','No mail/config.json in the repo yet'),true); return; }
   const next=!(CONF.enabled!==false);
@@ -2029,7 +2019,7 @@ async function toggleEnabled(){
     // after a merge the switch shows what the file says, which is not always `next` (both sides changed it, the other kept)
     toast(CONF&&CONF.enabled!==false?T('已开启定时自动分类','Scheduled classification ON'):T('已关闭（定时任务将直接跳过）','OFF — the scheduled job skips itself')); }
   catch(e){ CONF.enabled=!next; render(); toast(T('切换失败: ','Toggle failed: ')+e.message,true); }
-}
+});}
 function setFilter(c){ filter=c; syncURL(); render(); }
 // category keys come from the digest, so they never go into an inline handler: the chip carries the key in data-filter
 // (HTML-escaped) and this one listener reads it back as plain text
@@ -2039,7 +2029,7 @@ function onSearch(v){ query=v.trim().toLowerCase(); syncURL(v); renderList(); }
 function clearFilters(){ query=''; $('q').value=''; setFilter('all'); $('q').focus(); }
 // The page's Content-Security-Policy runs no inline event-handler attribute, so buttons name their action in data-act
 // and this one listener calls it; the search box gets its own listener.
-const ACTIONS={ toggleEnabled:()=>toggleEnabled(), loadAll:()=>loadAll(), toggleLang:()=>toggleLang(), showAction:()=>showAction(),
+const ACTIONS={ loadAll:()=>loadAll(), toggleLang:()=>toggleLang(), showAction:()=>showAction(),
   openSettings:(b)=>openSettings(true,b), clearFilters:()=>clearFilters() };
 document.addEventListener('click',e=>{ const b=e.target.closest('[data-act]'); if(b && Object.prototype.hasOwnProperty.call(ACTIONS,b.dataset.act)) ACTIONS[b.dataset.act](b); });
 $('q').addEventListener('input',e=>onSearch(e.target.value));
@@ -2084,7 +2074,7 @@ function render(){ const find=focusKey(document.activeElement); renderPage(); re
 function renderPage(){
   const on=CONF?CONF.enabled!==false:false;
   const togLabel=!CONF?T('分类: —','Classify: —'):(on?T('分类: 开','Classify: on'):T('分类: 关','Classify: off'));
-  ['togBtn','togBtnPage'].forEach(id=>{ const b=$(id); b.setAttribute('aria-checked',String(!!CONF&&on)); b.disabled=!CONF; });
+  ['togBtn','togBtnPage'].forEach(id=>{ const b=$(id); b.setAttribute('aria-label',T('定时分类：','Scheduled classification: ')+togLabel); });
   ['togText','togTextPage'].forEach(id=>{ $(id).textContent=togLabel; });
   $('connectCard').hidden=DEMO||configured();
   $('setupBox').hidden=!(configured()&&!MAIL&&!DEMO&&!LOAD_ERROR);
@@ -2181,8 +2171,7 @@ const DEMO_CONF={enabled:true, keep_items:300, categories:[
   {key:"promo",label:"Promotions"},{key:"reading",label:"Reading"}]};
 
 /* ============ theme ============ */
-Appearance.bindToggle($('theme'));   // ◐ switches light/dark only (inlined appearance.js)
-Appearance.bindSettings($('nl-settings-button'),()=>settingsOptions(false));   // the gear: palette, light/dark, repo connection
+// Canonical Settings owns appearance and connection controls.
 
 /* ============ start ============ */
 document.querySelector('.skip').addEventListener('click',e=>{ e.preventDefault(); firstHeading().focus(); });   // no #main in the address
@@ -2190,14 +2179,20 @@ globalThis.HeadersortBoard={
   demo:DEMO, available:()=>DEMO||Boolean(CONF&&configured()&&!LOAD_ERROR),
   getConfig:()=>CONF,
   get:(path,fresh)=>ghGet(path,fresh),
-  put:async(path,data,sha,message)=>{const r=await ghPut(path,data,sha,message);if(!r.ok)throw Error("Save conflict or unavailable");return r.json();},
-  saveConfig:async value=>{const before=CONF;CONF=value;try{await saveConf("mail: update cleanup settings");}catch{CONF=before;throw Error("Save unavailable");}},
+  put:async(path,data,sha,message)=>{return HubSettingsRuntime.track(async()=>{/* settings workflow */const r=await ghPut(path,data,sha,message);if(!r.ok)throw Error("Save conflict or unavailable");return r.json();});},
+  isDirty:()=>mailCleanupDirty,markDirty:value=>{mailCleanupDirty=Boolean(value);},
+  saveConfig:async(value,baseline=CONF)=>HubSettingsRuntime.track(async()=>{return HubSettingsRuntime.track(async()=>{/* settings workflow */const before=CONF;CONF=SafeMerge.formChanges(baseline,value,CONF);try{await saveConf("mail: update cleanup settings");}catch{CONF=SafeMerge.rebase(value,before,CONF);throw Error("Save unavailable");}});}),
   subscribe:fn=>document.addEventListener("headersort-data",fn),
   language:()=>lang
 };
 applyStatic();
 loadAll();
 </script>
+<script src="assets/settings-standard/backup.js"></script>
+<script src="assets/settings-standard/adapter-helpers.js"></script>
+<script src="assets/settings-standard/field-group.js"></script>
+<script src="assets/settings-adapter.js"></script>
+<script src="assets/settings-standard/panel.js"></script>
 <script type="module" src="board/cleanup.mjs"></script>
 </body>
 </html>

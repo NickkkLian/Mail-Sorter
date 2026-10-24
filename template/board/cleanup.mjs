@@ -4,17 +4,18 @@ import {demoBridge} from './demo.mjs';
 
 export function mountReview(bridge,document){
   const host=document.getElementById('cleanup-panel');if(!host)return;
-  let controller,busy=false,configForm;const say=text=>{const status=host.querySelector('[role=status]');status.textContent=text;status.setAttribute('tabindex','-1');status.focus();};
+  let controller,busy=false,configForm,configBaseline;const say=text=>{const status=host.querySelector('[role=status]');status.textContent=text;status.setAttribute('tabindex','-1');status.focus();};
   const el=(tag,text,attrs={})=>{const n=document.createElement(tag);if(text)n.textContent=text;for(const[k,v]of Object.entries(attrs))n.setAttribute(k,String(v));return n;};
   const button=(text,fn)=>{const b=el('button',text,{type:'button',class:'btn btn-sm'});b.addEventListener('click',()=>perform(fn,b));return b;};
-  async function perform(fn,target){if(busy)return;busy=true;if(target)target.disabled=true;try{await fn();}catch(e){say(['The review list changed. Refresh before approving.','Refresh the review list.'].includes(e.message)?e.message:'Could not save. Refresh and try again.');}finally{busy=false;if(target?.isConnected)target.disabled=false;}}
+  async function perform(fn,target){if(busy)return;busy=true;if(target)target.disabled=true;try{await (globalThis.HubSettingsRuntime?HubSettingsRuntime.track(fn):fn());}catch(e){say(['The review list changed. Refresh before approving.','Refresh the review list.'].includes(e.message)?e.message:'Could not save. Refresh and try again.');}finally{busy=false;if(target?.isConnected)target.disabled=false;}}
   function checkbox(text,on,fn){const label=el('label'),input=el('input',null,{type:'checkbox'});input.checked=on;input.addEventListener('change',()=>fn(input.checked));label.append(input,document.createTextNode(' '+text));return {label,input};}
   function select(values,value){const n=el('select');for(const[v,text]of values){const option=el('option',text,{value:v});option.selected=v===value;n.append(option);}return n;}
-  async function load(){
+  async function load(){return (globalThis.HubSettingsRuntime?fn=>HubSettingsRuntime.track(fn):fn=>fn())(async()=>{
+    if(bridge.isDirty?.())return;
     if(!bridge.available()){host.hidden=true;return;}host.hidden=false;
     if(!controller)controller=new ReviewController({get:bridge.get,put:bridge.put,getConfig:bridge.getConfig,saveConfig:bridge.saveConfig});
     try{await controller.load();render();}catch{host.replaceChildren(el('h2','Cleanup review'),el('p','Could not load the review list.'),button('Try again',load),el('p','',{role:'status','aria-live':'polite'}));}
-  }
+  });}
   function render(){
     const c=settings(bridge.getConfig()),{proposal:p,journal,undo}=controller.data;
     host.replaceChildren(el('h2','Cleanup review'),el('p','Review outdated mail before it leaves your inbox. Unselected items stay. Changes are rechecked by the next runner.'),el('p','',{role:'status','aria-live':'polite',class:'review-status'}));
@@ -47,7 +48,7 @@ export function mountReview(bridge,document){
       if(run.skipped_count)host.append(el('small','Some selected messages no longer qualified and stayed in place.'));
       if(run.entries.some(x=>x.action==='trash'))host.append(el('small','Trash undo is available only before Gmail removes mail after 30 days.'));
     }
-    const details=el('details'),summary=el('summary','Cleanup settings and protected list');details.append(summary);configForm=structuredClone(c);const grid=el('div',null,{class:'review-settings'});
+    const details=el('details'),summary=el('summary','Cleanup settings and protected list');details.append(summary);configForm=structuredClone(c);configBaseline=structuredClone(c);const grid=el('div',null,{class:'review-settings'});
     grid.append(checkbox('Read bodies for sorting and cleanup',c.read_bodies,on=>{configForm.read_bodies=on;}).label);
     grid.append(checkbox('Only scan the Primary tab',c.primary_only,on=>{configForm.primary_only=on;}).label);
     const cadence=el('label','Hours between review lists'),hours=el('input',null,{type:'number',min:1,max:720,value:c.frequency_hours});hours.addEventListener('change',()=>{configForm.frequency_hours=Number(hours.value);});cadence.append(hours);grid.append(cadence);
@@ -61,8 +62,11 @@ export function mountReview(bridge,document){
     details.append(el('p','Trash is deleted by Gmail after 30 days. Archive keeps mail in All Mail. Existing labels remain.'));
     for(const [key,title]of [['senders','Protected senders'],['domains','Protected domains'],['labels','Additional keep labels']]){const label=el('label',title+' (one per line)'),area=el('textarea',null,{'aria-label':title});area.value=c.protected[key].join('\n');area.addEventListener('change',()=>{configForm.protected[key]=area.value.split(/\n/).map(x=>x.trim()).filter(Boolean);});label.append(area);details.append(label);}
     const rulesLabel=el('label','Sender label rules (JSON address to category)'),rulesInput=el('textarea',null,{'aria-label':'Sender label rules'});rulesInput.value=JSON.stringify(c.sender_labels,null,2);rulesInput.addEventListener('change',()=>{try{configForm.sender_labels=JSON.parse(rulesInput.value);}catch{configForm.sender_labels=null;}});rulesLabel.append(rulesInput);details.append(rulesLabel);
-    details.append(button('Save cleanup settings',async()=>{await bridge.saveConfig(settings(configForm));say('Settings saved. The next runner will create a new review before applying changed permissions.');}));host.append(details);
+    details.append(button('Save cleanup settings',async()=>{await bridge.saveConfig(settings(configForm),configBaseline);bridge.markDirty?.(false);await load();say('Settings saved. The next runner will create a new review before applying changed permissions.');}));host.append(details);
   }
+  host.addEventListener('input',e=>{if(e.target.closest('.review-settings,details'))bridge.markDirty?.(true);});
+  host.addEventListener('change',e=>{if(e.target.closest('.review-settings,details'))bridge.markDirty?.(true);});
+  bridge.discardCleanupDraft=async()=>{bridge.markDirty?.(false);await load();};
   bridge.subscribe(load);const ready=load();return {load,ready,get controller(){return controller;}};
 }
 if(globalThis.document&&globalThis.HeadersortBoard)mountReview(globalThis.HeadersortBoard.demo?demoBridge(globalThis.HeadersortBoard):globalThis.HeadersortBoard,globalThis.document);
