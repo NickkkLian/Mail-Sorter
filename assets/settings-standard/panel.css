@@ -19,3 +19,21 @@
 @media(prefers-reduced-motion:reduce){.suite-panel *,.suite-confirm *{scroll-behavior:auto;animation:none;transition:none}}
 
 .suite-panel [hidden]{display:none!important}
+
+/* v2: app section, backup, collapsed connections, reset. */
+.suite-panel{inset:12px 12px auto auto;width:420px;height:auto;max-height:calc(100dvh - 24px);border-radius:0}
+.suite-panel-header{padding:16px 20px}.suite-panel-body{padding:0 20px 16px}
+.suite-panel section{padding:16px 0}.suite-panel section:last-child{border-bottom:0;padding-bottom:0}
+.suite-panel h2{font-size:1rem;margin-bottom:8px}.suite-panel p{margin:8px 0;line-height:1.5}
+.suite-panel p:empty{display:none}.suite-panel .suite-actions{margin-top:12px}
+.suite-panel #suite-connections>details{border-top:1px solid var(--ss-line)}
+.suite-panel #suite-connections>details>summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:8px;font-size:.875rem;list-style:none}
+.suite-panel #suite-connections>details>summary::after{content:'›';margin-left:auto}.suite-panel #suite-connections>details[open]>summary::after{content:'⌄'}
+.suite-panel #suite-connections section{padding-top:8px;border:0}
+@media(max-width:639px){.suite-panel{inset:12px 12px auto;width:calc(100vw - 24px);max-width:calc(100vw - 24px);height:auto;max-height:calc(100dvh - 24px);border:1px solid var(--ss-line)}.suite-panel-header{padding:16px}.suite-panel-body{padding:0 16px 16px}}
+
+/* Programmatic title focus keeps screen-reader context without a pointer focus box. */
+#suite-settings-title:focus:not(:focus-visible){outline:none}
+#suite-settings-title:focus-visible{outline:2px solid currentColor;outline-offset:3px}
+.suite-panel[data-open-input="pointer"] #suite-settings-title:focus{outline:none}
+.suite-panel[data-open-input="keyboard"] #suite-settings-title:focus{outline:2px solid currentColor;outline-offset:3px}

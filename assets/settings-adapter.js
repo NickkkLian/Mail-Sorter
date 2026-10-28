@@ -3,7 +3,7 @@
   const C=HubSettingsContract,R=HubSettingsRuntime,H=SuiteSettingsHelpers,kit=H.kitPreferences('Mail-Sorter');
   const gear=document.getElementById('nl-settings-button');let classifierDirty=false,dealtReadDirty=false,secondMailboxDirty=false;
   const adapter=window.settingsAdapter={
-    ...kit,app:'Mail-Sorter',demo:DEMO,connectionSlot:'mail_connection',
+    ...kit,resetDescription:{en:' and reset the palette and single-key shortcuts',zh:'并恢复配色与单键快捷键'},app:'Mail-Sorter',appSection:{en:"Your mail",zh:"你的邮件"},demo:DEMO,connectionSlot:'mail_connection',
     routing:'mail/mail.json digest; mail/config.json classifier settings; mail/dealt-queue.json dealt requests; mail/cleanup-* review, approval and undo files.',
     language:()=>lang,setLanguage(value){if(value!==lang){lang=value;applyStatic();render();}H.gear(gear,T('设置','Settings'));},
     connection:()=>({...mailConnection}),unsaved:()=>mailCleanupDirty||classifierDirty||dealtReadDirty||secondMailboxDirty,
@@ -16,7 +16,7 @@
     dataMode:'repository',
     backupHelp:{en:'Mail, classifier configuration, cleanup review, approval and undo history are managed in the private data repository. This digest is not a complete mailbox backup. Existing review and Undo controls stay below the digest; there is no browser whole-repository restore. Reset only changes this app’s appearance and shortcut preferences.',zh:'邮件、分类配置、清理审核、批准与撤销记录由私有数据仓库管理。摘要不是完整邮箱备份。原审核与撤销控件保留在摘要下方；浏览器没有整仓恢复功能。重置仅更改此应用的外观与快捷键偏好。'},
     appControls(container,settings){
-      let intro=container.querySelector('p');if(!intro){intro=document.createElement('p');container.append(intro);}intro.textContent=T('定时分类开关只保存 enabled；后台模型、Gmail 凭据、清理规则与审核流程保持各自管理。','The scheduled classifier switch saves only enabled. Backend models and credentials, cleanup rules and review keep their existing controls.');
+      let intro=container.querySelector('p');if(!intro){intro=document.createElement('p');container.append(intro);}intro.textContent=T('保存定时分类开关可开启或关闭自动分类；后台模型、Gmail 凭据、清理规则与审核流程保持各自管理。','Save the scheduled classification switch to turn automatic sorting on or off. Backend models and credentials, cleanup rules and review keep their existing controls.');
       let group=container.querySelector('#suite-classifier');if(!group){group=document.createElement('div');group.id='suite-classifier';container.append(group);}
       if(!group.firstChild){
         const label=document.createElement('label'),input=document.createElement('input'),save=document.createElement('button'),status=document.createElement('p'),review=document.createElement('button'),discard=document.createElement('button');
@@ -42,7 +42,7 @@
       }
       const dealtInput=dealt.querySelector('input'),dealtSave=dealt.querySelector('button');
       dealt.querySelector('label').textContent=T('将已处理邮件标为已读','Mark dealt mail as read');
-      dealt.querySelector('.hint').textContent=T('默认开启。下次 mail-sync 运行时生效，同时添加类别标签并保留在收件箱。','On by default. Applies on the next mail-sync run, with a category label; mail stays in Inbox.');
+      dealt.querySelector('.hint').textContent=T('默认开启。下次邮件同步时生效，同时添加类别标签并保留在收件箱。','On by default. Applies the next time mail is synced, with a category label; mail stays in Inbox.');
       if(!dealtInput.dataset.dirty){dealtInput.checked=CONF?.mark_dealt_read!==false;dealtInput._base=dealtInput.checked;}
       dealtInput.disabled=!CONF;dealtSave.textContent=T('保存已处理邮件设置','Save dealt mail setting');dealtSave.disabled=!CONF||!dealtReadDirty||Boolean(R.pending);
       let second=container.querySelector('#suite-second-settings');if(!second){
@@ -57,10 +57,10 @@
       }
       const secondInput=second.querySelector('input'),secondSave=second.querySelector('button');
       second.querySelector('label').textContent=T('启用第二邮箱','Enable second mailbox');
-      second.querySelector('.hint').textContent=T('默认关闭。需在数据仓库的 Actions secrets 设置 GMAIL2_USER 和 GMAIL2_APP_PASSWORD。关闭会暂停该邮箱的同步、处理和撤销。','Off by default. Set GMAIL2_USER and GMAIL2_APP_PASSWORD in the data repository’s Actions secrets. Turning off pauses this mailbox’s sync, dealt actions and Undo.');
+      second.querySelector('.hint').textContent=T('默认关闭。请在数据仓库的 Actions secrets 中添加第二邮箱地址与应用密码。关闭会暂停该邮箱的同步、处理和撤销。','Off by default. Add the second mailbox’s address and app password to the data repository’s Actions secrets. Turning off pauses this mailbox’s sync, dealt actions and Undo.');
       if(!secondInput.dataset.dirty){secondInput.checked=CONF?.second_mailbox_enabled===true;secondInput._base=secondInput.checked;}
       secondInput.disabled=!CONF;secondSave.textContent=T('保存第二邮箱设置','Save second mailbox setting');secondSave.disabled=!CONF||!secondMailboxDirty||Boolean(R.pending);
-      kit.shortcuts(container);
+      let palette=container.querySelector('#suite-palette');if(!palette){const label=document.createElement('label');label.htmlFor='suite-palette';palette=document.createElement('select');palette.id='suite-palette';container.append(label,palette);palette.onchange=()=>{try{R.write(adapter.app,{palette:palette.value});kit.setPalette(palette.value);SuiteSettings.refresh();}catch{SuiteHeaderEntry.announce(settingsAdapter.language()==='zh'?'无法保存配色，请重试。':'Could not save the palette. Try again.');}};}palette.previousElementSibling.textContent=T('配色','Palette');palette.replaceChildren(...kit.palette.values.map(value=>{const option=document.createElement('option');option.value=value;option.textContent=T(kit.palette.labels[value].zh,kit.palette.labels[value].en);return option;}));palette.value=R.read(adapter.app).palette??kit.palette.legacy();kit.shortcuts(container);
     },
     install(settings){gear.onclick=()=>settings.open();H.gear(gear,T('设置','Settings'));},
   };
