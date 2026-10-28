@@ -27,8 +27,8 @@ window.SuiteSettingsHelpers={
     return paused=>{note.hidden=!paused;for(const el of elements)if(el)el.inert=paused;const zh=window.settingsAdapter.language()==='zh';button.textContent=zh?'连接已更改；打开设置并重新加载':'Connection changed; open Settings and reload';button.onclick=()=>window.SuiteSettings.open('connection');};
   },
   gear(button,label){
-    button.classList.add('suite-gear');button.removeAttribute('data-i18n');button.removeAttribute('data-i18n-aria');button.setAttribute('aria-label',label);button.setAttribute('title',label);button.setAttribute('aria-keyshortcuts','Meta+, Control+,');
-    button.innerHTML='<svg aria-hidden="true" viewBox="0 0 24 24"><path d="m9 3-.7 2.3-2 .9-2.2-.5-1.5 2.6L4.2 10v2l-1.6 1.7 1.5 2.6 2.2-.5 2 .9L9 19h3l.7-2.3 2-.9 2.2.5 1.5-2.6-1.6-1.7v-2l1.6-1.7-1.5-2.6-2.2.5-2-.9L12 3z"/><circle cx="10.5" cy="11" r="3"/></svg><span>'+label+'</span>';
+    button.innerHTML='<svg aria-hidden="true" viewBox="0 0 24 24"><path d="m10 3-.7 2.3-2 .9-2.2-.5-1.5 2.6L5.2 10v2l-1.6 1.7 1.5 2.6 2.2-.5 2 .9L10 19h3l.7-2.3 2-.9 2.2.5 1.5-2.6-1.6-1.7v-2l1.6-1.7-1.5-2.6-2.2.5-2-.9L13 3z"/><circle cx="11.5" cy="11" r="3"/></svg>';
+    SuiteHeaderEntry.mount(button);
   },
   themeEngine(){
     const converted=[];
