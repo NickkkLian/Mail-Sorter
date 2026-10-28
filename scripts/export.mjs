@@ -7,10 +7,10 @@ const ROOT=fileURLToPath(new URL('../',import.meta.url)),WORKSPACE=path.dirname(
 export const FILES=[
   'index.html','apple-touch-icon.png','check-csp.mjs','package.json','package-lock.json','README.md','LICENSE',
   'mail/config.example.json','mail/rules.json',
-  ...['settings','rules','core','imap','metadata','classify','llm','privacy','intelligence','storage'].map(x=>'mail/scripts/'+x+'.mjs'),
+  ...['settings','rules','core','imap','metadata','classify','llm','privacy','intelligence','storage','mailboxes','mailbox-key'].map(x=>'mail/scripts/'+x+'.mjs'),
   ...['review.mjs','cleanup.mjs','demo.mjs','cleanup.css'].map(x=>'board/'+x),
   ...['PRIVATE-SET.md','synthetic.mjs','synthetic.json','score-cleanup.mjs'].map(x=>'eval/'+x),
-  ...['stage1.test.mjs','stage2.test.mjs','calendar.test.mjs','stage3.test.mjs','adapter.test.mjs','round2.test.mjs','precedence-coverage.test.mjs','tune-notices.test.mjs','release.test.mjs','helpers/fake-imap.mjs'].map(x=>'test/'+x),
+  ...['stage1.test.mjs','stage2.test.mjs','calendar.test.mjs','stage3.test.mjs','adapter.test.mjs','round2.test.mjs','precedence-coverage.test.mjs','tune-notices.test.mjs','release.test.mjs','mailboxes.test.mjs','helpers/fake-imap.mjs'].map(x=>'test/'+x),
   'scripts/check.mjs','scripts/export.mjs','scripts/offline-guard.mjs'
 ];
 const hash=b=>createHash('sha256').update(b).digest('hex');

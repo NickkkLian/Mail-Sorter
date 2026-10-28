@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-5nyhwSzTgu2n7ZAL4gvhru/QlXgk4oq6kTJUzThiFGQ=' 'sha256-wMCHn0OpH0CosStuYwKrHjIB5qySK0qbEbedXSkpsZQ=' 'sha256-WNEd22otewD0Y1mck/WaqaWMVsLAypCd5WD+1YsuD0w='; connect-src https://api.github.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-5nyhwSzTgu2n7ZAL4gvhru/QlXgk4oq6kTJUzThiFGQ=' 'sha256-wMCHn0OpH0CosStuYwKrHjIB5qySK0qbEbedXSkpsZQ=' 'sha256-hd7bgmTxK5TC7dUeJAq5lyAKxFhZmprU6bV/OFqRMuw='; connect-src https://api.github.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'">
 <script src="assets/settings-standard/core.js"></script>
 <script>/* appearance boot — runs before any stylesheet so the stored palette and light/dark apply on the first paint */(function(){try{var d=document.documentElement,L=window.localStorage,t=L.getItem('nl-theme'),s=L.getItem('nl-scheme');if(s===null){var o=L.getItem('theme')||L.getItem('qm-theme');if(o==='dark'||o==='light')s=o;}if(t==='paper'||t==='ink')d.setAttribute('data-theme',t);if(s==='dark'||s==='light')d.setAttribute('data-scheme',s);}catch(e){}})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -1314,6 +1314,7 @@ main{width:100%;flex:1 0 auto}
   </section>
   <div class="row" id="filterRow" hidden>
     <input type="search" id="q" placeholder="Search subject or sender…" aria-label="Search" data-i18n-ph="searchPh">
+    <label class="hint" for="mailbox-filter"><span id="mailbox-filter-label">Mailbox</span> <select id="mailbox-filter"><option value="all">All mailboxes</option></select></label>
     <div class="filters" id="filter" role="group" aria-label="Filter by category"></div>
   </div>
   <section id="dealt-toolbar" class="card" aria-label="Dealt mail" hidden></section>
@@ -1809,11 +1810,14 @@ let MAIL=null, CONF=null, SHA_CONF=null;
 // mail/config.json as this page last read or saved it: the base a stale save merges against. It stays null until a read
 // succeeds, and a page without it refuses to write over the file.
 let BASE_CONF=null;
-let filter='all', query='';
+let filter='all', query='', mailboxFilter='all';
+const mailKey=i=>(i.mailbox&&i.mailbox!=='primary'?i.mailbox+':':'')+i.gmailId;
+document.getElementById('mailbox-filter').addEventListener('change',e=>{mailboxFilter=e.target.value;syncURL();render();});
 // Filter and search live in the address, so a filtered board survives a reload and can be shared (?demo=1 is kept).
-try{ const p0=new URLSearchParams(location.search); filter=p0.get('filter')||'all'; const q0=p0.get('q')||''; query=q0.trim().toLowerCase();
+try{ const p0=new URLSearchParams(location.search); filter=p0.get('filter')||'all'; mailboxFilter=p0.get('mailbox')||'all'; const q0=p0.get('q')||''; query=q0.trim().toLowerCase();
   if(q0) document.addEventListener('DOMContentLoaded',()=>{ const b=document.getElementById('q'); if(b) b.value=q0; }); }catch(e){}
 function syncURL(raw){ try{ const u=new URL(location.href);
+  if(mailboxFilter==='all') u.searchParams.delete('mailbox'); else u.searchParams.set('mailbox',mailboxFilter);
   if(filter==='all') u.searchParams.delete('filter'); else u.searchParams.set('filter',filter);
   const q=raw!==undefined?raw.trim():(document.getElementById('q')||{value:''}).value.trim(); if(q) u.searchParams.set('q',q); else u.searchParams.delete('q');
   history.replaceState(null,'',u); }catch(e){} }
@@ -2027,7 +2031,7 @@ function setFilter(c){ filter=c; syncURL(); render(); }
 document.getElementById('filter').addEventListener('click',e=>{ const b=e.target.closest('button[data-filter]'); if(b) setFilter(b.dataset.filter); });
 function showAction(){ setFilter('__action'); const first=document.querySelector('#list .mail a.subj'); if(first) first.focus(); }
 function onSearch(v){ query=v.trim().toLowerCase(); syncURL(v); renderList(); }
-function clearFilters(){ query=''; $('q').value=''; setFilter('all'); $('q').focus(); }
+function clearFilters(){ mailboxFilter='all'; query=''; $('q').value=''; setFilter('all'); $('q').focus(); }
 // The page's Content-Security-Policy runs no inline event-handler attribute, so buttons name their action in data-act
 // and this one listener calls it; the search box gets its own listener.
 const ACTIONS={ loadAll:()=>loadAll(), toggleLang:()=>toggleLang(), showAction:()=>showAction(),
@@ -2121,6 +2125,10 @@ function renderPage(){
     $('trend').setAttribute('aria-label',per.map(p=>`${fmtDay(p.d)}: ${p.n}`).join(', '));
     $('trendX').innerHTML=per.map(p=>`<span>${fmtDay(p.d)}</span>`).join(''); }
   $('filterRow').hidden=!items.length;
+  $('mailbox-filter-label').textContent=T('邮箱','Mailbox');
+  const boxes=[...new Set(items.map(i=>i.mailbox||'primary'))];
+  $('mailbox-filter').innerHTML='<option value="all">'+T('全部邮箱','All mailboxes')+'</option>'+boxes.map(key=>'<option value="'+esc(key)+'">'+esc(items.find(i=>(i.mailbox||'primary')===key)?.mailbox_address||(key==='secondary'?T('第二邮箱','Second mailbox'):T('主邮箱','Primary mailbox')))+'</option>').join('');
+  $('mailbox-filter').value=mailboxFilter;
   const chip=(key,label,n)=>`<button type="button" aria-pressed="${filter===key?'true':'false'}" data-filter="${esc(key)}">${label}<span class="n">${n}</span></button>`;
   $('filter').innerHTML=items.length?[chip('all',T('全部','All'),items.length),chip('__action',T('待处理','Action'),action)].concat(cats.map(k=>chip(k,esc(catLabel(k)),counts[k]))).join(''):'';
   renderList();
@@ -2135,17 +2143,19 @@ function renderList(){
   shownDealtItems=[];
   const m=MAIL||{items:[]}; let items=m.items||[];
   if(!(m.items||[]).length){ document.dispatchEvent(new Event('headersort-list')); $('list').innerHTML=DEMO||configured()?`<div class="empty"><h3>${T('摘要还是空的','The digest is empty')}</h3><p>${lastRun(m)?T('上次运行（'+lastRun(m)+'）没有新邮件可加。','Last run '+lastRun(m)+' found nothing to add.'):T('定时任务跑完第一次后这里会出现邮件。','Emails appear here after the first scheduled run.')}</p><button class="btn btn-sm" data-act="loadAll">${T('刷新','Refresh')}</button></div>`:''; return; }
+  if(mailboxFilter!=='all') items=items.filter(i=>(i.mailbox||'primary')===mailboxFilter);
   if(filter==='__action') items=items.filter(i=>i.action); else if(filter!=='all') items=items.filter(i=>i.category===filter);
   if(query) items=items.filter(i=>(i.subject+' '+i.from).toLowerCase().includes(query));
   if(!items.length){ document.dispatchEvent(new Event('headersort-list')); $('list').innerHTML=`<div class="empty"><h3>${T('没有匹配的邮件','No mail matches')}</h3><p>${T('换个类别或清空搜索。','Pick another category or clear the search.')}</p><button class="btn btn-sm" data-act="clearFilters">${T('清除筛选','Clear filters')}</button></div>`; return; }
   shownDealtItems=items.slice(0,150);
   $('list').innerHTML='<div class="list">'+shownDealtItems.map(i=>{
-    const gurl=i.msgid?`https://mail.google.com/mail/u/0/#search/rfc822msgid:${encodeURIComponent(i.msgid)}`:'https://mail.google.com';
+    const mailHome=i.mailbox_address?'https://mail.google.com/mail/?authuser='+encodeURIComponent(i.mailbox_address):'https://mail.google.com/mail/u/0/';
+    const gurl=i.msgid?`${mailHome}#search/rfc822msgid:${encodeURIComponent(i.msgid)}`:mailHome;
     const d=new Date(i.date); const when=isNaN(d)?'':`${fmtDay(d)} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
     return `<div class="mail">${i.action?`<span class="flag" role="img" aria-label="${T('需要处理','Action needed')}" title="${T('需要处理','Action needed')}">${BOLT}</span>`:'<span class="flag"></span>'}
       <a class="subj" href="${gurl}" target="_blank" rel="noopener">${esc(subjectFor(i.subject))}</a>
       <span class="when">${when}</span>
-      <div class="meta"><span class="cat">${esc(catLabel(i.category))}</span><span class="chip">from <b>${esc(senderName(i.from))}</b>${senderName(i.from)!==senderAddress(i.from)?' '+esc(senderAddress(i.from)):''}</span>${reasonFor(i)?`<span class="reason">${esc(reasonFor(i))}</span>`:''}${/^\d+$/.test(i.gmailId)?`<button type="button" class="btn btn-sm" data-dealt-id="${esc(i.gmailId)}">${T('已处理','Dealt')}</button>`:''}</div></div>`;
+      <div class="meta"><span class="chip mailbox-badge">${esc(i.mailbox_address||(i.mailbox==='secondary'?T('第二邮箱','Second mailbox'):T('主邮箱','Primary mailbox')))}</span><span class="cat">${esc(catLabel(i.category))}</span><span class="chip">from <b>${esc(senderName(i.from))}</b>${senderName(i.from)!==senderAddress(i.from)?' '+esc(senderAddress(i.from)):''}</span>${reasonFor(i)?`<span class="reason">${esc(reasonFor(i))}</span>`:''}${/^\d+$/.test(i.gmailId)?`<button type="button" class="btn btn-sm" data-dealt-id="${esc(mailKey(i))}">${T('已处理','Dealt')}</button>`:''}</div></div>`;
   }).join('')+'</div>'+(items.length>150?`<p class="hint" style="margin-top:8px">${T('只显示前 150 封。','Showing the first 150.')}</p>`:'');
   document.dispatchEvent(new Event('headersort-list'));
 }
@@ -2165,7 +2175,7 @@ function makeDemo(){
    ['security@account.example','Security alert: new sign-in from Chrome on macOS','account',false,'informational alert'],['noreply@id.example','Your verification code is 482913','account',false,'one-time code'],['admin@cloud.example','Your storage is 90% full','account',false,'usage warning'],
    ['deals@shop.example','70% off everything — 48 hours only','promo',false,'marketing blast'],['news@brand.example','New arrivals you will love','promo',false,'newsletter'],['offers@airline.example','Flash sale: fares from 89','promo',false,'promotion'],
    ['digest@papers.example','Weekly digest: 12 new papers in your feed','reading',false,'newsletter'],['newsletter@blog.example','Issue #142: on writing less','reading',false,'newsletter'],['editor@magazine.example','This week\'s long reads','reading',false,'newsletter']];
-  const items=[]; for(let i=0;i<60;i++){ const t=T7[i%T7.length]; const d=new Date(now.getTime()-Math.floor(i/9)*864e5-(i%9)*3600e3*1.3); items.push({gmailId:String(7000+i),subject:t[1]+(i>=T7.length?' ('+(Math.floor(i/T7.length)+1)+')':''),from:t[0],date:d.toISOString(),category:t[2],action:t[3]&&i<40,reason:t[4],msgid:'<demo-'+i+'@mail.example>'}); }
+  const items=[]; for(let i=0;i<60;i++){ const t=T7[i%T7.length]; const d=new Date(now.getTime()-Math.floor(i/9)*864e5-(i%9)*3600e3*1.3); items.push({gmailId:String(7000+Math.floor(i/2)),mailbox:i%2?'secondary':'primary',mailbox_address:i%2?'second@mail.example':'main@mail.example',subject:t[1]+(i>=T7.length?' ('+(Math.floor(i/T7.length)+1)+')':''),from:t[0],date:d.toISOString(),category:t[2],action:t[3]&&i<40,reason:t[4],msgid:'<demo-'+i+'@mail.example>'}); }
   return {updated_at:now.toISOString(),keep_items:300,total_classified:1240,total_is_floor:true,items};
 }
 const DEMO=(()=>{ try{ return new URLSearchParams(location.search).get('demo')==='1'; }catch(e){ return false; } })();

@@ -1,6 +1,7 @@
 {
   "schema_version": 1,
   "enabled": false,
+  "second_mailbox_enabled": false,
   "read_bodies": false,
   "frequency_hours": 24,
   "approval_mode": "every_run",

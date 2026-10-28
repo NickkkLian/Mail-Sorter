@@ -63,3 +63,7 @@ The historical 40-message cached label evaluation is retained as `node eval/scor
 The board retains its digest counts, trend, filters, Gmail links and appearance controls. New review controls are English. Fake IMAP and injected providers verify code paths offline; live Gmail folder semantics, deployed browser rendering and real model quality require operational verification. GitHub schedules can be delayed. The preserved twice-daily schedule means approval/undo may wait until the next wake.
 
 MIT — see [LICENSE](LICENSE).
+
+## Second Gmail mailbox
+
+The scheduled runner supports an optional second Gmail account with separate cursors and mailbox-scoped cleanup, Dealt and Undo. The board shows address badges and a mailbox filter. [Setup and behavior](docs/second-mailbox.md).

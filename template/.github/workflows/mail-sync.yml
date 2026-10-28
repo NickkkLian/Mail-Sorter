@@ -52,6 +52,8 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GMAIL2_USER: ${{ secrets.GMAIL2_USER }}
+          GMAIL2_APP_PASSWORD: ${{ secrets.GMAIL2_APP_PASSWORD }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           LLM_PROVIDER: ${{ vars.LLM_PROVIDER }}
           LLM_MODEL: ${{ vars.LLM_MODEL }}

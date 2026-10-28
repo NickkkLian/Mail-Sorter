@@ -17,3 +17,5 @@ The workflow maps its job token to `GITHUB_TOKEN` and repository identity to `GI
 `DRY_RUN=1` exits without connecting. `DRY_RUN=proposal` writes metadata proposals to disposable local state while suppressing labels, archive, undo, bodies and model requests; it refuses hosted state. No dry mode is set by the production workflow.
 
 The browser holds only a separate fine-grained token with Contents read/write on the private data repo. It never receives Gmail or provider credentials.
+
+Optional second Gmail account: add Actions repository secrets GMAIL2_USER and GMAIL2_APP_PASSWORD in the private data repository, then enable the second mailbox in app Settings. Never put their values in this public template. See [setup](docs/second-mailbox.md).

@@ -4,6 +4,7 @@ import {fileURLToPath} from 'node:url';
 import {settings} from './settings.mjs';
 import {emptyState,runCycle} from './core.mjs';
 import {connectMailbox} from './imap.mjs';
+import {scopeState,mergeState,scopeApproval,scopeDealt} from './mailboxes.mjs';
 
 const ROOT=fileURLToPath(new URL('../',import.meta.url));
 const read=(root,name,fallback)=>{const f=path.join(root,name);return fs.existsSync(f)?JSON.parse(fs.readFileSync(f,'utf8')):fallback;};
@@ -17,35 +18,54 @@ export async function main({root=ROOT,env=process.env,connect=connectMailbox,out
     if(env.DRY_RUN==='1'||!c.enabled){output('Skipped: disabled or dry run; no connections.');return 0;}
     const proposalOnly=env.DRY_RUN==='proposal';
     if(proposalOnly&&env.STATE_BACKEND==='github')throw Error('Dry proposals require local state');
-    // Credentials are only consulted after the off switch. Values never enter output or persistence.
-    if(!env.GMAIL_USER||!env.GMAIL_APP_PASSWORD){output('Skipped: mailbox not configured.');return 0;}
+    // Credentials are consulted only after the off switch. Passwords never enter output or persistence.
     lock=fs.openSync(path.join(root,'.runner.lock'),'wx',0o600);
     const store=env.STATE_BACKEND==='github'?(await import('./storage.mjs')).githubStore({repository:env.GITHUB_REPOSITORY,key:env.GITHUB_TOKEN}):{read:async(name,fallback)=>read(root,name,fallback),write:async(name,data)=>atomic(root,name,data)};
     c=settings(await store.read('config.json',c));if(!c.enabled){output('Skipped: disabled; no mailbox connection.');return 0;}
     const state=emptyState();state.digest=await store.read('mail.json',state.digest);state.runtime=await store.read('runtime.json',state.runtime);state.proposal=await store.read('cleanup-proposal.json',null);state.journal=await store.read('cleanup-log.json',state.journal);
-    const persist=async s=>{await store.write('cleanup-log.json',s.journal);await store.write('cleanup-proposal.json',s.proposal);await store.write('mail.json',s.digest);await store.write('runtime.json',s.runtime);};
-    // One-time migration seeds only protective settings from pre-existing metadata. No body is accessed.
-    if(!state.runtime.protection_seeded){const {seedProtection}=await import('./core.mjs');const seeded=seedProtection(c,state.digest);if(JSON.stringify(seeded)!==JSON.stringify(c)){await store.write('config.json',seeded);c=seeded;}state.runtime.protection_seeded=true;await persist(state);}
-    mailbox=await connect(c,env);
-    const {createEvaluator,modelClassifier}=await import('./intelligence.mjs');let classify=null;
-    const diagnostics={errors:0};
-    if(!proposalOnly)try{classify=modelClassifier(env,{maxRetries:c.max_retries});}catch{diagnostics.errors++;diagnostics.config_errors=1;}
-    // A proposal dry run reads metadata and writes local state, but never calls a model,
-    // reads a body, labels, archives or restores mail, even with queued decisions.
-    if(proposalOnly){
-      c=settings({...c,read_bodies:false,approval_mode:'every_run',rules:Object.fromEntries(Object.entries(c.rules).map(([id,r])=>[id,{...r,auto:false}]))});
-      const real=mailbox;mailbox=new Proxy(real,{get(target,key){
-        if(key==='addLabel')return async()=>{};
-        if(['archive','trash','restore','removeLabel','readBody','markRead','markUnread'].includes(key))return async()=>{throw Error('Mutation forbidden in proposal dry run');};
-        const value=Reflect.get(target,key);return typeof value==='function'?value.bind(target):value;
-      }});classify=null;
+    const saveShared=async s=>{await store.write('cleanup-log.json',s.journal);await store.write('cleanup-proposal.json',s.proposal);await store.write('mail.json',s.digest);await store.write('runtime.json',s.runtime);};
+    const shared=state,initial=structuredClone(shared);
+    const approval=await store.read('cleanup-approval.json',null),undoRequests=(await store.read('cleanup-undo.json',{requests:[]})).requests,dealtRequests=(await store.read('dealt-queue.json',{requests:[]})).requests;
+    let failed=false;
+    for(const key of ['primary','secondary']){
+      if(stop.signal.aborted){failed=true;break;}
+      if(key==='secondary'&&!c.second_mailbox_enabled){output('Skipped: secondary mailbox disabled.');continue;}
+      const accountEnv=key==='primary'?env:{...env,GMAIL_USER:env.GMAIL2_USER,GMAIL_APP_PASSWORD:env.GMAIL2_APP_PASSWORD};
+      if(!accountEnv.GMAIL_USER||!accountEnv.GMAIL_APP_PASSWORD){output('Skipped: '+key+' mailbox not configured.');continue;}
+      const account=accountEnv.GMAIL_USER.trim().toLowerCase();
+      // Never re-use an old cursor, decision, or Undo before-image against a different account.
+      const bound=shared.runtime.mailboxes?.[key]?.account;
+      if(!account||/[\r\n]/.test(account)||(bound&&bound!==account)||account===shared.runtime.mailboxes?.[key==='primary'?'secondary':'primary']?.account||(key==='secondary'&&account===String(env.GMAIL_USER||'').trim().toLowerCase())){output('Mailbox '+key+' account binding mismatch; stopped safely.');failed=true;continue;}
+      const state=scopeState(initial,key);
+      let proposalId=state.proposal?.id;
+      const persist=async s=>{mergeState(shared,s,key,account,s.proposal?.id!==proposalId);proposalId=s.proposal?.id;await saveShared(shared);};
+      try{
+        // One-time migration seeds only protective settings from pre-existing metadata. No body is accessed.
+        if(!state.runtime.protection_seeded){const {seedProtection}=await import('./core.mjs');const seeded=seedProtection(c,state.digest);if(JSON.stringify(seeded)!==JSON.stringify(c)){await store.write('config.json',seeded);c=seeded;}state.runtime.protection_seeded=true;await persist(state);}
+        await persist(state);
+        mailbox=await connect(c,accountEnv);
+        const {createEvaluator,modelClassifier}=await import('./intelligence.mjs');let classify=null;
+        const diagnostics={errors:0};
+        if(!proposalOnly)try{classify=modelClassifier(accountEnv,{maxRetries:c.max_retries});}catch{diagnostics.errors++;diagnostics.config_errors=1;}
+        // A proposal dry run reads metadata and writes local state, but never calls a model,
+        // reads a body, labels, archives or restores mail, even with queued decisions.
+        if(proposalOnly){
+          c=settings({...c,read_bodies:false,approval_mode:'every_run',rules:Object.fromEntries(Object.entries(c.rules).map(([id,r])=>[id,{...r,auto:false}]))});
+          const real=mailbox;mailbox=new Proxy(real,{get(target,key){
+            if(key==='addLabel')return async()=>{};
+            if(['archive','trash','restore','removeLabel','readBody','markRead','markUnread'].includes(key))return async()=>{throw Error('Mutation forbidden in proposal dry run');};
+            const value=Reflect.get(target,key);return typeof value==='function'?value.bind(target):value;
+          }});classify=null;
+        }
+        const now=new Date(),evaluate=createEvaluator({config:c,mailbox,classify,now,diagnostics});
+        const result=await runCycle({config:c,state,mailbox,persist,approval:proposalOnly?null:scopeApproval(approval,initial.proposal,key),undoRequests:proposalOnly?[]:undoRequests,dealtRequests:proposalOnly?[]:scopeDealt(dealtRequests,key),force:proposalOnly||env.RUN_NOW==='1',backfill:env.BACKFILL==='1',evaluate,now,signal:stop.signal});
+        if(stop.signal.aborted){output('Run cancelled; progress so far was saved.');failed=true;}
+        output('Mailbox '+key+': '+(result.skipped?'Skipped: '+result.skipped:'Cycle complete. Proposed: '+result.proposed));
+        if(!proposalOnly){output('Mailbox '+key+' classification diagnostics: '+JSON.stringify(diagnostics));if(diagnostics.errors){output('::error title=Mail classification incomplete::Classification errors: '+diagnostics.errors+'; see fixed diagnostic counts.');failed=true;}}
+      }catch{output('Mailbox '+key+' stopped safely; no sensitive error details retained.');failed=true;}
+      finally{try{await mailbox?.close();}catch{}mailbox=null;}
     }
-    const now=new Date(),evaluate=createEvaluator({config:c,mailbox,classify,now,diagnostics});
-    const result=await runCycle({config:c,state,mailbox,persist,approval:proposalOnly?null:await store.read('cleanup-approval.json',null),undoRequests:proposalOnly?[]:(await store.read('cleanup-undo.json',{requests:[]})).requests,dealtRequests:proposalOnly?[]:(await store.read('dealt-queue.json',{requests:[]})).requests,force:proposalOnly||env.RUN_NOW==='1',backfill:env.BACKFILL==='1',evaluate,now,signal:stop.signal});
-    if(stop.signal.aborted){output('Run cancelled; progress so far was saved.');return 1;}
-    output(result.skipped?'Skipped: '+result.skipped:'Cycle complete. Proposed: '+result.proposed);
-    if(!proposalOnly){output('Classification diagnostics: '+JSON.stringify(diagnostics));if(diagnostics.errors){output('::error title=Mail classification incomplete::Classification errors: '+diagnostics.errors+'; see fixed diagnostic counts.');return 1;}}
-    return 0;
+    return failed?1:0;
   }catch{output('Run stopped safely. Check configuration, dependencies, or runner lock; no sensitive error details retained.');return 1;}
   finally{process.off('SIGINT',onSignal);process.off('SIGTERM',onSignal);try{await mailbox?.close();}catch{/* never print provider/mailbox errors */}if(lock!==undefined){fs.closeSync(lock);fs.unlinkSync(path.join(root,'.runner.lock'));}}
 }

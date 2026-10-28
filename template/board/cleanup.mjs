@@ -1,3 +1,4 @@
+import {mailKey} from '../mail/scripts/mailbox-key.mjs';
 import {ReviewController,RULE_NAMES,undoStatus} from './review.mjs';
 import {settings} from '../mail/scripts/settings.mjs';
 import {demoBridge} from './demo.mjs';
@@ -28,11 +29,11 @@ export function mountReview(bridge,document){
     else{
       host.append(el('p',new Date(p.created_at).toLocaleString()+' · '+p.items.length+' proposed'));
       const checks=new Map(),protectButtons=new Map(),ruleChecks=new Map();let approve;
-      const update=()=>{approve.textContent='Approve '+controller.selected.size+' selected';approve.disabled=!c.enabled;for(const[id,button]of protectButtons)button.hidden=controller.selected.has(id);for(const[rule,{input}]of ruleChecks){const group=p.items.filter(x=>x.rule===rule),n=group.filter(x=>controller.selected.has(x.gmailId)).length;input.checked=n===group.length;input.indeterminate=n>0&&n<group.length;}};
+      const update=()=>{approve.textContent='Approve '+controller.selected.size+' selected';approve.disabled=!c.enabled;for(const[id,button]of protectButtons)button.hidden=controller.selected.has(id);for(const[rule,{input}]of ruleChecks){const group=p.items.filter(x=>x.rule===rule),n=group.filter(x=>controller.selected.has(mailKey(x))).length;input.checked=n===group.length;input.indeterminate=n>0&&n<group.length;}};
       for(const[rule,name]of Object.entries(RULE_NAMES)){
-        const group=p.items.filter(x=>x.rule===rule);if(!group.length)continue;const field=el('fieldset'),legend=el('legend');const ruleCheck=checkbox(rule+' · '+name+' ('+group.length+')',true,on=>{controller.setRule(rule,on);for(const x of group)checks.get(x.gmailId).checked=on;update();});ruleChecks.set(rule,ruleCheck);legend.append(ruleCheck.label);field.append(legend);
-        for(const x of group){const row=el('div',null,{class:'review-item'}),input=el('input',null,{type:'checkbox','aria-label':'Select '+x.subject});input.checked=controller.selected.has(x.gmailId);checks.set(x.gmailId,input);const body=el('span'),label=el('label',x.subject),id='cleanup-'+x.gmailId;input.id=id;label.setAttribute('for',id);body.append(label,el('small',x.from+' · '+new Date(x.date).toLocaleDateString()),el('small',x.reason+' · '+(x.action==='trash'?'Trash — Gmail deletes after 30 days':'Archive — kept in All Mail')));
-          const protect=button('Protect sender',async()=>{await controller.protect(x.from);controller.setItem(x.gmailId,false);input.checked=false;update();say('Sender protected. A new review will be prepared using your settings.');});protectButtons.set(x.gmailId,protect);protect.hidden=input.checked;input.addEventListener('change',()=>{controller.setItem(x.gmailId,input.checked);protect.hidden=input.checked;update();});row.append(input,body,protect);field.append(row);
+        const group=p.items.filter(x=>x.rule===rule);if(!group.length)continue;const field=el('fieldset'),legend=el('legend');const ruleCheck=checkbox(rule+' · '+name+' ('+group.length+')',true,on=>{controller.setRule(rule,on);for(const x of group)checks.get(mailKey(x)).checked=on;update();});ruleChecks.set(rule,ruleCheck);legend.append(ruleCheck.label);field.append(legend);
+        for(const x of group){const row=el('div',null,{class:'review-item'}),input=el('input',null,{type:'checkbox','aria-label':'Select '+x.subject});input.checked=controller.selected.has(mailKey(x));checks.set(mailKey(x),input);const body=el('span'),label=el('label',x.subject),id='cleanup-'+mailKey(x);input.id=id;label.setAttribute('for',id);body.append(label,el('small',(x.mailbox_address||x.mailbox||'Primary mailbox')+' · '+x.from+' · '+new Date(x.date).toLocaleDateString()),el('small',x.reason+' · '+(x.action==='trash'?'Trash — Gmail deletes after 30 days':'Archive — kept in All Mail')));
+          const protect=button('Protect sender',async()=>{await controller.protect(x.from);controller.setItem(mailKey(x),false);input.checked=false;update();say('Sender protected. A new review will be prepared using your settings.');});protectButtons.set(mailKey(x),protect);protect.hidden=input.checked;input.addEventListener('change',()=>{controller.setItem(mailKey(x),input.checked);protect.hidden=input.checked;update();});row.append(input,body,protect);field.append(row);
         }host.append(field);
       }
       approve=button('',async()=>{await controller.approve();render();say('Approval queued. Mail changes only after the runner rechecks it.');});toolbar.append(approve);update();
@@ -42,7 +43,7 @@ export function mountReview(bridge,document){
     if(!journal.runs.length)host.append(el('p','No cleanup runs yet.'));
     for(const run of journal.runs.filter(r=>r.kind!=='dealt').slice().reverse().slice(0,30)){
       const row=el('div',null,{class:'review-toolbar'}),done=run.entries.filter(x=>x.status==='done'||x.status==='undone').length,status=undoStatus(run,undo.requests);
-      row.append(el('span',new Date(run.at).toLocaleString()+' · '+done+'/'+(run.selected_count??run.entries.length)+' completed'));
+      row.append(el('span',(run.mailbox_address||run.mailbox||'Primary mailbox')+' · '+new Date(run.at).toLocaleString()+' · '+done+'/'+(run.selected_count??run.entries.length)+' completed'));
       const undoButton=button(status,async()=>{await controller.undo(run.id);render();say('Undo queued. Refresh after the next runner to see restoration status.');});undoButton.disabled=!c.enabled||['Restored','Trash undo expired','Undo queued'].includes(status)||!run.entries.length;row.append(undoButton);host.append(row);
       if(run.entries.some(x=>x.status==='intent'||x.status==='uncertain'))host.append(el('small','A run stopped during a change. Undo can recover a recorded intent; check Gmail if it remains uncertain.'));
       if(run.skipped_count)host.append(el('small','Some selected messages no longer qualified and stayed in place.'));
