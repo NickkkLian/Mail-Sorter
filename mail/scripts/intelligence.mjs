@@ -13,22 +13,27 @@ export function modelClassifier(env,{completeImpl=complete,wait=ms=>new Promise(
     }catch{if(attempt+1===maxRetries)throw Error('Model unavailable');await wait(Math.min(10000,500*2**attempt));}
   };
 }
-export function createEvaluator({config,mailbox,classify=null,now=new Date()}){
+export function createEvaluator({config,mailbox,classify=null,now=new Date(),diagnostics={}}){
   const c=settings(config);
+  const failure=(v,status,reason)=>{diagnostics.errors=(diagnostics.errors||0)+1;diagnostics[status]=(diagnostics[status]||0)+1;return {...v,rule:null,classification_status:status,reason};};
   return async m=>{
-    let v=decide(m,c,now);if(protectedReason(m,c)||v.category!=='other')return v;
+    const protectedMail=!!protectedReason(m,c);
+    let v=decide(m,c,now);if(v.category!=='other')return v;
     let body='';
-    if(c.read_bodies){
+    // Protection vetoes cleanup, not categorization. Protected mail uses metadata only.
+    if(c.read_bodies&&!protectedMail){
       try{const raw=await mailbox.readBody(m.gmailId);if(typeof raw!=='string'||raw.length>=c.body_fetch_bytes)throw Error('Incomplete body');body=raw;const evidence=bodyEvidence(body,now);v=decide({...m,bodyEvidence:evidence,longOffer:evidence?.kind==='longOffer'},c,now);}
-      catch{return {...v,rule:null,reason:'Body unavailable; left in place'};}
+      catch{return failure(v,'body_unavailable','Body unavailable; left in place');}
       if(v.category!=='other')return v;
     }
-    if(!classify||(!c.read_bodies&&v.rule))return v;
+    if(v.rule&&(!c.read_bodies||!classify))return v;
+    if(!classify)return failure(v,'model_not_configured','Model not configured; left in place');
     try{
+      diagnostics.model_requests=(diagnostics.model_requests||0)+1;
       const verdict=await classify(modelInput(m,c,body));
-      if(!validVerdict(verdict))return {...v,rule:null,reason:'Uncertain; left in place'};
-      const rule=verdict.category==='other'&&!verdict.action&&verdict.cleanup==='agree'?v.rule:null;
-      return {category:verdict.category,action:verdict.action,rule,reason:rule?v.reason:verdict.category==='other'?'Uncertain; left in place':'Keep signal'};
-    }catch{return {...v,rule:null,reason:'Model unavailable; left in place'};}
+      if(!validVerdict(verdict))return failure(v,'invalid_output','Invalid model output; left in place');
+      const rule=!protectedMail&&verdict.category==='other'&&!verdict.action&&verdict.cleanup==='agree'?v.rule:null;
+      return {category:verdict.category,action:v.action||verdict.action,rule,reason:rule?v.reason:verdict.category==='other'?'Uncertain; left in place':'Keep signal'};
+    }catch{return failure(v,'model_unavailable','Model unavailable; left in place');}
   };
 }

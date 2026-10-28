@@ -105,7 +105,9 @@ export async function undoRun({state,runId,mailbox,persist,now=new Date(),signal
 }
 export function updateDigest(state,m,v,c,now){
   const d=state.digest,known=(d.items||[]).some(i=>i.gmailId===m.gmailId||(!i.gmailId&&i.uid===m.uid));
+  const errors={model_unavailable:'Model unavailable; left in place',model_not_configured:'Model not configured; left in place',invalid_output:'Invalid model output; left in place',body_unavailable:'Body unavailable; left in place'};
   const safe={uid:m.uid,gmailId:m.gmailId,msgid:m.msgid||null,date:m.date,from:m.from||'',fromAddr:m.fromAddr||'',subject:m.subject||'',category:v.category,action:v.action===true,reason:v.rule?'Cleanup rule '+v.rule:(v.category==='other'?'Unsorted':'Keep signal'),reason_en:v.rule?'Cleanup rule '+v.rule:(v.category==='other'?'Unsorted':'Keep signal')};
+  if(Object.hasOwn(errors,v.classification_status)){safe.classification_status=v.classification_status;safe.reason=safe.reason_en=errors[v.classification_status];}
   d.items=[safe,...d.items.filter(i=>i.gmailId!==m.gmailId&&(i.gmailId||i.uid!==m.uid))].sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,c.keep_items);
   if(!known&&m.uid>(d.lastUid||0))d.total_classified=Number(d.total_classified||0)+1;
   d.lastUid=Math.max(d.lastUid||0,m.uid);

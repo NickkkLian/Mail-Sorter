@@ -11,9 +11,9 @@ const mail=message({subject:'Verification code'}),agree={category:'other',action
 test('body switch off prevents fetching and rule matches avoid model requests',async()=>{
   let fetches=0,models=0;const v=await createEvaluator({config:base,mailbox:{readBody:async()=>{fetches++;}},classify:async()=>{models++;return agree;},now})(mail);check(v.rule==='O1'&&fetches===0&&models===0);
 });
-test('protected and known keep mail never fetches a body or calls model',async()=>{
-  let calls=0;const evaluate=createEvaluator({config:{...base,read_bodies:true},mailbox:{readBody:async()=>{calls++;return '';}},classify:async()=>{calls++;return agree;},now});
-  for(const patch of [{starred:true},{subject:'Invoice received'},{everWritten:true},{labels:['AI/Money']}])await evaluate({...mail,...patch});check(calls===0);
+test('protected mail never fetches a body; known keep mail also skips the model',async()=>{
+  let bodies=0,models=0;const evaluate=createEvaluator({config:{...base,read_bodies:true},mailbox:{readBody:async()=>{bodies++;return '';}},classify:async()=>{models++;return agree;},now});
+  for(const patch of [{starred:true},{subject:'Invoice received'},{everWritten:true},{labels:['AI/Money']}])await evaluate({...mail,...patch});check(bodies===0&&models===2);
 });
 test('redacts cards, spaced digits, account identifiers, short suffixes, and IBANs',()=>{
   const numbers=['4111111111111111','4111 1111 1111 1111','123456789','GB82 WEST 1234 5698 7654 32','account ending in 1234','acct: ABCD12345'];

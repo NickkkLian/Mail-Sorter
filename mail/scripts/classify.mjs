@@ -28,7 +28,8 @@ export async function main({root=ROOT,env=process.env,connect=connectMailbox,out
     if(!state.runtime.protection_seeded){const {seedProtection}=await import('./core.mjs');const seeded=seedProtection(c,state.digest);if(JSON.stringify(seeded)!==JSON.stringify(c)){await store.write('config.json',seeded);c=seeded;}state.runtime.protection_seeded=true;await persist(state);}
     mailbox=await connect(c,env);
     const {createEvaluator,modelClassifier}=await import('./intelligence.mjs');let classify=null;
-    try{classify=modelClassifier(env,{maxRetries:c.max_retries});}catch{/* deterministic rules remain available when no model is configured */}
+    const diagnostics={errors:0};
+    if(!proposalOnly)try{classify=modelClassifier(env,{maxRetries:c.max_retries});}catch{diagnostics.errors++;diagnostics.config_errors=1;}
     // A proposal dry run reads metadata and writes local state, but never calls a model,
     // reads a body, labels, archives or restores mail, even with queued decisions.
     if(proposalOnly){
@@ -39,10 +40,12 @@ export async function main({root=ROOT,env=process.env,connect=connectMailbox,out
         const value=Reflect.get(target,key);return typeof value==='function'?value.bind(target):value;
       }});classify=null;
     }
-    const now=new Date(),evaluate=createEvaluator({config:c,mailbox,classify,now});
+    const now=new Date(),evaluate=createEvaluator({config:c,mailbox,classify,now,diagnostics});
     const result=await runCycle({config:c,state,mailbox,persist,approval:proposalOnly?null:await store.read('cleanup-approval.json',null),undoRequests:proposalOnly?[]:(await store.read('cleanup-undo.json',{requests:[]})).requests,force:proposalOnly||env.RUN_NOW==='1',backfill:env.BACKFILL==='1',evaluate,now,signal:stop.signal});
     if(stop.signal.aborted){output('Run cancelled; progress so far was saved.');return 1;}
-    output(result.skipped?'Skipped: '+result.skipped:'Cycle complete. Proposed: '+result.proposed);return 0;
+    output(result.skipped?'Skipped: '+result.skipped:'Cycle complete. Proposed: '+result.proposed);
+    if(!proposalOnly){output('Classification diagnostics: '+JSON.stringify(diagnostics));if(diagnostics.errors){output('::error title=Mail classification incomplete::Classification errors: '+diagnostics.errors+'; see fixed diagnostic counts.');return 1;}}
+    return 0;
   }catch{output('Run stopped safely. Check configuration, dependencies, or runner lock; no sensitive error details retained.');return 1;}
   finally{process.off('SIGINT',onSignal);process.off('SIGTERM',onSignal);try{await mailbox?.close();}catch{/* never print provider/mailbox errors */}if(lock!==undefined){fs.closeSync(lock);fs.unlinkSync(path.join(root,'.runner.lock'));}}
 }
