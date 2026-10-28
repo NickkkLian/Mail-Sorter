@@ -20,7 +20,7 @@ function walk(dir){for(const e of fs.readdirSync(dir,{withFileTypes:true})){
 walk(root);
 const c=settings(JSON.parse(fs.readFileSync(path.join(root,'template/mail/config.json'))));
 if(c.enabled||c.read_bodies||c.approval_mode!=='every_run'||Object.values(c.rules).some(x=>x.action!=='archive'||x.auto)||Object.values(c.protected).some(x=>x.length)||Object.keys(c.sender_labels).length)fail.push('template/mail/config.json');
-for(const [name,empty]of Object.entries({'runtime.json':{scanAfter:0,lastProposalAt:null},'cleanup-proposal.json':null,'cleanup-approval.json':null,'cleanup-log.json':{runs:[],reviews:[]},'cleanup-undo.json':{requests:[]}})){
+for(const [name,empty]of Object.entries({'runtime.json':{scanAfter:0,lastProposalAt:null},'cleanup-proposal.json':null,'cleanup-approval.json':null,'cleanup-log.json':{runs:[],reviews:[]},'cleanup-undo.json':{requests:[]},'dealt-queue.json':{requests:[]}})){
   if(JSON.stringify(JSON.parse(fs.readFileSync(path.join(root,'template/mail',name))))!==JSON.stringify(empty))fail.push('template/mail/'+name);
 }
 if(fail.length){console.error('PRIVACY CHECK FAILED (paths only): '+[...new Set(fail)].join(', '));process.exitCode=1;}else console.log('PRIVACY CHECK PASS: no mailbox artifacts, personal settings, non-example product addresses or secret patterns.');

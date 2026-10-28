@@ -2,7 +2,7 @@ import {randomUUID} from 'node:crypto';
 import {settings,RULE_IDS} from './settings.mjs';
 import {decide,policyHash,fingerprint,DAY,protectedReason,address} from './rules.mjs';
 export const emptyState=()=>({digest:{items:[],lastUid:0,total_classified:0,total_is_floor:true},runtime:{scanAfter:0,lastProposalAt:null},proposal:null,journal:{runs:[],reviews:[]}});
-const quarantined=(state,id)=>state.journal.runs.some(r=>r.entries.some(e=>e.gmailId===id&&(e.status==='intent'||e.status==='uncertain'||['intent','retry','missing'].includes(e.undo_status))));
+const quarantined=(state,id)=>state.journal.runs.some(r=>r.entries.some(e=>e.gmailId===id&&((e.action==='dealt'&&e.status==='done')||e.status==='intent'||e.status==='uncertain'||['intent','retry','missing'].includes(e.undo_status))));
 export function seedProtection(config,digest){const c=settings(config),senders=new Set(c.protected.senders.map(address));for(const x of digest.items||[])if(['action','job','finance','school','health','official'].includes(x.category)){const a=address(x.fromAddr||x.from);if(a.includes('@'))senders.add(a);}c.protected.senders=[...senders];return c;}
 export const ruleHash=(c,id)=>fingerprint({id,rule:settings(c).rules[id],policy:policyHash(c)});
 export function autoEligible(c,id,reviews,now){
@@ -25,6 +25,39 @@ export async function makeProposal({messages,config,state,now=new Date(),evaluat
 // any of those messages is touched; the results are saved right after. A hard crash can therefore lose at most one
 // batch of "done" marks (those entries stay as saved intents, which later runs never replay and Undo still restores).
 export const BATCH={size:25,ms:120000};
+// Requests are append-only and consumed by a durable run ID, including interrupted runs.
+// An intent/uncertain entry is never replayed. Undo uses its before-image, as cleanup does.
+export async function applyDealt({config,state,requests=[],mailbox,persist,now=new Date(),signal=null,batch=BATCH}){
+  const c=settings(config);if(!c.enabled||signal?.aborted)return {applied:0};let applied=0;
+  for(const request of requests){
+    if(signal?.aborted)break;
+    if(!request||typeof request.id!=='string'||!request.id||!Array.isArray(request.items)||!request.items.length||request.items.length>150||state.journal.runs.some(r=>r.dealt_request_id===request.id))continue;
+    const run={id:randomUUID(),kind:'dealt',dealt_request_id:request.id,at:now.toISOString(),status:'running',entries:[]};state.journal.runs.push(run);await persist(state);
+    const unique=new Set();
+    for(let at=0;at<request.items.length&&!signal?.aborted;at+=batch.size){
+      const group=[];
+      for(const x of request.items.slice(at,at+batch.size)){
+        if(!x||typeof x.gmailId!=='string'||!/^\d+$/.test(x.gmailId)||unique.has(x.gmailId)||quarantined(state,x.gmailId))continue;unique.add(x.gmailId);
+        if(state.journal.runs.some(r=>r.kind==='dealt'&&r.entries.some(e=>e.gmailId===x.gmailId&&e.status==='done')))continue;
+        const digest=state.digest.items.find(i=>i.gmailId===x.gmailId),category=c.categories.find(i=>i.key===x.category);
+        if(!digest||digest.category!==x.category||!category)continue;
+        let m;try{m=await mailbox.get(x.gmailId);}catch{continue;}
+        if(!m||!m.inInbox||typeof m.seen!=='boolean'||!Array.isArray(m.labels)||m.labelsKnown===false)continue;
+        const label=c.label_prefix+category.label;
+        const entry={gmailId:x.gmailId,category:x.category,action:'dealt',label,at:now.toISOString(),status:'intent',changeRead:c.mark_dealt_read&&!m.seen,addLabel:!m.labels.includes(label)};
+        run.entries.push(entry);group.push(entry);
+      }
+      if(!group.length)continue;await persist(state);let next=0,saved=Date.now();
+      try{
+        while(next<group.length&&!signal?.aborted){
+          const e=group[next];try{if(e.addLabel)await mailbox.addLabel(e.gmailId,e.label);if(e.changeRead)await mailbox.markRead(e.gmailId);e.status='done';applied++;}catch{e.status='uncertain';}
+          next++;if(Date.now()-saved>=batch.ms){await persist(state);saved=Date.now();}
+        }
+      }finally{const untouched=new Set(group.slice(next));run.entries=run.entries.filter(e=>!untouched.has(e));await persist(state);}
+    }
+    run.status=signal?.aborted?'cancelled':'finished';run.skipped_count=request.items.length-run.entries.length;await persist(state);
+  }return {applied};
+}
 export async function applyApproval({config,state,approval,mailbox,persist,now=new Date(),recordReview=true,evaluate=async m=>decide(m,config,now),signal=null,batch=BATCH}){
   const c=settings(config),p=state.proposal; if(!c.enabled||!p||!approval)return {applied:0,skipped:'no approval'};
   if(approval.proposal_id!==p.id||approval.revision!==p.revision||p.policy!==policyHash(c)||!Array.isArray(approval.selected)||approval.selected.some(x=>!p.items.some(i=>i.gmailId===x))||new Set(approval.selected).size!==approval.selected.length)return {applied:0,skipped:'stale approval'};
@@ -72,7 +105,8 @@ export async function applyApproval({config,state,approval,mailbox,persist,now=n
   run.skipped_count=chosen.size-run.entries.length-notReached;
   for(const review of state.journal.reviews.filter(x=>x.run_id===run.id)){const selected=p.items.filter(x=>x.rule===review.rule&&chosen.has(x.gmailId));review.complete=selected.every(x=>run.entries.some(e=>e.gmailId===x.gmailId&&e.status==='done'));}
   // Do not discard incomplete operations. Older completed runs retain Gmail cleanup labels for manual restoration.
-  const completed=state.journal.runs.filter(r=>r.status==='finished');
+  // Dealt queue requests remain append-only: their consumption records must outlive cleanup log pruning.
+  const completed=state.journal.runs.filter(r=>r.status==='finished'&&r.kind!=='dealt');
   if(completed.length>c.log_runs){const drop=new Set(completed.slice(0,completed.length-c.log_runs).filter(r=>r.entries.every(e=>e.status==='undone'||(e.status==='done'&&!e.undo_status))).map(r=>r.id));state.journal.runs=state.journal.runs.filter(r=>!drop.has(r.id));}
   state.journal.reviews=state.journal.reviews.filter(r=>Date.parse(now)-Date.parse(r.at)<400*DAY);
   await persist(state);return {applied:run.entries.filter(x=>x.status==='done').length};
@@ -89,9 +123,14 @@ export async function undoRun({state,runId,mailbox,persist,now=new Date(),signal
       while(next<group.length&&!signal?.aborted){
         const e=group[next];
         try{const m=await mailbox.get(e.gmailId);if(!m)e.undo_status='missing';else{
-          await mailbox.restore(e.gmailId);for(const label of e.originalLabels||[])if(!label.startsWith('\\')&&!m.labels?.includes(label))await mailbox.addLabel(e.gmailId,label);if(!e.hadCleanLabel)await mailbox.removeLabel(e.gmailId,e.label);
+          if(e.action==='dealt'){
+            if(e.changeRead)await mailbox.markUnread(e.gmailId);
+            if(e.addLabel)await mailbox.removeLabel(e.gmailId,e.label);
+          }else{
+            await mailbox.restore(e.gmailId);for(const label of e.originalLabels||[])if(!label.startsWith('\\')&&!m.labels?.includes(label))await mailbox.addLabel(e.gmailId,label);if(!e.hadCleanLabel)await mailbox.removeLabel(e.gmailId,e.label);
+          }
           e.status='undone';e.undo_status='done';restored++;
-          state.journal.reviews.push({rule:e.rule,policy:state.journal.reviews.findLast(x=>x.rule===e.rule)?.policy||'',at:now.toISOString(),reviewed:1,rejected:1,complete:false});}
+          if(e.action!=='dealt')state.journal.reviews.push({rule:e.rule,policy:state.journal.reviews.findLast(x=>x.rule===e.rule)?.policy||'',at:now.toISOString(),reviewed:1,rejected:1,complete:false});}
         }catch{e.undo_status='retry';}
         next++; // counted as acted on BEFORE any save, same rule as cleanup
         if(Date.now()-saved>=batch.ms){await persist(state);saved=Date.now();}
@@ -113,11 +152,13 @@ export function updateDigest(state,m,v,c,now){
   d.lastUid=Math.max(d.lastUid||0,m.uid);
   d.updated_at=now.toISOString();d.keep_items=c.keep_items;
 }
-export async function runCycle({config,state,mailbox,persist,approval=null,undoRequests=[],now=new Date(),force=false,backfill=false,evaluate=async m=>decide(m,config,now),signal=null}){
+export async function runCycle({config,state,mailbox,persist,approval=null,undoRequests=[],dealtRequests=[],now=new Date(),force=false,backfill=false,evaluate=async m=>decide(m,config,now),signal=null}){
   const c=settings(config);if(!c.enabled)return {skipped:'disabled'};
   if(state.runtime.afterAuto){state.proposal=state.runtime.afterAuto;delete state.runtime.afterAuto;await persist(state);}
-  for(const req of undoRequests)await undoRun({state,runId:req.run_id,mailbox,persist,now,signal});
+  for(const req of undoRequests)await undoRun({state,runId:req.run_id||state.journal.runs.find(r=>r.dealt_request_id===req.dealt_request_id)?.id,mailbox,persist,now,signal});
   if(signal?.aborted)return {skipped:'cancelled'}; // cancelled during Undo: do not start the approval
+  await applyDealt({config:c,state,requests:dealtRequests.filter(r=>!undoRequests.some(u=>u.dealt_request_id===r.id)),mailbox,persist,now,signal});
+  if(signal?.aborted)return {skipped:'cancelled'};
   await applyApproval({config:c,state,approval,mailbox,persist,now,evaluate,signal});
   if(signal?.aborted)return {skipped:'cancelled'};
   if(!force&&state.runtime.lastProposalAt&&Date.parse(now)-Date.parse(state.runtime.lastProposalAt)<c.frequency_hours*3600000)return {skipped:'cadence'};
@@ -129,7 +170,9 @@ export async function runCycle({config,state,mailbox,persist,approval=null,undoR
   for(const id of pending.keys()){try{const m=await mailbox.get(id);if(m)all.push(m);}catch{/* unknown stays */}}
   const classifyDigest=async m=>{
     const v=await evaluate(m),label=c.categories.find(x=>x.key===v.category);
-    if(label&&label.key!=='other'&&!protectedReason(m,c))await mailbox.addLabel(m.gmailId,c.label_prefix+label.label);
+    // Dealt owns this message's category label, including an explicit Undo; a scan must not re-add it.
+    const dealtOwned=state.journal.runs.some(r=>r.kind==='dealt'&&r.entries.some(e=>e.gmailId===m.gmailId));
+    if(label&&label.key!=='other'&&!protectedReason(m,c)&&!quarantined(state,m.gmailId)&&!dealtOwned)await mailbox.addLabel(m.gmailId,c.label_prefix+label.label);
     updateDigest(state,m,v,c,now);return v;
   };
   for(const m of page.messages){

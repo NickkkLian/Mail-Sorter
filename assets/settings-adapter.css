@@ -1,6 +1,10 @@
 .suite-panel,.suite-confirm{--ss-bg:var(--surface-raised);--ss-ink:var(--text);--ss-line:var(--border);--ss-control-line:var(--border-input)}
 .suite-panel input[type=checkbox]{display:inline-block;width:24px;min-height:24px;margin:8px 12px 8px 0;vertical-align:middle}
 .suite-panel #suite-classifier-status:empty{display:none}
+.suite-panel #suite-dealt-settings{margin-top:24px;padding-top:16px;border-top:1px solid var(--border)}
+#dealt-toolbar .dealt-history{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-top:8px}
+#dealt-toolbar p:empty{display:none}
+.mail .meta [data-dealt-id]{white-space:normal;text-align:start;min-height:36px}
 .suite-panel #suite-mail-review,.suite-panel #suite-mail-discard{display:block;margin-top:12px}
 .topbar .brand{min-width:0}.topbar .brand img{width:32px;height:32px;object-fit:contain;flex:none}
 .topbar #nl-settings-button{margin-left:0}

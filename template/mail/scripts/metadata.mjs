@@ -10,7 +10,7 @@ export function normalizeMetadata(m,{inInbox=true,tabSets={},sentThreads=new Set
     try{labels=[...(m.labels||[])].map(decodeLabel);}catch{labelsKnown=false;}
     const received=Date.parse(m.internalDate),header=Date.parse(e.date),date=Number.isFinite(received)?new Date(received).toISOString():Number.isFinite(header)?new Date(header).toISOString():null;
     const bulk=/list-unsubscribe|precedence:\s*(?:bulk|list)/i.test(String(m.headers||''));
-    return {uid:m.uid,gmailId:m.emailId==null?'':String(m.emailId),threadId,msgid:(e.messageId||'').replace(/^<|>$/g,''),from:(f.name?f.name+' ':'')+'<'+a+'>',fromAddr:a,subject:e.subject||'(no subject)',date,
+    return {seen:m.flags==null?null:flags.has('\\Seen'),labelsKnown:labelsKnown&&m.labels!=null,uid:m.uid,gmailId:m.emailId==null?'':String(m.emailId),threadId,msgid:(e.messageId||'').replace(/^<|>$/g,''),from:(f.name?f.name+' ':'')+'<'+a+'>',fromAddr:a,subject:e.subject||'(no subject)',date,
       bulk,personal:!bulk&&!/no.?reply|notices|notif|alert|account|verify|security|calendar|shipment|delivery|support@|info@|admin@|mailer|automated|news@|offers@/i.test(a),labels,starred:flags.has('\\Flagged')||labels.includes('\\Starred'),important:labels.includes('\\Important'),
       needsReply:labels.includes('AI/重要待办'),replied:sentThreads.has(threadId),threadParticipated:sentThreads.has(threadId),everWritten:written.has(a),protectionComplete:protectionComplete&&labelsKnown&&m.labels!=null&&m.flags!=null&&!!threadId,inInbox,
       tab:inInbox?Object.keys(tabSets).find(t=>tabSets[t].has(m.uid))||'unknown':'unknown',

@@ -9,7 +9,7 @@ export function fake({sent=0,missingThread=false,bodySize=20,seen=true,downloadE
     async search(query){if(this.box==='Sent')return Array.from({length:sent},(_,i)=>i+1);if(query.gmailRaw)return query.gmailRaw==='category:primary'&&this.inbox?[11]:[];if(query.emailId)return (this.box==='INBOX'&&this.inbox||this.box==='All'&&!this.inbox)?[record.uid]:[];return this.box==='INBOX'&&this.inbox?[11]:[];}
     async *fetch(uids){if(this.box==='Sent'){for(const uid of uids)yield {...sentRecord,uid};}else if(uids.length)yield record;}
     async fetchOne(){return record;}async mailboxCreate(){}
-    async messageFlagsAdd(uid,labels,options){check(options.useLabels===true&&labels.every(x=>!x.startsWith('\\')));for(const x of labels)record.labels.add(x);actions.push('label');}
+    async messageFlagsAdd(uid,labels,options){if(!options.useLabels){check(labels.length===1&&labels[0]==='\\Seen');flags.add('\\Seen');actions.push('seen');return;}check(labels.every(x=>!x.startsWith('\\')));for(const x of labels)record.labels.add(x);actions.push('label');}
     async messageFlagsRemove(uid,labels,options){if(options.useLabels===true){for(const x of labels)record.labels.delete(x);actions.push('unlabel');}else{check(labels.length===1&&labels[0]==='\\Seen');flags.delete('\\Seen');actions.push('unseen');}}
     async messageMove(uid,destination){check(destination==='All'||destination==='Trash'||destination==='INBOX');this.inbox=destination==='INBOX';record.uid++;actions.push(destination);}
     async messageCopy(uid,destination){check(destination==='INBOX');this.inbox=true;record.uid++;actions.push('restore');}

@@ -101,5 +101,6 @@
       "auto": false,
       "clean_days": 28
     }
-  }
+  },
+  "mark_dealt_read": true
 }

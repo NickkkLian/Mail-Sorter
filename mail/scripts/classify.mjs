@@ -36,12 +36,12 @@ export async function main({root=ROOT,env=process.env,connect=connectMailbox,out
       c=settings({...c,read_bodies:false,approval_mode:'every_run',rules:Object.fromEntries(Object.entries(c.rules).map(([id,r])=>[id,{...r,auto:false}]))});
       const real=mailbox;mailbox=new Proxy(real,{get(target,key){
         if(key==='addLabel')return async()=>{};
-        if(['archive','trash','restore','removeLabel','readBody'].includes(key))return async()=>{throw Error('Mutation forbidden in proposal dry run');};
+        if(['archive','trash','restore','removeLabel','readBody','markRead','markUnread'].includes(key))return async()=>{throw Error('Mutation forbidden in proposal dry run');};
         const value=Reflect.get(target,key);return typeof value==='function'?value.bind(target):value;
       }});classify=null;
     }
     const now=new Date(),evaluate=createEvaluator({config:c,mailbox,classify,now,diagnostics});
-    const result=await runCycle({config:c,state,mailbox,persist,approval:proposalOnly?null:await store.read('cleanup-approval.json',null),undoRequests:proposalOnly?[]:(await store.read('cleanup-undo.json',{requests:[]})).requests,force:proposalOnly||env.RUN_NOW==='1',backfill:env.BACKFILL==='1',evaluate,now,signal:stop.signal});
+    const result=await runCycle({config:c,state,mailbox,persist,approval:proposalOnly?null:await store.read('cleanup-approval.json',null),undoRequests:proposalOnly?[]:(await store.read('cleanup-undo.json',{requests:[]})).requests,dealtRequests:proposalOnly?[]:(await store.read('dealt-queue.json',{requests:[]})).requests,force:proposalOnly||env.RUN_NOW==='1',backfill:env.BACKFILL==='1',evaluate,now,signal:stop.signal});
     if(stop.signal.aborted){output('Run cancelled; progress so far was saved.');return 1;}
     output(result.skipped?'Skipped: '+result.skipped:'Cycle complete. Proposed: '+result.proposed);
     if(!proposalOnly){output('Classification diagnostics: '+JSON.stringify(diagnostics));if(diagnostics.errors){output('::error title=Mail classification incomplete::Classification errors: '+diagnostics.errors+'; see fixed diagnostic counts.');return 1;}}

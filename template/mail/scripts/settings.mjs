@@ -7,7 +7,7 @@ export const CATEGORIES = [
   {key:'job',label:'Jobs'}, {key:'health',label:'Health'}, {key:'other',label:'Unsorted'}
 ];
 export const DEFAULTS = {
-  schema_version: 1, enabled:false, read_bodies:false, frequency_hours:24,
+  schema_version: 1, enabled:false, read_bodies:false, mark_dealt_read:true, frequency_hours:24,
   approval_mode:'every_run', primary_only:false, keep_items:500, max_per_run:120,
   max_backfill:3000, max_sent:50000, log_runs:500, max_retries:3,
   body_max_chars:4000, body_fetch_bytes:32768, label_prefix:'AI/',
@@ -22,7 +22,7 @@ export function settings(input={}) {
   const c={...structuredClone(DEFAULTS),...input,
     protected:{...structuredClone(DEFAULTS.protected),...input.protected},
     rules:Object.fromEntries(RULE_IDS.map(id=>[id,{...DEFAULTS.rules[id],...input.rules?.[id]}]))};
-  for(const k of ['enabled','read_bodies','primary_only']) boolean(c[k],k);
+  for(const k of ['enabled','read_bodies','primary_only','mark_dealt_read']) boolean(c[k],k);
   if (!['every_run','eligible_rules'].includes(c.approval_mode)) throw Error('Invalid approval mode');
   const bounds={frequency_hours:[1,720],keep_items:[1,5000],max_per_run:[1,3000],max_backfill:[1,10000],max_sent:[1,100000],log_runs:[28,2000],max_retries:[1,5],body_max_chars:[128,8000],body_fetch_bytes:[1024,65536]};
   for(const [k,[lo,hi]] of Object.entries(bounds)) if(!Number.isInteger(c[k])||c[k]<lo||c[k]>hi) throw Error('Invalid setting: '+k);

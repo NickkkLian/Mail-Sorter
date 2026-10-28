@@ -1,5 +1,7 @@
 # Settings update — 2026-10-24
 
+Dealt mail adds one App-specific preference: **Mark dealt mail as read** / **将已处理邮件标为已读**. It defaults on, saves only `mark_dealt_read` through the existing conflict-aware config save, and participates in unsaved/discard handling. Saving a failure keeps the draft and restores the displayed saved value. The runner uses the saved value on its next enabled wake. Category labeling always applies; mail stays in Inbox. Dealt history and Undo are actions next to the digest, outside Settings.
+
 The top-right gear opens Connection, AI, Language and theme, Data and App-specific. Language, theme, palettes and the scheduled classifier preference have no duplicate header controls. The classifier text in the header/page is status only. Refresh, filters, cleanup review and Undo remain actions in their original views.
 
 Connection Save is local; Connect / reload reads the selected private source. Complete shared/independent choices are explicit, incomplete overrides stay disconnected, other origins remain isolated, and original connection bytes remain for older pages. AI runs in the scheduled backend: Anthropic and Gmail credentials belong in repository Actions secrets, with no browser AI key. Data explains repository-managed mail/history; this digest cannot export or restore a whole mailbox.

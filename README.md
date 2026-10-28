@@ -16,9 +16,13 @@ Rules propose; a model can choose a keep category or veto cleanup. A model canno
 
 The public board has empty connection defaults. It uses the existing GitHub Contents client and conflict-aware config editor. Tokens stay in browser localStorage. Review text is rendered as text, and script sources/inline hashes are restricted by CSP. Deploy board modules and the matching index/CSP together.
 
+Each digest message with a stable Gmail ID has a **Dealt** button. **Mark all shown as dealt** queues only the current filtered page (at most 150 messages). On the next enabled `mail-sync` wake, the runner adds the configured category label, including Unsorted, and marks the message read by default. It keeps the message in Inbox. Settings → App-specific → **Mark dealt mail as read** can turn off the read change; explicitly Save the switch. The setting in force when the runner executes is used. Scheduled wakes are 15:00 and 22:00 UTC and can be delayed.
+
+Dealt history has Undo for every queued action. Undo before execution cancels that request; Undo after execution queues restoration on the next enabled wake. Only a previously unread message changed by Dealt becomes unread again, and only a category label added by Dealt is removed. Existing labels and read state are preserved. Interrupted operations are quarantined, never automatically replayed, and can be undone. Dealt consumption records remain in the journal so an old queued request cannot replay when cleanup history is pruned. Normal classifier scans do not re-add labels removed by dealt Undo. A stale category, missing stable ID, missing message, unknown read/label state or a message outside Inbox is skipped safely; history reports skipped counts.
+
 ## What stays private
 
-`mail/config.json`, `mail/mail.json`, `runtime.json`, `cleanup-proposal.json`, `cleanup-log.json`, `cleanup-approval.json` and `cleanup-undo.json` belong in the private repository. Only empty state and example settings ship in the template. Never add a real digest, sample pool or reviewed test set here.
+`mail/config.json`, `mail/mail.json`, `runtime.json`, `cleanup-proposal.json`, `cleanup-log.json`, `cleanup-approval.json`, `cleanup-undo.json` and `dealt-queue.json` belong in the private repository. Only empty state and example settings ship in the template. Never add a real digest, sample pool or reviewed test set here. Existing installations can leave `dealt-queue.json` absent until the first Dealt action creates it; preserve it thereafter.
 
 At first cut-over, protective senders are seeded once from existing keep-category digest metadata. Every run also indexes Sent correspondents/threads. Protected senders/domains, keep labels, stars, written-to correspondents and participated threads veto cleanup; incomplete safety metadata leaves mail in place. No old Gmail labels are renamed or removed.
 
@@ -45,6 +49,8 @@ DRY_RUN=1 node mail/scripts/classify.mjs
 ```
 
 The suite preloads a network blocker and tests rules, protection, disabled behavior, provider request shapes, durable journal ordering, approval conflicts/replay, interrupted operations, undo and the real review renderer in a DOM harness. The 200-message cleanup fixture is entirely synthetic. Its scores are safety checks, not measured mailbox accuracy.
+
+Optional browser checks use Playwright Core and a headless Chromium installation: `PLAYWRIGHT_MODULE=/absolute/path/to/playwright-core/index.mjs CHROME_PATH=/path/to/chromium node scripts/browser-dealt.mjs`. The script serves this checkout on localhost:8765, blocks external requests, and tests EN/ZH, light/dark, desktop/phone, Dealt, bulk, Undo and Settings. A synthetic in-memory Contents API verifies the connected UI without a repository token or mailbox. Screenshots go to `evidence/` (override with `EVIDENCE_DIR`).
 
 `DRY_RUN=1` exits without connecting or writing state. `DRY_RUN=proposal` is a separate metadata-only mode for an enabled local installation: it writes proposals/digest locally, suppresses every mailbox mutation, ignores queued approvals/undo, disables body/model reads and refuses GitHub state. Use only in a disposable copy for testing; its policy differs from body-enabled settings. The release integration test injects fake IMAP.
 

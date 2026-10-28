@@ -40,7 +40,7 @@ export function mountReview(bridge,document){
     }
     host.append(el('h3','Run history'));
     if(!journal.runs.length)host.append(el('p','No cleanup runs yet.'));
-    for(const run of journal.runs.slice().reverse().slice(0,30)){
+    for(const run of journal.runs.filter(r=>r.kind!=='dealt').slice().reverse().slice(0,30)){
       const row=el('div',null,{class:'review-toolbar'}),done=run.entries.filter(x=>x.status==='done'||x.status==='undone').length,status=undoStatus(run,undo.requests);
       row.append(el('span',new Date(run.at).toLocaleString()+' · '+done+'/'+(run.selected_count??run.entries.length)+' completed'));
       const undoButton=button(status,async()=>{await controller.undo(run.id);render();say('Undo queued. Refresh after the next runner to see restoration status.');});undoButton.disabled=!c.enabled||['Restored','Trash undo expired','Undo queued'].includes(status)||!run.entries.length;row.append(undoButton);host.append(row);

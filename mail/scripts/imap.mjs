@@ -1,5 +1,5 @@
 // Gmail-only adapter. Dynamic dependency loading keeps imports/tests/disabled CLI offline.
-// No delete, expunge, mark-read, reply, or arbitrary-folder operation is exposed.
+// No delete, expunge, reply, or arbitrary-folder operation is exposed.
 // Gmail can return either decoded UTF-8 names or RFC 3501 modified UTF-7. Malformed encodings fail closed.
 import {normalizeMetadata} from "./metadata.mjs";
 export {decodeLabel} from "./metadata.mjs";
@@ -41,6 +41,8 @@ export async function connectMailbox(config,env,createClient){
     get:id=>withMessage(id,async x=>metadata(x.m,x.box==='INBOX')).catch(()=>null),
     addLabel:(id,label)=>withMessage(id,async x=>{try{await client.mailboxCreate(label);}catch{/* existing label */}await client.messageFlagsAdd(x.m.uid,[label],{uid:true,useLabels:true});}),
     removeLabel:(id,label)=>withMessage(id,x=>client.messageFlagsRemove(x.m.uid,[label],{uid:true,useLabels:true})),
+    markRead:id=>withMessage(id,x=>client.messageFlagsAdd(x.m.uid,['\\Seen'],{uid:true})),
+    markUnread:id=>withMessage(id,x=>client.messageFlagsRemove(x.m.uid,['\\Seen'],{uid:true})),
     archive:id=>withMessage(id,x=>{if(x.box!=='INBOX')throw Error('Inbox changed');return client.messageMove(x.m.uid,all,{uid:true});}),
     trash:id=>withMessage(id,x=>{if(x.box!=='INBOX')throw Error('Inbox changed');return client.messageMove(x.m.uid,trash,{uid:true});}),
     restore:id=>withMessage(id,x=>x.box==='INBOX'?true:x.box===trash?client.messageMove(x.m.uid,'INBOX',{uid:true}):client.messageCopy(x.m.uid,'INBOX',{uid:true})),

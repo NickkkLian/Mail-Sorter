@@ -8,3 +8,6 @@ mail/runtime.json
 mail/cleanup-*.json
 mail/.runner.lock
 template/mail/.runner.lock
+
+mail/dealt-queue.json
+evidence/
