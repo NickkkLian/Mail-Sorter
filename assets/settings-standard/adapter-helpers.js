@@ -2,10 +2,10 @@
 window.SuiteSettingsHelpers={
   kitPreferences(app){
     const R=HubSettingsRuntime,values=['plaster','paper','ink'];
-    const legacyPalette=()=>{const v=localStorage.getItem('nl-theme');return values.includes(v)?v:'plaster';};
-    const legacyShortcuts=()=>localStorage.getItem('nl-shortcuts')!=='off';
+    const legacyPalette=()=>{const v=localStorage.getItem(HubSettingsContract.preferenceKey("nl-theme"));return values.includes(v)?v:'plaster';};
+    const legacyShortcuts=()=>localStorage.getItem(HubSettingsContract.preferenceKey("nl-shortcuts"))!=='off';
     Appearance.shortcutsOn=()=>{try{return R.read(app).shortcuts??legacyShortcuts();}catch{return legacyShortcuts();}};
-    const shortcuts=SuiteFieldGroup({id:'suite-shortcuts',slot:'pha-settings-v1:'+app,fields:[{key:'shortcuts',type:'checkbox',default:legacyShortcuts(),en:'Single-key page shortcuts',zh:'页面单键快捷键'}],afterSave(){document.dispatchEvent(new CustomEvent('shortcutschange',{detail:{on:Appearance.shortcutsOn()}}));}});
+    const shortcuts=SuiteFieldGroup({id:'suite-shortcuts',slot:HubSettingsContract.preferenceKey("pha-settings-v1:")+app,fields:[{key:'shortcuts',type:'checkbox',default:legacyShortcuts(),en:'Single-key page shortcuts',zh:'页面单键快捷键'}],afterSave(){document.dispatchEvent(new CustomEvent('shortcutschange',{detail:{on:Appearance.shortcutsOn()}}));}});
     return {
       defaultLanguage:'en',
       palette:{values,legacy:legacyPalette,labels:{plaster:{en:'Water lilies',zh:'睡莲'},paper:{en:'Morning light',zh:'晨光'},ink:{en:'Dusk',zh:'暮色'}}},

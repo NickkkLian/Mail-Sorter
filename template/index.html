@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-5nyhwSzTgu2n7ZAL4gvhru/QlXgk4oq6kTJUzThiFGQ=' 'sha256-wMCHn0OpH0CosStuYwKrHjIB5qySK0qbEbedXSkpsZQ=' 'sha256-hd7bgmTxK5TC7dUeJAq5lyAKxFhZmprU6bV/OFqRMuw='; connect-src https://api.github.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-9Q4lbDxmkKa0OiSEdhM3shTqoTB8RwPSia5TbLdwrmM=' 'sha256-/46Bqio80s2CmyDlRf/EpQl8JTXxfme0gW3U/eVA6y4=' 'sha256-7KHJoL7OnP6Fz4/UXIE8TM2/yxQeFN3L3UAWFB7Ws14='; connect-src https://api.github.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'">
 <script src="assets/settings-standard/core.js"></script>
-<script>/* appearance boot — runs before any stylesheet so the stored palette and light/dark apply on the first paint */(function(){try{var d=document.documentElement,L=window.localStorage,t=L.getItem('nl-theme'),s=L.getItem('nl-scheme');if(s===null){var o=L.getItem('theme')||L.getItem('qm-theme');if(o==='dark'||o==='light')s=o;}if(t==='paper'||t==='ink')d.setAttribute('data-theme',t);if(s==='dark'||s==='light')d.setAttribute('data-scheme',s);}catch(e){}})();</script>
+<script>/* appearance boot — runs before any stylesheet so the stored palette and light/dark apply on the first paint */(function(){try{var d=document.documentElement,L=window.localStorage,t=L.getItem(HubSettingsContract.preferenceKey("nl-theme")),s=L.getItem(HubSettingsContract.preferenceKey("nl-scheme"));if(s===null){var o=L.getItem(HubSettingsContract.preferenceKey("theme"))||L.getItem(HubSettingsContract.preferenceKey("qm-theme"));if(o==='dark'||o==='light')s=o;}if(t==='paper'||t==='ink')d.setAttribute('data-theme',t);if(s==='dark'||s==='light')d.setAttribute('data-scheme',s);}catch(e){}})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="Sort what matters. Review outdated mail before cleanup. Headersort: a scheduled Action writes a capped digest to your private repo; this board reads it.">
 <meta name="theme-color" content="#f7e9e8" media="(prefers-color-scheme: light)">
@@ -1248,6 +1248,8 @@ main{width:100%;flex:1 0 auto}
 <link rel="stylesheet" href="board/cleanup.css">
 <link rel="stylesheet" href="assets/settings-standard/panel.css">
 <link rel="stylesheet" href="assets/settings-adapter.css">
+<link rel="stylesheet" href="assets/settings-standard/entry.css">
+<link rel="stylesheet" href="assets/settings-entry.css">
 </head>
 <body>
 <a class="skip" href="#main" data-i18n="skip">Skip to content</a>
@@ -1356,7 +1358,7 @@ main{width:100%;flex:1 0 auto}
    No dependencies. Styles use design tokens only. */
 (function (root) {
   'use strict';
-  var KEY_THEME = 'nl-theme', KEY_SCHEME = 'nl-scheme', KEY_SHORTCUTS = 'nl-shortcuts';
+  var KEY_THEME = HubSettingsContract.preferenceKey("nl-theme"), KEY_SCHEME = HubSettingsContract.preferenceKey("nl-scheme"), KEY_SHORTCUTS = HubSettingsContract.preferenceKey("nl-shortcuts");
   var THEMES = ['plaster', 'paper', 'ink'];
   var THEME_NAMES = { plaster: 'Plaster', paper: 'Paper', ink: 'Ink' };   // names, not translated
   var SCHEMES = ['system', 'light', 'dark'];
@@ -1840,7 +1842,7 @@ initializeMailConnection();
 function configured(){ return HubSettingsContract.complete(cfg()); }
 
 /* ============ language (pha-lang shared; English by default) ============ */
-let lang=(()=>{ try{ return localStorage.getItem('pha-lang')==='zh'?'zh':'en'; }catch(e){ return 'en'; } })();
+let lang=(()=>{ try{ return localStorage.getItem(HubSettingsContract.preferenceKey("pha-lang"))==='zh'?'zh':'en'; }catch(e){ return 'en'; } })();
 const T=(zh,en)=>lang==='en'?en:zh;
 const I18N={
   skip:{zh:'跳到内容',en:'Skip to content'},
@@ -1882,7 +1884,7 @@ function applyStatic(){
   document.querySelectorAll('[data-i18n-ph]').forEach(el=>{ el.placeholder=Ls(el.dataset.i18nPh); });
   const lb=document.getElementById('langBtn'); if(lb) lb.textContent=Ls('langBtn');
 }
-function toggleLang(){ lang=lang==='en'?'zh':'en'; try{localStorage.setItem('pha-lang',lang);}catch(e){} applyStatic(); render(); }
+function toggleLang(){ lang=lang==='en'?'zh':'en'; try{localStorage.setItem(HubSettingsContract.preferenceKey("pha-lang"),lang);}catch(e){} applyStatic(); render(); }
 
 /* ============ helpers ============ */
 const $=id=>document.getElementById(id);
@@ -2205,6 +2207,7 @@ applyStatic();
 loadAll();
 </script>
 <script src="assets/settings-standard/backup.js"></script>
+<script src="assets/settings-standard/entry.js" data-settings-row="header.topbar" data-settings-overlays="dialog[open],.overlay.open,.modal-overlay.open,.suite-panel[open],.suite-confirm[open]" data-settings-secondary="#refresh,.topbar>a.gh"></script>
 <script src="assets/settings-standard/adapter-helpers.js"></script>
 <script src="assets/settings-standard/field-group.js"></script>
 <script src="assets/settings-adapter.js"></script>

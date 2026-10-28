@@ -10,7 +10,8 @@ const SETTINGS_HOST = (()=>{
   return null;
 })();
 const HUB_ORIGIN = SETTINGS_HOST?.origin || 'urn:settings-isolated';
-const PROVENANCE = 'pha-settings-provenance-v1';
+function preferenceKey(key){return SETTINGS_HOST?key:"Mail-Sorter:public-preferences:"+key;}
+const PROVENANCE = preferenceKey('pha-settings-provenance-v1');
 const CONNECTION = 'pha-config';
 const SECTIONS = [
     { id: 'connection', en: 'Connection', zh: '连接' }, { id: 'ai', en: 'AI', zh: 'AI' },
@@ -198,9 +199,9 @@ function connectionSession(initial) {
             throw new SettingsError('pending'); target = { ...next }; sha = undefined; readBefore = false; },
     };
 }
-const LEGACY_THEME = {"Mail-Sorter":"nl-scheme"};
+const LEGACY_THEME = {"Mail-Sorter":preferenceKey("nl-scheme")};
 function migrateTheme(store, app) {
-    const slot = 'pha-settings-v1:' + app, raw = rawRead(store, slot);
+    const slot = preferenceKey("pha-settings-v1:") + app, raw = rawRead(store, slot);
     if (raw !== null) {
         const v = object(raw);
         if (!['hub', 'app'].includes(String(v.themeMode)) || !['system', 'light', 'dark'].includes(String(v.theme)))
@@ -221,25 +222,25 @@ function refresh(field, value) {
 }
 function review(field, saved, keep) { return keep ? { ...field, baseline: saved, conflict: false, dirty: field.value !== saved } : draft(saved); }
 function preferencesRead(store) {
-    const lang = rawRead(store, 'pha-lang'), theme = rawRead(store, 'pha-theme');
+    const lang = rawRead(store, preferenceKey("pha-lang")), theme = rawRead(store, preferenceKey("pha-theme"));
     if (lang !== null && !['en', 'zh'].includes(lang) || theme !== null && !['system', 'light', 'dark'].includes(theme))
         throw new SettingsError('invalid');
     return { lang: lang === 'en' ? 'en' : 'zh', theme: (theme || 'system'), raw: { lang, theme } };
 }
 function preferencesWrite(store, value, baseline) {
-    if (rawRead(store, 'pha-lang') !== baseline.lang || rawRead(store, 'pha-theme') !== baseline.theme)
+    if (rawRead(store, preferenceKey("pha-lang")) !== baseline.lang || rawRead(store, preferenceKey("pha-theme")) !== baseline.theme)
         throw new SettingsError('conflict');
     let wroteLang = false;
     try {
-        persist(store, 'pha-lang', value.lang);
+        persist(store, preferenceKey("pha-lang"), value.lang);
         wroteLang = true;
-        persist(store, 'pha-theme', value.theme);
+        persist(store, preferenceKey("pha-theme"), value.theme);
     }
     catch (error) {
         // Best-effort compensation of our own partial write, never another tab's newer edit.
-        if (wroteLang && rawRead(store, 'pha-lang') === value.lang)
+        if (wroteLang && rawRead(store, preferenceKey("pha-lang")) === value.lang)
             try {
-                persist(store, 'pha-lang', baseline.lang);
+                persist(store, preferenceKey("pha-lang"), baseline.lang);
             }
             catch { }
         throw error;
@@ -274,7 +275,7 @@ function observeSettings(refresh) {
     return () => { window.removeEventListener('storage', refresh); window.removeEventListener('focus', refresh); document.removeEventListener('visibilitychange', visible); };
 }
 
-const C=window.HubSettingsContract={settingsManager:SETTINGS_HOST?.manager||'',CONTRACT_VERSION,HUB_ORIGIN,PROVENANCE,CONNECTION,SECTIONS,AI_CAPABILITIES,SettingsError,object,rawRead,keyRead,writesAllowed,digest,keySource,keyWrite,connectionRead,connectionWrite,complete,effectiveConnection,connectionSession,migrateTheme,resolveAppTheme,draft,edit,refresh,review,preferencesRead,preferencesWrite,isSettingsShortcut,openModal,observeSettings};
+const C=window.HubSettingsContract={hosted:!!SETTINGS_HOST,preferenceKey,settingsManager:SETTINGS_HOST?.manager||'',CONTRACT_VERSION,HUB_ORIGIN,PROVENANCE,CONNECTION,SECTIONS,AI_CAPABILITIES,SettingsError,object,rawRead,keyRead,writesAllowed,digest,keySource,keyWrite,connectionRead,connectionWrite,complete,effectiveConnection,connectionSession,migrateTheme,resolveAppTheme,draft,edit,refresh,review,preferencesRead,preferencesWrite,isSettingsShortcut,openModal,observeSettings};
 /* Installed before the app's own startup; C is the pinned settings-contract namespace. */
 const R = window.HubSettingsRuntime = {
   pending: 0,
@@ -289,19 +290,19 @@ const R = window.HubSettingsRuntime = {
     const id=JSON.stringify([connection.owner,connection.repo,branch,path]);
     if(status===404&&R.seenFiles.has(id)) {
       const error=new C.SettingsError('missing-after-read');
-      error.message=localStorage.getItem('pha-lang')==='zh'?'以前读到过的文件现在返回 404；请检查权限或仓库，已停止读取和写入。':'A previously read file now returns 404. Check repository access; reading and writing stopped.';
+      error.message=localStorage.getItem(preferenceKey("pha-lang"))==='zh'?'以前读到过的文件现在返回 404；请检查权限或仓库，已停止读取和写入。':'A previously read file now returns 404. Check repository access; reading and writing stopped.';
       throw error;
     }
     if(status===200)R.seenFiles.add(id);
   },
   sameConnection(a,b){return ['owner','repo','token'].every(field=>a[field]===b[field]);},
-  origin() { return C.writesAllowed(location.origin, window.__SETTINGS_TEST__ === true) ? C.HUB_ORIGIN : location.origin; },
+  origin() { return C.hosted && C.writesAllowed(location.origin, window.__SETTINGS_TEST__ === true) ? C.HUB_ORIGIN : location.origin; },
   async track(operation,allowDuringRestore=false) { R.pending++; try { if(R.restoring&&!allowDuringRestore)await R.restoreWait;return await operation(); } finally { R.pending--;if(!R.pending&&R.connectionDeferred&&!window.settingsAdapter?.unsaved?.())queueMicrotask(()=>window.SuiteSettings?.refresh()); } },
   beginRestore(){if(R.pending||R.restoring)throw new C.SettingsError('pending');R.restoring=true;R.restoreWait=new Promise(resolve=>{R.releaseRestore=resolve;});},
   endRestore(){R.restoring=false;const release=R.releaseRestore;R.releaseRestore=null;release?.();},
-  read(app) { return C.object(C.rawRead(localStorage, 'pha-settings-v1:' + app)); },
+  read(app) { return C.object(C.rawRead(localStorage, preferenceKey("pha-settings-v1:") + app)); },
   write(app, patch) {
-    const slot = 'pha-settings-v1:' + app;
+    const slot = preferenceKey("pha-settings-v1:") + app;
     const existing=C.rawRead(localStorage,slot)===null?C.migrateTheme(localStorage,app):R.read(app);
     const next = JSON.stringify({...existing, ...patch});
     try { localStorage.setItem(slot, next); } catch { throw new C.SettingsError('storage'); }

@@ -1,0 +1,25 @@
+/* The 44px hit target surrounds a 40px visible box; the slot owns its gap and divider. */
+[data-settings-slot]{display:inline-flex;align-items:center;flex:0 0 auto;align-self:center;margin-inline-start:8px;padding-inline-start:9px;border-inline-start:1px solid var(--line,var(--border,var(--brd,currentColor)));position:relative;order:99}
+[data-settings-slot][hidden]{display:none!important}
+[data-settings-slot]{box-sizing:border-box!important;width:54px!important;flex:0 0 54px!important}
+[data-settings-slot]>.suite-gear{position:relative!important;inset:auto!important;z-index:auto!important;display:inline-flex!important;align-items:center;justify-content:center;flex:none!important;box-sizing:border-box!important;width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important;max-width:44px!important;max-height:44px!important;margin:0!important;padding:12px!important;border:0!important;background:transparent!important;box-shadow:none!important;line-height:1!important;color:inherit}
+[data-settings-slot]>.suite-gear{isolation:isolate}
+[data-settings-slot]>.suite-gear::before{content:'';position:absolute;inset:2px;pointer-events:none;border:1px solid currentColor;border-radius:inherit;background:transparent;z-index:-1}
+[data-settings-slot]>.suite-gear>span{display:none!important}
+[data-settings-slot]>.suite-gear svg{width:20px!important;height:20px!important;flex:none;fill:none;stroke:currentColor;stroke-width:1.7}
+[data-settings-slot]>.suite-gear:focus-visible{outline:2px solid currentColor;outline-offset:1px}
+.suite-work-menu{display:block;flex:none}
+.suite-work-menu>summary{display:none}
+.suite-work-items{display:flex;align-items:center;gap:8px}
+@media(max-width:639px){
+ .suite-work-menu{position:relative;display:block;flex:none}
+ .suite-work-menu>summary{display:flex;align-items:center;justify-content:center;list-style:none;min-width:44px;min-height:44px;cursor:pointer}
+ .suite-work-menu>summary::-webkit-details-marker{display:none}
+ .suite-work-menu:not([open])>.suite-work-items{display:none!important}
+ .suite-work-menu[open]{z-index:20}
+ .suite-work-menu[open]>.suite-work-items{display:flex;flex-direction:column;gap:8px;position:absolute;inset:calc(100% + 8px) 0 auto auto;min-width:160px;padding:8px;background:var(--card,var(--surface,var(--plane,#fff)));color:inherit;box-shadow:0 6px 24px #0003;border:1px solid currentColor;border-radius:8px}
+ .suite-work-menu[open]>.suite-work-items{color:var(--text,var(--ink,#202b24))}
+ .suite-work-menu[open]>.suite-work-items .btn,.suite-work-menu[open]>.suite-work-items a{color:inherit}
+ .suite-work-menu[open]{position:relative}
+ .suite-work-menu[open]>summary{background:var(--card,var(--surface,var(--plane,transparent)))}
+}
