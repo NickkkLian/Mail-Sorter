@@ -1,0 +1,22 @@
+/* The app header owns layout and inherits the native palette and type. */
+#app-save-status{--save-status-color:var(--muted);--save-status-font-size:12px;min-width:0;max-width:100%;white-space:normal;line-height:1.5;}
+#app-save-status [role=status]{overflow-wrap:anywhere}
+header.topbar:has(#app-save-status){height:auto;min-height:var(--topbar-h);flex-wrap:wrap!important;gap:12px;padding-block:8px}
+header.topbar #pill{display:none}
+header.topbar #app-save-status{--save-status-color:var(--on-band);flex:0 1 auto}
+@media(max-width:760px){header.topbar #app-save-status{order:100;flex:1 0 100%;margin:0}header.topbar .spacer{display:none}}
+
+header.topbar:has(#app-save-status){width:100%;box-sizing:border-box;gap:8px!important}
+header.topbar .brand{flex:1 0 auto!important;overflow:visible!important}
+header.topbar #app-save-status{white-space:normal;flex-shrink:1}
+@media(max-width:760px){header.topbar #app-save-status{flex:1 0 100%!important;white-space:normal!important}}
+
+@media(max-width:639px){
+ header.topbar:has(#app-save-status){display:grid!important;grid-template-columns:44px minmax(0,1fr) 157px;grid-template-areas:'brand brand controls' 'menu save save';column-gap:6px!important;row-gap:8px!important;height:auto!important}
+ header.topbar .brand{grid-area:brand;min-width:0!important;max-width:100%;font-size:16px!important}
+ header.topbar .status{display:contents!important}
+ header.topbar [data-settings-slot]{grid-area:controls}
+ header.topbar .suite-work-menu,header.topbar #work-menu{grid-area:menu}
+ header.topbar #app-save-status{grid-area:save;min-height:44px;align-content:center;white-space:normal!important}
+}
+@media(max-width:374px){header.topbar:has(#app-save-status){grid-template-columns:32px minmax(0,1fr) 121px}}

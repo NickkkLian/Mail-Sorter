@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-9Q4lbDxmkKa0OiSEdhM3shTqoTB8RwPSia5TbLdwrmM=' 'sha256-/46Bqio80s2CmyDlRf/EpQl8JTXxfme0gW3U/eVA6y4=' 'sha256-pS0szUVc8hvC62utWW6VVSaHNNWpAslcSIZFnPLeMlQ='; connect-src https://api.github.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-9Q4lbDxmkKa0OiSEdhM3shTqoTB8RwPSia5TbLdwrmM=' 'sha256-/46Bqio80s2CmyDlRf/EpQl8JTXxfme0gW3U/eVA6y4=' 'sha256-V572Hq9ES04Jsw2kj/xTE1R8/wtm2kRLinPfCGh86MQ='; connect-src https://api.github.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'">
 <script src="assets/settings-standard/core.js"></script>
 <script>/* appearance boot — runs before any stylesheet so the stored palette and light/dark apply on the first paint */(function(){try{var d=document.documentElement,L=window.localStorage,t=L.getItem(HubSettingsContract.preferenceKey("nl-theme")),s=L.getItem(HubSettingsContract.preferenceKey("nl-scheme"));if(s===null){var o=L.getItem(HubSettingsContract.preferenceKey("theme"))||L.getItem(HubSettingsContract.preferenceKey("qm-theme"));if(o==='dark'||o==='light')s=o;}if(t==='paper'||t==='ink')d.setAttribute('data-theme',t);if(s==='dark'||s==='light')d.setAttribute('data-scheme',s);}catch(e){}})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -1250,6 +1250,10 @@ main{width:100%;flex:1 0 auto}
 <link rel="stylesheet" href="assets/settings-adapter.css">
 <link rel="stylesheet" href="assets/settings-standard/entry.css">
 <link rel="stylesheet" href="assets/settings-entry.css">
+<link rel="stylesheet" href="assets/settings-standard/save-status.css">
+<link rel="stylesheet" href="assets/save-status-adapter.css">
+<script src="assets/settings-standard/save-status.js"></script>
+<script src="assets/save-status-bridge.js"></script>
 </head>
 <body>
 <a class="skip" href="#main" data-i18n="skip">Skip to content</a>
@@ -1258,6 +1262,7 @@ main{width:100%;flex:1 0 auto}
     <b>Headersort</b><span data-i18n="tagline">Sort what matters. Review outdated mail before cleanup.</span>
   </a>
   <span class="pill" id="pill" title="">Demo<span class="long" id="pillLong"> · fictional mail</span></span>
+  <div id="app-save-status"></div>
   <span class="spacer"></span>
   <span class="pill" id="togBtn" role="status"><span id="togText">—</span></span>
   <button class="btn btn-ghost" id="refresh" data-act="loadAll" data-i18n="refresh">Refresh</button>
@@ -1845,6 +1850,7 @@ function configured(){ return HubSettingsContract.complete(cfg()); }
 /* ============ language (pha-lang shared; English by default) ============ */
 let lang=(()=>{ try{ return localStorage.getItem(HubSettingsContract.preferenceKey("pha-lang"))==='zh'?'zh':'en'; }catch(e){ return 'en'; } })();
 const T=(zh,en)=>lang==='en'?en:zh;
+const appSave=RolloutSave.create({connection:()=>cfg(),language:()=>lang,path:"mail/config.json"});
 const I18N={
   skip:{zh:'跳到内容',en:'Skip to content'},
   tagline:{zh:'整理值得保留的邮件，确认后再清理过期邮件。',en:'Sort what matters. Review outdated mail before cleanup.'},
@@ -1876,6 +1882,7 @@ const I18N={
 };
 const Ls=k=>(I18N[k]||{zh:k,en:k})[lang];
 function applyStatic(){
+  appSave.view.refresh();
   document.documentElement.lang=lang==='en'?'en':'zh-CN';
   document.title=lang==='en'?'Headersort':'Headersort · 邮件分拣台';
   document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent=Ls(el.dataset.i18n); });
@@ -1924,7 +1931,11 @@ function ghPut(path,obj,sha,message){
 }
 // Save config.json: a stale save re-reads the file and merges three ways (base = as this page last read or saved it);
 // only a value changed on both sides asks. One save at a time, so two clicks never race on one sha.
-const saveConf=SafeMerge.serial(async message=>{return HubSettingsRuntime.track(async()=>{/* settings workflow */
+let retryConfig=null;
+const configQueue=SafeMerge.serial(async (message,key,revision)=>{return HubSettingsRuntime.track(async()=>{/* settings workflow */
+  if(key!==appSave.key())throw new HubSettingsContract.SettingsError('conflict');
+  const token=appSave.start(key,revision);
+  try{
   const sent=SafeMerge.snapshot(CONF);
   const r=await SafeMerge.save({data:sent,sha:SHA_CONF,base:BASE_CONF,T,
     put:(d,sha)=>ghPut('mail/config.json',d,sha,message),
@@ -1933,8 +1944,14 @@ const saveConf=SafeMerge.serial(async message=>{return HubSettingsRuntime.track(
   // merged: the page takes the merged file plus anything changed here meanwhile (otherwise the next save would treat
   // what came from elsewhere as deleted here)
   if(r.merged){ CONF=SafeMerge.rebase(sent,r.data,CONF); render(); }
+  appSave.succeed(token,r.wrote===false?null:new Date());
   return r;
+  }catch(error){appSave.fail(token,error);throw error;}
 });});
+function saveConf(message){
+  const key=appSave.key(),revision=appSave.pending(key,()=>{CONF=SafeMerge.formChanges(BASE_CONF,retryConfig,CONF);return saveConf(message);});
+  retryConfig=SafeMerge.snapshot(CONF);return configQueue(message,key,revision);
+}
 
 /* ============ settings ============ */
 function openSettings(focusToken,opener){return SuiteSettings.open(focusToken?'connection':'connection');}
@@ -2207,8 +2224,8 @@ globalThis.HeadersortBoard={
   demo:DEMO, available:()=>DEMO||Boolean(CONF&&configured()&&!LOAD_ERROR),
   getConfig:()=>CONF,
   get:(path,fresh)=>ghGet(path,fresh),
-  put:async(path,data,sha,message)=>{return HubSettingsRuntime.track(async()=>{/* settings workflow */const r=await ghPut(path,data,sha,message);if(!r.ok)throw Error("Save conflict or unavailable");return r.json();});},
-  isDirty:()=>mailCleanupDirty,markDirty:value=>{mailCleanupDirty=Boolean(value);},
+  put:async(path,data,sha,message)=>{const key=appSave.key(path),revision=appSave.pending(key,async()=>{const fresh=await ghGet(path,true);if(!SafeMerge.same(fresh.data,data)&&fresh.sha!==sha)throw new HubSettingsContract.SettingsError('conflict');return HeadersortBoard.put(path,data,fresh.sha,message);});const token=appSave.start(key,revision);try{return await HubSettingsRuntime.track(async()=>{const r=await ghPut(path,data,sha,message);if(!r.ok)throw Error('HTTP '+r.status);const result=await r.json();appSave.succeed(token);return result;});}catch(error){appSave.fail(token,error);throw error;}},
+  isDirty:()=>mailCleanupDirty,markDirty:value=>{mailCleanupDirty=Boolean(value);appSave.draft('cleanup-form',mailCleanupDirty);},
   saveConfig:async(value,baseline=CONF)=>HubSettingsRuntime.track(async()=>{return HubSettingsRuntime.track(async()=>{/* settings workflow */const before=CONF;CONF=SafeMerge.formChanges(baseline,value,CONF);try{await saveConf("mail: update cleanup settings");}catch{CONF=SafeMerge.rebase(value,before,CONF);throw Error("Save unavailable");}});}),
   subscribe:fn=>document.addEventListener("headersort-data",fn),
   shownItems:()=>shownDealtItems,
@@ -2222,6 +2239,7 @@ loadAll();
 <script src="assets/settings-standard/adapter-helpers.js"></script>
 <script src="assets/settings-standard/field-group.js"></script>
 <script src="assets/settings-adapter.js"></script>
+<script src="assets/save-status-bindings.js"></script>
 <script src="assets/settings-standard/panel.js"></script>
 <script type="module" src="board/cleanup.mjs"></script>
 <script type="module" src="board/dealt.mjs"></script>

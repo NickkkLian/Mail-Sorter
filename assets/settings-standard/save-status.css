@@ -1,0 +1,8 @@
+/* Scoped, token-driven, intrinsic-width header content. */
+.suite-save-status{display:flex;align-items:center;gap:8px;flex:0 1 auto;min-width:0;max-width:100%;color:var(--save-status-color,inherit);font-size:var(--save-status-font-size,12px);line-height:1.4}
+.suite-save-status>[role=status]{min-width:0;overflow-wrap:anywhere;text-wrap:pretty}
+.suite-save-status>button{flex:none;min-height:44px;min-width:44px;padding:4px 8px;font:inherit;color:inherit;border:1px solid var(--save-status-border,currentColor);border-radius:var(--save-status-radius,6px);background:var(--save-status-button-bg,transparent);cursor:pointer}
+.suite-save-status>button[hidden]{display:none}
+.suite-save-status>button:focus-visible{outline:2px solid currentColor;outline-offset:2px}
+.suite-save-status>button:active{transform:scale(.97)}
+.suite-save-status>button:disabled{opacity:.65;cursor:wait}
