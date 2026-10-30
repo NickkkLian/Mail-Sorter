@@ -18,5 +18,5 @@
   .topbar{gap:6px!important;padding-inline:10px!important}
   .topbar .suite-work-menu>summary{min-width:32px;min-height:44px}
   .topbar .brand{gap:2px!important}
-  .topbar .app-logo{width:20px;height:20px}
+  .topbar .app-logo{width:20px!important;height:20px!important}
 }
