@@ -8,3 +8,15 @@
 .suite-panel p:empty{display:none}.suite-panel #suite-classifier,.suite-panel #suite-dealt-settings,.suite-panel #suite-second-settings{margin-block:12px}
 
 .topbar>.pill{border:0;box-shadow:none;background:transparent}
+
+/* Fit the whole brand beside reachable header controls only on narrow phones. */
+@media(max-width:374px){
+  [data-settings-slot]{flex-basis:121px;width:121px;gap:4px}
+  [data-settings-slot]>button{width:32px!important;height:44px!important;min-width:32px!important;min-height:44px!important;max-width:32px!important;max-height:44px!important;padding:6px!important}
+  [data-settings-slot]>.suite-gear{width:44px!important;min-width:44px!important;max-width:44px!important}
+
+  .topbar{gap:6px!important;padding-inline:10px!important}
+  .topbar .suite-work-menu>summary{min-width:32px;min-height:44px}
+  .topbar .brand{gap:2px!important}
+  .topbar .app-logo{width:20px;height:20px}
+}
