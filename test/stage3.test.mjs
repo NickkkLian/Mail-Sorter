@@ -48,17 +48,17 @@ const flush=async()=>{for(let i=0;i<15;i++)await Promise.resolve();};
 test('real review renderer exposes accessible grouped checkboxes, selection feedback and queued approval',async()=>{
   const {bridge,puts}=boardIO(),doc=documentStub(),mount=mountReview(bridge,doc);await mount.ready;
   const boxes=doc.host.all().filter(n=>n.tagName==='input'&&n.attrs['aria-label']?.startsWith('Select '));check(boxes.length===3);
-  boxes[0].checked=false;boxes[0].fire('change');const approve=doc.host.all().find(n=>n.tagName==='button'&&n.textContent==='Approve 2 selected');check(!!approve);
-  approve.fire('click');await flush();check(puts[0][1].selected.length===2&&doc.host.textContent.includes('Approval queued')&&doc.activeElement?.attrs.role==='status');
+  boxes[0].checked=false;boxes[0].fire('change');const approve=doc.host.all().find(n=>n.tagName==='button'&&n.textContent==='Approve cleanup of 2 emails');check(!!approve);
+  approve.fire('click');await flush();check(puts[0][1].selected.length===2&&doc.host.textContent.includes('Approved.')&&doc.activeElement?.attrs.role==='status');
 });
 test('untrusted message text is rendered as text; failed saves restore controls',async()=>{
   const {bridge}=boardIO(),p=await bridge.get('mail/cleanup-proposal.json');p.data.items[0].subject='<img src=x onerror=evil()>';await bridge.put('mail/cleanup-proposal.json',p.data);const doc=documentStub(),mount=mountReview(bridge,doc);await mount.ready;check(doc.host.textContent.includes('<img')&&!doc.host.all().some(n=>n.tagName==='img'));
-  mount.controller.io.put=async()=>{throw Error('unavailable');};const b=doc.host.all().find(n=>n.tagName==='button'&&n.textContent.startsWith('Approve '));b.fire('click');await flush();check(!b.disabled&&doc.host.textContent.includes('Could not save'));
+  mount.controller.io.put=async()=>{throw Error('unavailable');};const b=doc.host.all().find(n=>n.tagName==='button'&&n.textContent.startsWith('Approve cleanup'));b.fire('click');await flush();check(!b.disabled&&doc.host.textContent.includes('Could not save'));
 });
 test('no connection hides panel; missing review and read error remain recoverable',async()=>{
   const {bridge}=boardIO(),doc=documentStub();await mountReview({...bridge,available:()=>false},doc).ready;check(doc.host.hidden);
   const d2=documentStub();await mountReview({...bridge,get:async()=>({data:null,sha:null})},d2).ready;check(d2.host.textContent.includes('No review list yet'));
-  const d3=documentStub();await mountReview({...bridge,get:async()=>{throw Error('offline');}},d3).ready;check(d3.host.textContent.includes('Could not load')&&d3.host.all().some(n=>n.textContent==='Try again'));
+  const d3=documentStub();await mountReview({...bridge,get:async()=>{throw Error('offline');}},d3).ready;check(d3.host.textContent.includes('Could not load')&&d3.host.all().some(n=>n.textContent==='Load list again'));
 });
 test('hosted state persistence uses SHA CAS, skips unchanged writes, and refuses conflicts',async()=>{
   const calls=[],stored={};let conflict=false;
@@ -110,4 +110,15 @@ test('interrupted cleanup is quarantined across new proposals, not just approval
 });
 test('scan checkpoints never advance past a candidate before its proposal is saved',async()=>{
   const state=emptyState(),mail=message({uid:5,subject:'Verification code'}),box={scan:async()=>({messages:[mail],done:false,uidValidity:'1'})};await runCycle({config,state,mailbox:box,persist:async s=>{if(s.runtime.scanAfter===5)check(s.proposal?.items.some(x=>x.gmailId===mail.gmailId));},now});
+});
+test('partial cleanup history explains archived total and remaining emails in both languages',async()=>{
+ for(const language of ['en','zh']){
+  const {bridge}=boardIO(),doc=documentStub();
+  await bridge.put('mail/cleanup-log.json',{runs:[{id:'partial',at:'2026-10-20T18:37:00Z',status:'cancelled',selected_count:932,not_reached_count:632,entries:Array.from({length:300},(_,i)=>({gmailId:String(i),status:'done',action:'archive'}))}]});
+  await mountReview({...bridge,language:()=>language},doc).ready;
+  const text=doc.host.textContent;
+  if(language==='en'){check(text.includes('300 of 932 selected emails archived')&&text.includes('632 emails were not reached')&&text.includes('will not continue automatically')&&text.includes('put up to 300 emails back in inbox'));}
+  else check(text.includes('所选 932 封邮件中，300 封已归档')&&text.includes('632 封尚未处理')&&text.includes('不会自动继续')&&text.includes('最多 300 封邮件放回收件箱'));
+  check(!/runner|queued|recorded intent|300\/932 completed/.test(text));
+ }
 });
