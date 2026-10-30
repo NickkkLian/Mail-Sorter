@@ -46,12 +46,12 @@ test('every intent is saved before its email is touched (batching keeps the cras
   hooks.before=async(verb,id)=>{const e=gh.saved('cleanup-log.json').runs[0].entries.find(x=>x.gmailId===id);check(e&&e.status==='intent');checked++;};
   await applyApproval({config,state,approval,mailbox,persist:persistTo(gh.store),now});check(checked===60);
 });
-test('a cancelled run saves the finished emails and drops the untouched ones',async()=>{
+test('a cancelled run saves the finished emails and keeps untouched emails pending',async()=>{
   const gh=fakeGitHub(),{state,approval,mailbox,data,hooks}=await setup(30),stop=new AbortController();let archives=0;
   hooks.before=async verb=>{if(verb==='archive'&&++archives===5)stop.abort();};
   await applyApproval({config,state,approval,mailbox,persist:persistTo(gh.store),now,signal:stop.signal});
   const log=gh.saved('cleanup-log.json'),entries=log.runs[0].entries;
-  check(entries.length===5&&entries.every(e=>e.status==='done')&&log.runs[0].status==='cancelled'&&log.runs[0].not_reached_count===25&&log.runs[0].skipped_count===0);
+  check(entries.length===5&&entries.every(e=>e.status==='done')&&log.runs[0].status==='in_progress'&&log.runs[0].not_reached_count===25&&log.runs[0].skipped_count===0);
   check([...data.values()].filter(x=>!x.inInbox).length===5); // exactly the recorded five were archived
 });
 test('long batches are also saved on a timer',async()=>{

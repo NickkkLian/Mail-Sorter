@@ -189,14 +189,14 @@ export const ruleName=(id,lang='en')=>({O1:['One-time codes','一次性验证码
 export function historyText(run,lang='en'){
   const t=(en,zh)=>lang==='zh'?zh:en, entries=run.entries||[],total=run.selected_count??entries.length;
   const archived=entries.filter(e=>e.status==='done'&&e.action==='archive').length,trashed=entries.filter(e=>e.status==='done'&&e.action==='trash').length,restored=entries.filter(e=>e.status==='undone').length;
-  const parts=[t(`${archived} of ${total} selected emails archived`, `所选 ${total} 封邮件中，${archived} 封已归档`)];
+  const parts=[t(`${archived} of ${total} selected emails archived${['running','in_progress'].includes(run.status)&&!run.resume_cancelled?' so far':''}`, `所选 ${total} 封邮件中，${archived} 封已归档`)];
   if(trashed)parts.push(t(`${trashed} emails moved to Trash`,`${trashed} 封已移入垃圾箱`));
   if(restored)parts.push(t(`${restored} emails put back in the inbox`,`${restored} 封已放回收件箱`));
   const unknown=entries.filter(e=>!['done','undone'].includes(e.status)).length;
   if(unknown)parts.push(t(`${unknown} email changes need checking in Gmail or Undo`,`${unknown} 封改动未确认，请到 Gmail 检查或撤销`));
   if(run.skipped_count)parts.push(t(`${run.skipped_count} emails skipped and left in place`,`${run.skipped_count} 封已跳过，未改动`));
   const rest=Math.max(0,total-entries.length-(run.skipped_count||0));
-  if(rest)parts.push(run.status==='running'?t(`${rest} emails have no result yet. Refresh later; if cleanup stopped, they will not continue automatically.`,`${rest} 封尚无结果，请稍后刷新；若清理已停止，不会自动继续。`):t(`${rest} emails were not reached. This cleanup will not continue automatically. Check Gmail and review a new list before approving more.`,`${rest} 封尚未处理，本次清理不会自动继续。请到 Gmail 检查，待有新清单时再确认。`));
+  if(rest)parts.push(['running','in_progress'].includes(run.status)&&!run.resume_cancelled?t('the rest continue at the next automatic check','其余邮件将在下次自动检查时继续处理'):run.resume_cancelled?t(`${rest} emails were left in place after Undo was requested`,`${rest} 封未处理的邮件已在申请撤销后保留原位`):t(`${rest} emails were not reached; review a new list before approving more`,`${rest} 封尚未处理，请等待新清单后再确认`));
   return parts.join(' · ');
 }
 export function undoText(run,status,lang='en'){

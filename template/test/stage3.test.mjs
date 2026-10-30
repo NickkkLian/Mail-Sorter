@@ -114,11 +114,11 @@ test('scan checkpoints never advance past a candidate before its proposal is sav
 test('partial cleanup history explains archived total and remaining emails in both languages',async()=>{
  for(const language of ['en','zh']){
   const {bridge}=boardIO(),doc=documentStub();
-  await bridge.put('mail/cleanup-log.json',{runs:[{id:'partial',at:'2026-10-20T18:37:00Z',status:'cancelled',selected_count:932,not_reached_count:632,entries:Array.from({length:300},(_,i)=>({gmailId:String(i),status:'done',action:'archive'}))}]});
+  await bridge.put('mail/cleanup-log.json',{runs:[{id:'partial',at:'2026-10-20T18:37:00Z',status:'in_progress',selected_count:932,not_reached_count:632,entries:Array.from({length:300},(_,i)=>({gmailId:String(i),status:'done',action:'archive'}))}]});
   await mountReview({...bridge,language:()=>language},doc).ready;
   const text=doc.host.textContent;
-  if(language==='en'){check(text.includes('300 of 932 selected emails archived')&&text.includes('632 emails were not reached')&&text.includes('will not continue automatically')&&text.includes('put up to 300 emails back in inbox'));}
-  else check(text.includes('所选 932 封邮件中，300 封已归档')&&text.includes('632 封尚未处理')&&text.includes('不会自动继续')&&text.includes('最多 300 封邮件放回收件箱'));
+  if(language==='en'){check(text.includes('300 of 932 selected emails archived')&&text.includes('archived so far')&&text.includes('the rest continue at the next automatic check')&&text.includes('put up to 300 emails back in inbox'));}
+  else check(text.includes('所选 932 封邮件中，300 封已归档')&&text.includes('其余邮件将在下次自动检查时继续处理')&&text.includes('最多 300 封邮件放回收件箱'));
   check(!/runner|queued|recorded intent|300\/932 completed/.test(text));
  }
 });

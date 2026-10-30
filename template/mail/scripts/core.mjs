@@ -58,52 +58,60 @@ export async function applyDealt({config,state,requests=[],mailbox,persist,now=n
     run.status=signal?.aborted?'cancelled':'finished';run.skipped_count=request.items.length-run.entries.length;await persist(state);
   }return {applied};
 }
-export async function applyApproval({config,state,approval,mailbox,persist,now=new Date(),recordReview=true,evaluate=async m=>decide(m,config,now),signal=null,batch=BATCH}){
-  const c=settings(config),p=state.proposal; if(!c.enabled||!p||!approval)return {applied:0,skipped:'no approval'};
-  if(approval.proposal_id!==p.id||approval.revision!==p.revision||p.policy!==policyHash(c)||!Array.isArray(approval.selected)||approval.selected.some(x=>!p.items.some(i=>i.gmailId===x))||new Set(approval.selected).size!==approval.selected.length)return {applied:0,skipped:'stale approval'};
-  if(state.journal.runs.some(r=>r.proposal_id===p.id))return {applied:0,skipped:'consumed'};
-  if(signal?.aborted)return {applied:0,skipped:'cancelled'}; // a cancelled wake must not record a run or use up the approval
-  const run={id:randomUUID(),proposal_id:p.id,at:now.toISOString(),selected_count:approval.selected.length,entries:[],status:'running'};
-  state.journal.runs.push(run);const chosen=new Set(approval.selected);
-  if(recordReview)for(const id of RULE_IDS){const group=p.items.filter(x=>x.rule===id);if(group.length)state.journal.reviews.push({run_id:run.id,rule:id,policy:ruleHash(c,id),at:now.toISOString(),reviewed:group.length,rejected:group.filter(x=>!chosen.has(x.gmailId)).length,complete:false});}
+export async function applyApproval({config,state,approval,mailbox,persist,now=new Date(),recordReview=true,evaluate=async m=>decide(m,config,now),signal=null,batch=BATCH,deadline=Infinity,clock=Date.now,resumeRun=null}){
+  const c=settings(config),p=state.proposal;
+  let run=resumeRun||(approval&&state.journal.runs.find(r=>r.proposal_id===approval.proposal_id));
+  if(!c.enabled)return {applied:0,skipped:'disabled'};
+  if(run?.resume_cancelled||run&& !['running','in_progress','cancelled'].includes(run.status))return {applied:0,skipped:'consumed'};
+  // Older cancelled records can be resumed only with their original, still matching approval.
+  if(!run?.approved_items){
+    if(!p||!approval)return {applied:0,skipped:'no approval'};
+    if(approval.proposal_id!==p.id||approval.revision!==p.revision||p.policy!==policyHash(c)||!Array.isArray(approval.selected)||approval.selected.some(x=>!p.items.some(i=>i.gmailId===x))||new Set(approval.selected).size!==approval.selected.length)return {applied:0,skipped:'stale approval'};
+  }else if(run.policy!==policyHash(c)){
+    run.status='permissions_changed';await persist(state);return {applied:0,skipped:'stale approval'};
+  }
+  const stopped=()=>signal?.aborted||clock()>=deadline;
+  if(stopped())return {applied:0,skipped:signal?.aborted?'cancelled':'budget'};
+  const fresh=!run;
+  run||={id:randomUUID(),proposal_id:p.id,at:now.toISOString(),entries:[]};
+  if(fresh)state.journal.runs.push(run);
+  if(!run.approved_items){run.approved_items=structuredClone(p.items.filter(x=>approval.selected.includes(x.gmailId)));run.policy=p.policy;run.selected_count=approval.selected.length;run.skipped_ids=[];}
+  run.status='in_progress';
+  const chosen=new Set(run.approved_items.map(x=>x.gmailId));
+  if(fresh&&recordReview)for(const id of RULE_IDS){const group=p.items.filter(x=>x.rule===id);if(group.length)state.journal.reviews.push({run_id:run.id,rule:id,policy:ruleHash(c,id),at:now.toISOString(),reviewed:group.length,rejected:group.filter(x=>!chosen.has(x.gmailId)).length,complete:false});}
   await persist(state);
-  const todo=p.items.filter(x=>chosen.has(x.gmailId));let at=0,notReached=0;
-  while(at<todo.length&&!signal?.aborted){
-    const group=[],started=Date.now();
-    for(;at<todo.length&&group.length<batch.size&&(!group.length||Date.now()-started<batch.ms)&&!signal?.aborted;at++){
-      const x=todo[at];if(quarantined(state,x.gmailId))continue;
-      let m,v;try{m=await mailbox.get(x.gmailId);v=m?await evaluate(m):null;}catch{continue;}
-      if(!m||v?.rule!==x.rule||c.rules[x.rule].action!==x.action||!c.rules[x.rule].enabled)continue;
+  const todo=run.approved_items.filter(x=>!run.entries.some(e=>e.gmailId===x.gmailId)&&!run.skipped_ids.includes(x.gmailId));let at=0;
+  while(at<todo.length&&!stopped()){
+    const group=[],started=clock();
+    for(;at<todo.length&&group.length<batch.size&&(!group.length||clock()-started<batch.ms)&&!stopped();at++){
+      const x=todo[at];if(quarantined(state,x.gmailId)){run.skipped_ids.push(x.gmailId);continue;}
+      let m,v;try{m=await mailbox.get(x.gmailId);v=m?await evaluate(m):null;}catch{run.skipped_ids.push(x.gmailId);continue;}
+      if(!m||!m.inInbox||v?.rule!==x.rule||c.rules[x.rule].action!==x.action||!c.rules[x.rule].enabled){run.skipped_ids.push(x.gmailId);continue;}
+      if(stopped())break;
       const entry={gmailId:x.gmailId,rule:x.rule,action:x.action,label:`${c.label_prefix}Cleaned/${x.rule}`,at:now.toISOString(),status:'intent',originalLabels:[...m.labels],hadCleanLabel:m.labels.includes(`${c.label_prefix}Cleaned/${x.rule}`)};
       run.entries.push(entry);group.push(entry);
     }
     if(!group.length)continue;
     await persist(state); // every intent in this group is durable before the first mailbox change
-    let saved=Date.now(),next=0;
+    let saved=clock(),next=0;
     try{
-      while(next<group.length&&!signal?.aborted){
+      while(next<group.length&&!stopped()){
         const entry=group[next];
         try{await mailbox.addLabel(entry.gmailId,entry.label);await mailbox[entry.action](entry.gmailId);entry.status='done';}
         catch{entry.status='uncertain';} // journal retains intent; never blindly replay a partially applied mutation
         next++; // counted as acted on BEFORE any save, so a failing save can never drop the record of a changed email
-        if(Date.now()-saved>=batch.ms){await persist(state);saved=Date.now();}
+        if(clock()-saved>=batch.ms){await persist(state);saved=clock();}
       }
     }finally{
       // Only entries never attempted (cancel) are dropped: they were not touched, so they must not stay as intents.
-      const untouched=new Set(group.slice(next));if(untouched.size){run.entries=run.entries.filter(e=>!untouched.has(e));notReached+=untouched.size;}
+      const untouched=new Set(group.slice(next));if(untouched.size){run.entries=run.entries.filter(e=>!untouched.has(e));}
       await persist(state); // failed or cancelled runs still keep the progress already made
     }
   }
-  notReached+=todo.length-at;
-  if(signal?.aborted){
-    if(!run.entries.length){ // cancelled before changing anything: leave no trace, the approval stays usable
-      state.journal.runs=state.journal.runs.filter(r=>r!==run);state.journal.reviews=state.journal.reviews.filter(r=>r.run_id!==run.id);
-      await persist(state);return {applied:0,skipped:'cancelled'};
-    }
-    run.status='cancelled';run.not_reached_count=notReached;
-  }else run.status='finished';
-  run.skipped_count=chosen.size-run.entries.length-notReached;
-  for(const review of state.journal.reviews.filter(x=>x.run_id===run.id)){const selected=p.items.filter(x=>x.rule===review.rule&&chosen.has(x.gmailId));review.complete=selected.every(x=>run.entries.some(e=>e.gmailId===x.gmailId&&e.status==='done'));}
+  run.not_reached_count=chosen.size-run.entries.length-run.skipped_ids.length;
+  run.status=run.not_reached_count?'in_progress':'finished';
+  run.skipped_count=run.skipped_ids.length;
+  for(const review of state.journal.reviews.filter(x=>x.run_id===run.id)){const selected=run.approved_items.filter(x=>x.rule===review.rule&&chosen.has(x.gmailId));review.complete=selected.every(x=>run.entries.some(e=>e.gmailId===x.gmailId&&e.status==='done'));}
   // Do not discard incomplete operations. Older completed runs retain Gmail cleanup labels for manual restoration.
   // Dealt queue requests remain append-only: their consumption records must outlive cleanup log pruning.
   const completed=state.journal.runs.filter(r=>r.status==='finished'&&r.kind!=='dealt');
@@ -112,7 +120,7 @@ export async function applyApproval({config,state,approval,mailbox,persist,now=n
   await persist(state);return {applied:run.entries.filter(x=>x.status==='done').length};
 }
 export async function undoRun({state,runId,mailbox,persist,now=new Date(),signal=null,batch=BATCH}){
-  const run=state.journal.runs.find(x=>x.id===runId);if(!run)return {restored:0};let restored=0;
+  const run=state.journal.runs.find(x=>x.id===runId);if(!run)return {restored:0};run.resume_cancelled=true;let restored=0;
   const todo=run.entries.filter(e=>!(e.status==='undone'||(e.action==='trash'&&Date.parse(now)-Date.parse(e.at)>=30*DAY)));let at=0;
   while(at<todo.length&&!signal?.aborted){
     const group=todo.slice(at,at+batch.size);at+=group.length;
@@ -140,7 +148,7 @@ export async function undoRun({state,runId,mailbox,persist,now=new Date(),signal
       for(const e of group.slice(next)){if(before.get(e)===undefined)delete e.undo_status;else e.undo_status=before.get(e);}
       await persist(state);
     }
-  }return {restored};
+  }if(!todo.length)await persist(state);return {restored};
 }
 export function updateDigest(state,m,v,c,now){
   const d=state.digest,known=(d.items||[]).some(i=>i.gmailId===m.gmailId||(!i.gmailId&&i.uid===m.uid));
@@ -152,30 +160,38 @@ export function updateDigest(state,m,v,c,now){
   d.lastUid=Math.max(d.lastUid||0,m.uid);
   d.updated_at=now.toISOString();d.keep_items=c.keep_items;
 }
-export async function runCycle({config,state,mailbox,persist,approval=null,undoRequests=[],dealtRequests=[],now=new Date(),force=false,backfill=false,evaluate=async m=>decide(m,config,now),signal=null}){
+export async function runCycle({config,state,mailbox,persist,approval=null,undoRequests=[],dealtRequests=[],now=new Date(),force=false,backfill=false,evaluate=async m=>decide(m,config,now),signal=null,deadline=Infinity,clock=Date.now}){
+  const externalSignal=signal;signal={get aborted(){return externalSignal?.aborted||clock()>=deadline;}};
   const c=settings(config);if(!c.enabled)return {skipped:'disabled'};
   if(state.runtime.afterAuto){state.proposal=state.runtime.afterAuto;delete state.runtime.afterAuto;await persist(state);}
   for(const req of undoRequests)await undoRun({state,runId:req.run_id||state.journal.runs.find(r=>r.dealt_request_id===req.dealt_request_id)?.id,mailbox,persist,now,signal});
-  if(signal?.aborted)return {skipped:'cancelled'}; // cancelled during Undo: do not start the approval
+  if(signal?.aborted)return {skipped:clock()>=deadline?'budget':'cancelled'}; // cancelled during Undo: do not start the approval
   await applyDealt({config:c,state,requests:dealtRequests.filter(r=>!undoRequests.some(u=>u.dealt_request_id===r.id)),mailbox,persist,now,signal});
-  if(signal?.aborted)return {skipped:'cancelled'};
-  await applyApproval({config:c,state,approval,mailbox,persist,now,evaluate,signal});
-  if(signal?.aborted)return {skipped:'cancelled'};
+  if(signal?.aborted)return {skipped:clock()>=deadline?'budget':'cancelled'};
+  for(const run of state.journal.runs.filter(r=>r.approved_items&&!r.resume_cancelled&&['running','in_progress','cancelled'].includes(r.status))){
+    await applyApproval({config:c,state,mailbox,persist,now,evaluate,signal,deadline,clock,resumeRun:run});
+    if(run.status==='in_progress')return {skipped:clock()>=deadline?'budget':'continuing'};
+  }
+  await applyApproval({config:c,state,approval,mailbox,persist,now,evaluate,signal,deadline,clock});
+  if(state.journal.runs.some(r=>r.status==='in_progress'&&!r.resume_cancelled))return {skipped:clock()>=deadline?'budget':'continuing'};
+  if(signal?.aborted)return {skipped:clock()>=deadline?'budget':'cancelled'};
   if(!force&&state.runtime.lastProposalAt&&Date.parse(now)-Date.parse(state.runtime.lastProposalAt)<c.frequency_hours*3600000)return {skipped:'cadence'};
+  const scanAfter=state.runtime.scanAfter||0;
   const page=await mailbox.scan({after:state.runtime.scanAfter||0,expectedUidValidity:state.runtime.uidValidity,limit:backfill?c.max_backfill:c.max_per_run,primaryOnly:c.primary_only});
   if(page.reset){state.runtime.scanAfter=0;state.digest.lastUid=0;state.digest.total_is_floor=true;}
   const pending=new Map((state.proposal?.items||[]).filter(x=>!state.journal.runs.some(r=>r.proposal_id===state.proposal.id)).map(x=>[x.gmailId,x]));
   const all=[],decisions=new Map();
   // Revalidate pending items; proposals never derive from the capped digest.
-  for(const id of pending.keys()){try{const m=await mailbox.get(id);if(m)all.push(m);}catch{/* unknown stays */}}
+  for(const id of pending.keys()){if(signal?.aborted)break;try{const m=await mailbox.get(id);if(m)all.push(m);}catch{/* unknown stays */}}
   const classifyDigest=async m=>{
     const v=await evaluate(m),label=c.categories.find(x=>x.key===v.category);
     // Dealt owns this message's category label, including an explicit Undo; a scan must not re-add it.
     const dealtOwned=state.journal.runs.some(r=>r.kind==='dealt'&&r.entries.some(e=>e.gmailId===m.gmailId));
-    if(label&&label.key!=='other'&&!protectedReason(m,c)&&!quarantined(state,m.gmailId)&&!dealtOwned)await mailbox.addLabel(m.gmailId,c.label_prefix+label.label);
+    if(!signal?.aborted&&label&&label.key!=='other'&&!protectedReason(m,c)&&!quarantined(state,m.gmailId)&&!dealtOwned)await mailbox.addLabel(m.gmailId,c.label_prefix+label.label);
     updateDigest(state,m,v,c,now);return v;
   };
   for(const m of page.messages){
+    if(signal?.aborted)break;
     let v;try{v=await classifyDigest(m);}
     catch{break;}
     all.push(m);decisions.set(m.gmailId,v);state.runtime.scanAfter=m.uid;
@@ -184,15 +200,16 @@ export async function runCycle({config,state,mailbox,persist,approval=null,undoR
   if(page.done&&page.messages.every(m=>m.uid<=(state.runtime.scanAfter||0)))state.runtime.scanAfter=0;
   // A historical cleanup sweep must not starve the legacy digest's incremental intake.
   // Keep its cursor and proposal unchanged; the extra digest page is independently bounded.
-  if(!page.done&&(state.digest.lastUid||0)>(state.runtime.scanAfter||0)){
+  if(!signal?.aborted&&!page.done&&(state.digest.lastUid||0)>(state.runtime.scanAfter||0)){
     const fresh=await mailbox.scan({after:state.digest.lastUid,expectedUidValidity:page.uidValidity,limit:c.max_per_run,primaryOnly:c.primary_only});
     if(fresh.reset)throw Error('Mailbox UID validity changed during digest scan');
-    for(const m of fresh.messages){try{await classifyDigest(m);}catch{break;}}
+    for(const m of fresh.messages){if(signal?.aborted)break;try{await classifyDigest(m);}catch{break;}}
   }
+  if(signal?.aborted){state.runtime.scanAfter=page.reset?0:scanAfter;await persist(state);return {skipped:clock()>=deadline?'budget':'cancelled'};}
   const latest=[...new Map(all.map(m=>[m.gmailId,m])).values()];
   const p=await makeProposal({messages:latest,config:c,state,now,evaluate:async m=>decisions.has(m.gmailId)?decisions.get(m.gmailId):evaluate(m)});await persist(state);
   const eligible=p.items.filter(x=>autoEligible(c,x.rule,state.journal.reviews,now));
   // Automated reviews never add clean-history evidence; only human approval can establish eligibility.
-  if(eligible.length){const manual=p.items.filter(x=>!eligible.includes(x));state.runtime.afterAuto={...p,id:randomUUID(),items:manual,revision:fingerprint({policy:p.policy,items:manual})};await persist(state);state.proposal={...p,items:eligible};state.proposal.revision=fingerprint({policy:p.policy,items:eligible});await persist(state);await applyApproval({config:c,state,approval:{proposal_id:p.id,revision:state.proposal.revision,selected:eligible.map(x=>x.gmailId)},mailbox,persist,now,evaluate,recordReview:false});state.proposal=state.runtime.afterAuto;delete state.runtime.afterAuto;await persist(state);}
+  if(eligible.length){const manual=p.items.filter(x=>!eligible.includes(x));state.runtime.afterAuto={...p,id:randomUUID(),items:manual,revision:fingerprint({policy:p.policy,items:manual})};await persist(state);state.proposal={...p,items:eligible};state.proposal.revision=fingerprint({policy:p.policy,items:eligible});await persist(state);await applyApproval({config:c,state,approval:{proposal_id:p.id,revision:state.proposal.revision,selected:eligible.map(x=>x.gmailId)},mailbox,persist,now,evaluate,recordReview:false,signal,deadline,clock});state.proposal=state.runtime.afterAuto;delete state.runtime.afterAuto;await persist(state);}
   return {proposed:p.items.length};
 }
