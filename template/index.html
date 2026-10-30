@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-9Q4lbDxmkKa0OiSEdhM3shTqoTB8RwPSia5TbLdwrmM=' 'sha256-/46Bqio80s2CmyDlRf/EpQl8JTXxfme0gW3U/eVA6y4=' 'sha256-7KHJoL7OnP6Fz4/UXIE8TM2/yxQeFN3L3UAWFB7Ws14='; connect-src https://api.github.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-9Q4lbDxmkKa0OiSEdhM3shTqoTB8RwPSia5TbLdwrmM=' 'sha256-/46Bqio80s2CmyDlRf/EpQl8JTXxfme0gW3U/eVA6y4=' 'sha256-pS0szUVc8hvC62utWW6VVSaHNNWpAslcSIZFnPLeMlQ='; connect-src https://api.github.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'">
 <script src="assets/settings-standard/core.js"></script>
 <script>/* appearance boot — runs before any stylesheet so the stored palette and light/dark apply on the first paint */(function(){try{var d=document.documentElement,L=window.localStorage,t=L.getItem(HubSettingsContract.preferenceKey("nl-theme")),s=L.getItem(HubSettingsContract.preferenceKey("nl-scheme"));if(s===null){var o=L.getItem(HubSettingsContract.preferenceKey("theme"))||L.getItem(HubSettingsContract.preferenceKey("qm-theme"));if(o==='dark'||o==='light')s=o;}if(t==='paper'||t==='ink')d.setAttribute('data-theme',t);if(s==='dark'||s==='light')d.setAttribute('data-scheme',s);}catch(e){}})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -1266,6 +1266,9 @@ main{width:100%;flex:1 0 auto}
 </header>
 
 <main id="main" tabindex="-1">
+  <div class="page-switch">
+    <span class="pill" id="togBtnPage" role="status"><span id="togTextPage">—</span></span>
+  </div>
   <section class="plate" id="digestPlate" aria-labelledby="digestT" hidden>
     <div class="plate-in">
       <div>
@@ -1287,9 +1290,7 @@ main{width:100%;flex:1 0 auto}
 
   <div class="main-col">
   <h1 class="sr-only" id="pageT">Headersort</h1>
-  <div class="page-switch">
-    <span class="pill" id="togBtnPage" role="status"><span id="togTextPage">—</span></span>
-  </div>
+
 
   <section class="card" id="connectCard" hidden>
     <h2 data-i18n="setT">Connect your private data repo</h2>
@@ -2078,15 +2079,25 @@ function restoreFocus(find){
   if(el&&find.caret&&el.setSelectionRange) try{ el.setSelectionRange(find.caret[0],find.caret[1]); }catch(e){ /* not a text field */ }
 }
 function render(){ const find=focusKey(document.activeElement); renderPage(); restoreFocus(find); document.dispatchEvent(new Event("headersort-data")); }
+// Keep the existing connection status beside classification below the phone header.
+const phoneStatuses=matchMedia('(max-width:767px)');
+function placeConnectionStatus(){
+  const pill=$('pill');
+  if(phoneStatuses.matches)document.querySelector('.page-switch').prepend(pill);
+  else document.querySelector('.topbar .brand').after(pill);
+}
+phoneStatuses.addEventListener('change',placeConnectionStatus);
+placeConnectionStatus();
 function renderPage(){
   const on=CONF?CONF.enabled!==false:false;
   const togLabel=!CONF?T('分类: —','Classify: —'):(on?T('分类: 开','Classify: on'):T('分类: 关','Classify: off'));
-  ['togBtn','togBtnPage'].forEach(id=>{ const b=$(id); b.setAttribute('aria-label',T('定时分类：','Scheduled classification: ')+togLabel); });
+  ['togBtn','togBtnPage'].forEach(id=>{ const b=$(id); b.setAttribute('aria-label',T('定时分类：','Scheduled classification: ')+togLabel); b.title=b.getAttribute('aria-label'); });
   ['togText','togTextPage'].forEach(id=>{ $(id).textContent=togLabel; });
   $('connectCard').hidden=DEMO||configured();
   $('setupBox').hidden=!(configured()&&!MAIL&&!DEMO&&!LOAD_ERROR);
   loadErrorCard();
-  const pill=$('pill'); pill.classList.toggle('live',!DEMO&&LOADED&&!LOAD_ERROR); pill.firstChild.textContent=DEMO?'Demo':LOAD_ERROR?T('未加载','Not loaded'):LOADED?T('已连接','Connected'):configured()?T('加载中…','Loading…'):'Demo'; $('pillLong').textContent=DEMO?T(' · 虚构邮件',' · fictional mail'):(configured()?' · '+esc(cfg().owner)+'/'+esc(cfg().repo||'…'):T(' · 未连接',' · not connected')); pill.title=DEMO?T('全部虚构，不连接任何东西','All fictional; connects to nothing'):'';
+  const pill=$('pill'); pill.classList.toggle('live',!DEMO&&LOADED&&!LOAD_ERROR); pill.firstChild.textContent=DEMO?'Demo':LOAD_ERROR?T('未加载','Not loaded'):LOADED?T('已连接','Connected'):configured()?T('加载中…','Loading…'):'Demo'; $('pillLong').textContent=DEMO?T(' · 虚构邮件',' · fictional mail'):(configured()?' · '+esc(cfg().owner)+'/'+esc(cfg().repo||'…'):T(' · 未连接',' · not connected')); pill.title=DEMO?T('全部虚构，不连接任何东西','All fictional; connects to nothing'):pill.textContent; pill.setAttribute('aria-label',pill.title);
+
   const m=MAIL||{items:[]}; const items=m.items||[];
   const now=Date.now(),dayMs=864e5;
   const total=Number(m.total_classified||0), floor=!!m.total_is_floor, keep=Number(m.keep_items||(CONF&&CONF.keep_items)||500);

@@ -1,5 +1,5 @@
 /* Header ownership only; panel content and app entries are unchanged. */
-.topbar{flex-wrap:nowrap!important;gap:8px!important}.topbar .brand{flex:1!important;min-width:0!important;padding-right:0!important;overflow:hidden;white-space:nowrap}.topbar .brand>b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.topbar .brand>span{display:none}.topbar>.pill{flex:none;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.topbar .spacer{display:none}.topbar .suite-gear{position:relative!important;inset:auto!important}@media(max-width:639px){.topbar>#pill{display:none}.topbar>#togBtn{max-width:48px}.topbar .brand>b{font-size:18px}}
+.topbar{justify-content:flex-start!important;flex-wrap:nowrap!important;gap:8px!important}.topbar .brand{flex:0 1 auto!important;min-width:0!important;padding-right:0!important;overflow:hidden;white-space:nowrap}.topbar .brand>b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.topbar .brand>span{display:none}.topbar>.pill{margin-inline-end:0;flex:none;max-width:none;overflow:visible;white-space:nowrap}.topbar .spacer{display:none}.topbar .suite-gear{position:relative!important;inset:auto!important}@media(max-width:639px){.topbar>#pill{display:none}.topbar .brand>b{font-size:18px}}
 
 /* Whole phone names and plain status indicators; preserve native work controls. */
 @media(max-width:639px){.topbar{padding-inline:12px!important}.topbar .brand{gap:6px!important}.topbar .brand>b{font-size:17px;letter-spacing:-.4px;overflow:visible;text-overflow:clip}.topbar .app-logo{width:24px;height:24px}}
@@ -23,4 +23,13 @@
 
 @media(max-width:374px){
   .topbar .suite-work-items #refresh,.topbar .suite-work-items .gh{display:inline-flex}
+}
+
+/* Status labels keep their intrinsic width. Repository details remain in the tooltip. */
+#pill .long{display:none}
+.page-switch{align-items:center;gap:12px;flex-wrap:wrap;max-width:960px;margin-inline:auto;padding:12px var(--gutter)}
+@media(max-width:767px){
+  .topbar>#pill{display:none}
+  .topbar .brand{flex:1!important}
+  .page-switch>.pill{max-width:none;white-space:nowrap;overflow:visible}
 }
