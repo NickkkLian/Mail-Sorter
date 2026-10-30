@@ -20,3 +20,7 @@
   .topbar .brand{gap:2px!important}
   .topbar .app-logo{width:20px!important;height:20px!important}
 }
+
+@media(max-width:374px){
+  .topbar .suite-work-items #refresh,.topbar .suite-work-items .gh{display:inline-flex}
+}
