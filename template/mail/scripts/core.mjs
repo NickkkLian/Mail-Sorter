@@ -85,7 +85,7 @@ export async function applyApproval({config,state,approval,mailbox,persist,now=n
     const group=[],started=clock();
     for(;at<todo.length&&group.length<batch.size&&(!group.length||clock()-started<batch.ms)&&!stopped();at++){
       const x=todo[at];if(quarantined(state,x.gmailId)){run.skipped_ids.push(x.gmailId);continue;}
-      let m,v;try{m=await mailbox.get(x.gmailId);v=m?await evaluate(m):null;}catch{run.skipped_ids.push(x.gmailId);continue;}
+      let m,v;try{m=await mailbox.get(x.gmailId);v=m?.inInbox===true?await evaluate(m):null;}catch{run.skipped_ids.push(x.gmailId);continue;}
       if(!m||!m.inInbox||v?.rule!==x.rule||c.rules[x.rule].action!==x.action||!c.rules[x.rule].enabled){run.skipped_ids.push(x.gmailId);continue;}
       if(stopped())break;
       const entry={gmailId:x.gmailId,rule:x.rule,action:x.action,label:`${c.label_prefix}Cleaned/${x.rule}`,at:now.toISOString(),status:'intent',originalLabels:[...m.labels],hadCleanLabel:m.labels.includes(`${c.label_prefix}Cleaned/${x.rule}`)};
@@ -182,7 +182,9 @@ export async function runCycle({config,state,mailbox,persist,approval=null,undoR
   const pending=new Map((state.proposal?.items||[]).filter(x=>!state.journal.runs.some(r=>r.proposal_id===state.proposal.id)).map(x=>[x.gmailId,x]));
   const all=[],decisions=new Map();
   // Revalidate pending items; proposals never derive from the capped digest.
-  for(const id of pending.keys()){if(signal?.aborted)break;try{const m=await mailbox.get(id);if(m)all.push(m);}catch{/* unknown stays */}}
+  // A mailbox-scoped merge can revise the aggregate proposal ID. Recheck inbox membership
+  // before evaluation even when its old entries appear pending under the new ID.
+  for(const id of pending.keys()){if(signal?.aborted)break;try{const m=await mailbox.get(id);if(m?.inInbox===true)all.push(m);}catch{/* unknown stays */}}
   const classifyDigest=async m=>{
     const v=await evaluate(m),label=c.categories.find(x=>x.key===v.category);
     // Dealt owns this message's category label, including an explicit Undo; a scan must not re-add it.

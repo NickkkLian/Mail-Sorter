@@ -1,3 +1,4 @@
+import '../scripts/offline-guard.mjs';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {settings} from '../mail/scripts/settings.mjs';
@@ -55,14 +56,15 @@ test('slow recheck crossing deadline starts no mutation and stays pending',async
 });
 test('CLI budget is a successful exit and persisted selection continues on next invocation',async()=>{
  const fs=await import('node:fs'),{main}=await import('../mail/scripts/classify.mjs');
- const a=await setup(),root=fs.mkdtempSync(new URL('../.tmp-continue-',import.meta.url));let tick=0;
+ const a=await setup(),root=fs.mkdtempSync(new URL('../.tmp-continue-',import.meta.url));let tick=0,invocation=1;const lines=[];
  try{
   for(const [n,d] of Object.entries({'config.json':a.config,'mail.json':a.state.digest,'runtime.json':a.state.runtime,'cleanup-proposal.json':a.state.proposal,'cleanup-log.json':a.state.journal,'cleanup-approval.json':a.approval}))fs.writeFileSync(root+'/'+n,JSON.stringify(d));
   const archive=a.mailbox.archive;a.mailbox.archive=async id=>{await archive(id);tick+=60000;};
-  const args={root,env:{ANTHROPIC_API_KEY:'synthetic-placeholder',RUN_BUDGET_MINUTES:'2',GMAIL_USER:'synthetic',GMAIL_APP_PASSWORD:'synthetic'},clock:()=>tick,connect:async()=>({...a.mailbox,scan:async()=>({messages:[],done:true,uidValidity:'1'}),close:async()=>{}}),output:()=>{}};
+  const args={root,env:{ANTHROPIC_API_KEY:'synthetic-placeholder',RUN_BUDGET_MINUTES:'2',GMAIL_USER:'synthetic',GMAIL_APP_PASSWORD:'synthetic'},clock:()=>tick,connect:async()=>({...a.mailbox,scan:async()=>({messages:[],done:true,uidValidity:'1'}),close:async()=>{}}),output:line=>{lines.push(line);process.stderr.write(`[CLI invocation ${invocation}] ${line}\n`);}};
   assert.equal(await main(args),0);assert.equal(a.calls.length,2);
   assert.equal(JSON.parse(fs.readFileSync(root+'/cleanup-log.json')).runs[0].status,'in_progress');
-  args.env.RUN_BUDGET_MINUTES='22';assert.equal(await main(args),0);assert.equal(a.calls.length,8);
-  assert.equal(JSON.parse(fs.readFileSync(root+'/cleanup-log.json')).runs[0].status,'finished');
+  invocation=2;args.env.RUN_BUDGET_MINUTES='22';const secondExit=await main(args);process.stderr.write(`[CLI invocation 2] exit=${secondExit}\n`);const journal=JSON.parse(fs.readFileSync(root+'/cleanup-log.json'));process.stderr.write(`[CLI invocation 2] saved=${JSON.stringify(journal.runs.map(r=>({status:r.status,entries:r.entries.length,done:r.entries.filter(e=>e.status==='done').length})))}\n`);assert.equal(secondExit,0,lines.join('\n'));assert.equal(a.calls.length,8);assert.equal(new Set(a.calls).size,8);
+  assert.equal(journal.runs.length,1);assert.equal(journal.runs[0].status,'finished');assert.equal(journal.runs[0].entries.filter(e=>e.status==='done').length,8);
+  assert(lines.every(line=>!line.includes('model_requests')&&!line.includes('::error')),'completed archived mail must not trigger model calls');
  }finally{fs.rmSync(root,{recursive:true,force:true});}
 });
