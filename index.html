@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-9Q4lbDxmkKa0OiSEdhM3shTqoTB8RwPSia5TbLdwrmM=' 'sha256-/46Bqio80s2CmyDlRf/EpQl8JTXxfme0gW3U/eVA6y4=' 'sha256-V572Hq9ES04Jsw2kj/xTE1R8/wtm2kRLinPfCGh86MQ='; connect-src https://api.github.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-9Q4lbDxmkKa0OiSEdhM3shTqoTB8RwPSia5TbLdwrmM=' 'sha256-/46Bqio80s2CmyDlRf/EpQl8JTXxfme0gW3U/eVA6y4=' 'sha256-m2VUBZGzPnhsgOD05smVmqNidRPOgaS6htnXOrALCVY='; connect-src https://api.github.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'">
 <script src="assets/settings-standard/core.js"></script>
 <script>/* appearance boot — runs before any stylesheet so the stored palette and light/dark apply on the first paint */(function(){try{var d=document.documentElement,L=window.localStorage,t=L.getItem(HubSettingsContract.preferenceKey("nl-theme")),s=L.getItem(HubSettingsContract.preferenceKey("nl-scheme"));if(s===null){var o=L.getItem(HubSettingsContract.preferenceKey("theme"))||L.getItem(HubSettingsContract.preferenceKey("qm-theme"));if(o==='dark'||o==='light')s=o;}if(t==='paper'||t==='ink')d.setAttribute('data-theme',t);if(s==='dark'||s==='light')d.setAttribute('data-scheme',s);}catch(e){}})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -1983,6 +1983,7 @@ function loadErrorCard(){
   const box=$('loadError'); box.hidden=!LOAD_ERROR||DEMO;
   if(box.hidden){ box.innerHTML=''; return; }
   box.innerHTML=`<h2>${T('没能读到你的摘要','Could not load your digest')}</h2><p>${esc(LOAD_ERROR.reason)} — ${esc(LOAD_ERROR.fix)}</p>
+    <p>${T('已保存的内容没有改动。请重试，读取完成后再继续。','Your saved work is unchanged. Retry to load it before continuing.')}</p>
     <div class="row">${LOAD_ERROR.kind==='auth'?`<button class="btn btn-sm" type="button" data-act="openSettings">${T('打开设置','Open settings')}</button>`:`<button class="btn btn-sm" type="button" data-act="loadAll">${T('重试','Try again')}</button>`}</div>`;
 }
 /* Category names come from YOUR config.json, so they are whatever you typed — often Chinese.
