@@ -12,6 +12,7 @@ const c=settings({enabled:true}),now=new Date(NOW),m=(x={})=>message({subject:'V
 function mocks(messages=[m()]){
   const calls=[],data=new Map(messages.map(x=>[x.gmailId,structuredClone(x)]));
   const box=new Proxy({
+    markRead:async id=>{data.get(id).seen=true;},markUnread:async id=>{data.get(id).seen=false;},
     get:async id=>structuredClone(data.get(id)||null),
     scan:async({after,limit})=>({messages:[...data.values()].filter(x=>x.inInbox&&x.uid>after).sort((a,b)=>a.uid-b.uid).slice(0,limit),done:[...data.values()].filter(x=>x.inInbox&&x.uid>after).length<=limit,uidValidity:'1'}),
     addLabel:async(id,label)=>{calls.push('label');data.get(id).labels.push(label);},

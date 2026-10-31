@@ -41,10 +41,10 @@
         };
       }
       const dealtInput=dealt.querySelector('input'),dealtSave=dealt.querySelector('button');
-      dealt.querySelector('label').textContent=T('将已处理邮件标为已读','Mark dealt mail as read');
-      dealt.querySelector('.hint').textContent=T('默认开启。下次邮件同步时生效，同时添加类别标签并保留在收件箱。','On by default. Applies the next time mail is synced, with a category label; mail stays in Inbox.');
+      dealt.querySelector('label').textContent=T('将已处理和已清理的邮件标为已读','Mark dealt and cleaned mail as read');
+      dealt.querySelector('.hint').textContent=T('默认开启，下次自动检查时生效。已处理邮件添加类别标签并留在收件箱；已批准清理的邮件按规则归档或移入垃圾箱。','On by default. Applies at the next automatic check. Dealt mail gets a category label and stays in Inbox; approved cleanups archive or move mail to Trash according to the rule.');
       if(!dealtInput.dataset.dirty){dealtInput.checked=CONF?.mark_dealt_read!==false;dealtInput._base=dealtInput.checked;}
-      dealtInput.disabled=!CONF;dealtSave.textContent=T('保存已处理邮件设置','Save dealt mail setting');dealtSave.disabled=!CONF||!dealtReadDirty||Boolean(R.pending);
+      dealtInput.disabled=!CONF;dealtSave.textContent=T('保存邮件已读设置','Save read setting');dealtSave.disabled=!CONF||!dealtReadDirty||Boolean(R.pending);
       let second=container.querySelector('#suite-second-settings');if(!second){
         second=document.createElement('div');second.id='suite-second-settings';
         const label=document.createElement('label'),input=document.createElement('input'),help=document.createElement('p'),save=document.createElement('button'),status=document.createElement('p');

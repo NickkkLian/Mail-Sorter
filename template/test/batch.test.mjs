@@ -23,6 +23,7 @@ async function setup(n=COUNT){
   const messages=Array.from({length:n},(_,i)=>message({uid:i+1,gmailId:String(2000+i),subject:'Verification code'}));
   const data=new Map(messages.map(m=>[m.gmailId,structuredClone(m)])),calls=[],hooks={before:async()=>{}};
   const mailbox={
+    markRead:async id=>{data.get(id).seen=true;},markUnread:async id=>{data.get(id).seen=false;},
     get:async id=>structuredClone(data.get(id)),
     addLabel:async(id,l)=>{await hooks.before('label',id);data.get(id).labels.push(l);},
     archive:async id=>{await hooks.before('archive',id);data.get(id).inInbox=false;calls.push(id);},

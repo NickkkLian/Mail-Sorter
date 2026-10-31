@@ -1,6 +1,6 @@
 # Settings update — 2026-10-24
 
-Dealt mail adds one App-specific preference: **Mark dealt mail as read** / **将已处理邮件标为已读**. It defaults on, saves only `mark_dealt_read` through the existing conflict-aware config save, and participates in unsaved/discard handling. Saving a failure keeps the draft and restores the displayed saved value. The runner uses the saved value on its next enabled wake. Category labeling always applies; mail stays in Inbox. Dealt history and Undo are actions next to the digest, outside Settings.
+Dealt mail adds one App-specific preference: **Mark dealt and cleaned mail as read** / **将已处理和已清理的邮件标为已读**. It defaults on, saves only `mark_dealt_read` through the existing conflict-aware config save, and participates in unsaved/discard handling. Saving a failure keeps the draft and restores the displayed saved value. The runner uses the saved value on its next enabled wake. For dealt mail, category labeling always applies and mail stays in Inbox. Approved cleanups archive or trash mail and mark it read when this preference is on. Undo restores unread only when that operation changed it. Dealt history and Undo are actions next to the digest, outside Settings.
 
 The top-right gear opens Connection, AI, Language and theme, Data and App-specific. Language, theme, palettes and the scheduled classifier preference have no duplicate header controls. The classifier text in the header/page is status only. Refresh, filters, cleanup review and Undo remain actions in their original views.
 

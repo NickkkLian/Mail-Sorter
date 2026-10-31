@@ -81,7 +81,7 @@ test('automatic cleanup leaves ineligible rules pending and never creates human 
   await runCycle({config:cfg,state,mailbox,persist:async()=>{},now});check(archived===1&&state.proposal.items.length===1&&state.proposal.items[0].rule==='O4'&&state.journal.reviews.length===29);
 });
 test('a partial mailbox failure remains journalled and never replays cleanup',async()=>{
-  const state=emptyState(),mail=message({subject:'Verification code'});await makeProposal({messages:[mail],config,state,now});const p=state.proposal,approval={proposal_id:p.id,revision:p.revision,selected:[mail.gmailId]};let attempts=0;const mailbox={get:async()=>mail,addLabel:async()=>{},archive:async()=>{attempts++;throw Error('partial');}};
+  const state=emptyState(),mail=message({subject:'Verification code'});await makeProposal({messages:[mail],config,state,now});const p=state.proposal,approval={proposal_id:p.id,revision:p.revision,selected:[mail.gmailId]};let attempts=0;const mailbox={markRead:async()=>{mail.seen=true;},markUnread:async()=>{mail.seen=false;},get:async()=>mail,addLabel:async()=>{},archive:async()=>{attempts++;throw Error('partial');}};
   await applyApproval({config,state,approval,mailbox,persist:async()=>{},now});await applyApproval({config,state,approval,mailbox,persist:async()=>{},now});check(attempts===1&&state.journal.runs[0].entries[0].status==='uncertain');
 });
 test('private bootstrap adds only finance/school/official/health correspondents to visible protection',()=>{
@@ -96,7 +96,7 @@ test('private evaluation requires Nick review and rejects unrecognized content f
 test('board approval through runner and queued undo completes an offline lifecycle',async()=>{
   const state=emptyState(),mail=message({subject:'Verification code'});await makeProposal({messages:[mail],config,state,now});const files={},bridge={getConfig:()=>config,saveConfig:async()=>{},get:async path=>({data:path.endsWith('cleanup-proposal.json')?state.proposal:path.endsWith('cleanup-log.json')?state.journal:files[path]||null,sha:null}),put:async(path,data)=>{files[path]=structuredClone(data);}};
   const control=new ReviewController(bridge);await control.load();await control.approve();let archived=0,restored=0;
-  const box={get:async()=>mail,addLabel:async()=>{},removeLabel:async()=>{},archive:async()=>{archived++;},restore:async()=>{restored++;}};
+  const box={markRead:async()=>{mail.seen=true;},markUnread:async()=>{mail.seen=false;},get:async()=>mail,addLabel:async()=>{},removeLabel:async()=>{},archive:async()=>{archived++;},restore:async()=>{restored++;}};
   await runCycle({config,state,mailbox:box,persist:async()=>{},approval:files['mail/cleanup-approval.json'],now});await control.load();check(control.consumed&&archived===1);await control.undo(state.journal.runs[0].id);
   await runCycle({config,state,mailbox:box,persist:async()=>{},undoRequests:files['mail/cleanup-undo.json'].requests,now});check(restored===1&&undoStatus(state.journal.runs[0],files['mail/cleanup-undo.json'].requests)==='Restored');
 });

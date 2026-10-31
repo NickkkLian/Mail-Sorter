@@ -7,7 +7,8 @@ import {message,NOW} from '../eval/synthetic.mjs';
 async function setup(){
  const config=settings({enabled:true}),now=new Date(NOW),state=emptyState(),data=new Map(Array.from({length:8},(_,i)=>{const m=message({uid:i+1,gmailId:String(9000+i),subject:'Verification code'});return [m.gmailId,m];})),calls=[];
  let tick=0,saved;
- const mailbox={get:async id=>structuredClone(data.get(id)),addLabel:async(id,l)=>data.get(id).labels.push(l),archive:async id=>{data.get(id).inInbox=false;calls.push(id);tick+=10;},restore:async id=>{data.get(id).inInbox=true;},removeLabel:async(id,l)=>{data.get(id).labels=data.get(id).labels.filter(x=>x!==l);},scan:async()=>{throw Error('must not scan while pending');}};
+ const mailbox={markRead:async id=>{data.get(id).seen=true;},markUnread:async id=>{data.get(id).seen=false;},
+    get:async id=>structuredClone(data.get(id)),addLabel:async(id,l)=>data.get(id).labels.push(l),archive:async id=>{data.get(id).inInbox=false;calls.push(id);tick+=10;},restore:async id=>{data.get(id).inInbox=true;},removeLabel:async(id,l)=>{data.get(id).labels=data.get(id).labels.filter(x=>x!==l);},scan:async()=>{throw Error('must not scan while pending');}};
  await makeProposal({messages:[...data.values()],config,state,now});
  const approval={proposal_id:state.proposal.id,revision:state.proposal.revision,selected:[...data.keys()]};
  const persist=async s=>{saved=structuredClone(s);};

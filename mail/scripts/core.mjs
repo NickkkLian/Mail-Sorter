@@ -88,7 +88,7 @@ export async function applyApproval({config,state,approval,mailbox,persist,now=n
       let m,v;try{m=await mailbox.get(x.gmailId);v=m?.inInbox===true?await evaluate(m):null;}catch{run.skipped_ids.push(x.gmailId);continue;}
       if(!m||!m.inInbox||v?.rule!==x.rule||c.rules[x.rule].action!==x.action||!c.rules[x.rule].enabled){run.skipped_ids.push(x.gmailId);continue;}
       if(stopped())break;
-      const entry={gmailId:x.gmailId,rule:x.rule,action:x.action,label:`${c.label_prefix}Cleaned/${x.rule}`,at:now.toISOString(),status:'intent',originalLabels:[...m.labels],hadCleanLabel:m.labels.includes(`${c.label_prefix}Cleaned/${x.rule}`)};
+      const entry={gmailId:x.gmailId,rule:x.rule,action:x.action,label:`${c.label_prefix}Cleaned/${x.rule}`,at:now.toISOString(),status:'intent',changeRead:c.mark_dealt_read&&!m.seen,originalLabels:[...m.labels],hadCleanLabel:m.labels.includes(`${c.label_prefix}Cleaned/${x.rule}`)};
       run.entries.push(entry);group.push(entry);
     }
     if(!group.length)continue;
@@ -97,7 +97,7 @@ export async function applyApproval({config,state,approval,mailbox,persist,now=n
     try{
       while(next<group.length&&!stopped()){
         const entry=group[next];
-        try{await mailbox.addLabel(entry.gmailId,entry.label);await mailbox[entry.action](entry.gmailId);entry.status='done';}
+        try{await mailbox.addLabel(entry.gmailId,entry.label);await mailbox[entry.action](entry.gmailId);if(entry.changeRead)await mailbox.markRead(entry.gmailId);entry.status='done';}
         catch{entry.status='uncertain';} // journal retains intent; never blindly replay a partially applied mutation
         next++; // counted as acted on BEFORE any save, so a failing save can never drop the record of a changed email
         if(clock()-saved>=batch.ms){await persist(state);saved=clock();}
@@ -135,6 +135,7 @@ export async function undoRun({state,runId,mailbox,persist,now=new Date(),signal
             if(e.changeRead)await mailbox.markUnread(e.gmailId);
             if(e.addLabel)await mailbox.removeLabel(e.gmailId,e.label);
           }else{
+            if(e.changeRead)await mailbox.markUnread(e.gmailId);
             await mailbox.restore(e.gmailId);for(const label of e.originalLabels||[])if(!label.startsWith('\\')&&!m.labels?.includes(label))await mailbox.addLabel(e.gmailId,label);if(!e.hadCleanLabel)await mailbox.removeLabel(e.gmailId,e.label);
           }
           e.status='undone';e.undo_status='done';restored++;
