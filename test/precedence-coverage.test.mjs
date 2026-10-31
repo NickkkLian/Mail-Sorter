@@ -59,7 +59,7 @@ test('account and security notices never become O6 notifications, regardless of 
   assert.equal(decide(old({subject:'New notification: someone commented',tab:'updates',notificationSender:true}),config,now).rule,'O6');
 });
 test('routine sign-ins use only O7 strictly after 90 days, with no other-rule fallback',()=>{
-  for(const subject of ['New sign-in to your account','New login from a browser','Password changed']){
+  for(const subject of ['New sign-in to your account','New login from a browser']){
     for(const tab of ['social','updates','promotions'])for(const elapsed of [15*DAY,90*DAY,90*DAY+1,120*DAY]){
       const mail=old({subject:subject+'; sale',tab,bulk:true,notificationSender:true,date:new Date(now-elapsed).toISOString()});
       assert.equal(decide(mail,config,now).rule,elapsed>90*DAY?'O7':null);

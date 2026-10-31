@@ -48,10 +48,10 @@ for(const crash of ['before intent save','after intent save','after read'])test(
  x.state=durable;const n=x.calls.length;await applyApproval({...x,resumeRun:x.state.journal.runs[0]});assert.equal(x.calls.length,n);
  await undoRun({...x,runId:x.state.journal.runs[0].id});assert.equal(x.data.get('1').seen,false);assert(x.data.get('1').inInbox);
 });
-for(const changed of [false,true])test('markRead error (changed='+changed+') is uncertain, never done or replayed; Undo repairs',async()=>{
+for(const changed of [false,true])test('markRead error (changed='+changed+') stays retryable, never repeats archive; Undo repairs',async()=>{
  const x=await setup(),read=x.mailbox.markRead;x.mailbox.markRead=async id=>{if(changed)await read(id);throw Error('connection lost');};
- assert.equal((await applyApproval(x)).applied,0);assert.equal(x.state.journal.runs[0].entries[0].status,'uncertain');assert.equal(x.state.journal.reviews[0].complete,false);
- const n=x.calls.length;await applyApproval(x);assert.equal(x.calls.length,n);
+ assert.equal((await applyApproval(x)).applied,0);assert.equal(x.state.journal.runs[0].entries[0].status,'retry');assert.equal(x.state.journal.reviews[0].complete,false);
+ const n=x.calls.filter(v=>v.startsWith('archive:')).length;await applyApproval(x);assert.equal(x.calls.filter(v=>v.startsWith('archive:')).length,n);
  await undoRun({...x,runId:x.state.journal.runs[0].id});assert.equal(x.data.get('1').seen,false);assert(x.data.get('1').inInbox);
 });
 for(const seen of [false,true])test('legacy cleanup Undo without changeRead preserves seen='+seen,async()=>{

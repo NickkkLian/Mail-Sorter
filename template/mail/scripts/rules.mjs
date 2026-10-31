@@ -7,17 +7,17 @@ export const RULE_PRECEDENCE=Object.freeze(['O1','O2','O3','O7','O6','O5','O4'])
 const definitions=Object.fromEntries(RULES.map(r=>[r.id,r]));
 export const DAY=86400000;
 export const fingerprint=x=>createHash('sha256').update(JSON.stringify(x)).digest('hex');
-export const policyHash=c=>fingerprint({settings:settings(c),rules:RULES,precedence:RULE_PRECEDENCE,accountSecurity:1,tunedNotices:1});
+export const policyHash=c=>fingerprint({settings:settings(c),rules:RULES,precedence:RULE_PRECEDENCE,accountSecurity:2,tunedNotices:1});
 export const address=s=>{const m=String(s||'').match(/<([^<>]+)>/);return (m?m[1]:String(s||'')).trim().toLowerCase();};
 // Verified legacy keep-worthy categories from the live sorter's configuration; never protect bulk/junk labels wholesale.
 export const LEGACY_KEEP_LABELS=['AI/重要待办','AI/求职招聘','AI/财务账单','AI/学校学术','AI/账号安全'];
 const age=(m,now)=> m.date?(new Date(now)-new Date(m.date))/DAY:NaN;
-const routine=/new (?:sign.in|login)|password (?:was )?changed|新(?:的)?登录|密码已更改/i;
+const routine=/new (?:sign.in|login)|新(?:的)?登录/i;
 const code=/verification code|your (?:one.time |security |login )?code is|one.time (?:code|password)|confirm your email|verify your email|sign.in link|验证码|验证链接/i;
 const incident=/suspicious|unauthori[sz]ed|compromis|breach|security (?:incident|vulnerability)|recovery|recover your|action required|可疑|泄露|恢复/i;
 // K5 signals are independent of sender, Gmail tab, bulk status and word order.
 // A routine login may age into O7; adding credentials/changing terms never does.
-const accountChange=/\b(?:tokens?|passkeys?|terms|2fa|mfa|two[ -]factor|multi[ -]factor)\b|\baccount\b.{0,60}\b(?:creat(?:ed|ion)|clos(?:ed|ure)|deactivat(?:ed|ion))\b|\b(?:creat(?:ed|ing)|clos(?:ed|ing)|deactivat(?:ed|ing))\b.{0,60}\baccount\b|\bpassword\b.{0,40}\b(?:reset|request|recover|expir)|\b(?:reset|recover)\b.{0,40}\bpassword\b|账号.*(?:创建|关闭)|令牌|通行密钥|条款|双(?:重|因素)验证/i;
+const accountChange=/\bpasswords?\b.{0,40}\b(?:chang(?:e|ed)|updat(?:e|ed)|modif(?:y|ied))\b|\b(?:chang(?:e|ed)|updat(?:e|ed)|modif(?:y|ied))\b.{0,40}\bpasswords?\b|\baccount\b.{0,40}\b(?:chang(?:e|ed)|updat(?:e|ed)|modif(?:y|ied))\b|密码.*(?:更改|修改|变更)|账号.*(?:更改|修改|变更)|\b(?:tokens?|passkeys?|terms|2fa|mfa|two[ -]factor|multi[ -]factor)\b|\baccount\b.{0,60}\b(?:creat(?:ed|ion)|clos(?:ed|ure)|deactivat(?:ed|ion))\b|\b(?:creat(?:ed|ing)|clos(?:ed|ing)|deactivat(?:ed|ing))\b.{0,60}\baccount\b|\bpassword\b.{0,40}\b(?:reset|request|recover|expir)|\b(?:reset|recover)\b.{0,40}\bpassword\b|账号.*(?:创建|关闭)|令牌|通行密钥|条款|双(?:重|因素)验证/i;
 const accountSecurityNotice=s=>accountChange.test(s)||/\b(?:sign[\s\u2010-\u2015-]?in|log[\s\u2010-\u2015-]?in|passwords?|security|recovery|trusted device|account data|authori[sz]ation)\b|登录|密码|账号安全/i.test(s);
 const newsletter=/newsletter|\bdigest\b|weekly (?:roundup|reading)|订阅|周报/i;
 const shipping=/\bshipped\b|out for delivery|\bdelivered\b|order is on its way|shipment|delivery (?:is )?scheduled|物流|已送达/i;
@@ -49,7 +49,7 @@ export function keepCategory(m,c){
   if(receipt.test(s))return 'finance';
   if(/(?:^|\.)(?:gc\.ca|canada\.ca|gov|gov\.uk)$/.test(d)||(!socialPost(m)&&/contract|agreement|notice of assessment|insurance policy|lease agreement|immigration|合同|移民/i.test(s)))return 'official';
   if(/booking confirm|itinerary|boarding pass|flight ticket|hotel reservation|check.in (?:opens|reminder)|行程|机票/i.test(s))return 'travel';
-  if(incident.test(s)||(!code.test(s)&&(accountChange.test(s)||(!routine.test(s)&&/\b(?:passwords?|security)\b|密码|账号安全/i.test(s)))))return 'security';
+  if(incident.test(s)||accountChange.test(s)||(!code.test(s)&&!routine.test(s)&&/\b(?:passwords?|security)\b|密码|账号安全/i.test(s)))return 'security';
   if(/\.(?:edu|ac\.uk|edu\.cn|utoronto\.ca|ubc\.ca)$/.test(d)||/course (?:enrol|registration)|professor|tuition|课程|学费/i.test(s))return 'school';
   if(/application (?:received|status)|interview|job offer|recruiter|面试|录用/i.test(s))return 'job';
   if(/clinic|prescription|pharmacy|medical appointment|insurance claim|patient|诊所|处方/i.test(s))return 'health';

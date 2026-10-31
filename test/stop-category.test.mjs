@@ -25,10 +25,10 @@ test('connection failure has a fixed category and suppresses private provider te
  const output=await run({connect:async()=>{throw Error(privateText);}});
  assert(output.some(s=>s.includes('Mailbox primary stopped safely; category: mailbox connection;')));
 });
-test('uncategorized cycle failure logs other and closes the fake mailbox',async()=>{
+test('sorting failure is reported without private text and closes the fake mailbox',async()=>{
  let closed=false;
  const output=await run({connect:async()=>({scan:async()=>{throw Error(privateText);},close:async()=>{closed=true;}})});
- assert(output.some(s=>s.includes('Mailbox primary stopped safely; category: other;')));assert(closed);
+ assert(output.some(s=>s.includes('Mailbox primary sorting: incomplete')));assert(closed);
 });
 for(const [status,category]of [[409,'state write conflict'],[503,'state write failed']])test(`failed PUT ${status} logs ${category} without connecting`,async()=>{
  let puts=0;

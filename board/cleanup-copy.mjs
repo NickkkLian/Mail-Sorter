@@ -193,7 +193,8 @@ export function historyText(run,lang='en'){
   const parts=[t(`${archived} of ${total} selected emails archived${['running','in_progress'].includes(run.status)&&!run.resume_cancelled?' so far':''}`, `所选 ${total} 封邮件中，${archived} 封已归档`)];
   if(trashed)parts.push(t(`${trashed} emails moved to Trash`,`${trashed} 封已移入垃圾箱`));
   if(restored)parts.push(t(`${restored} emails put back in the inbox`,`${restored} 封已放回收件箱`));
-  const unknown=entries.filter(e=>!['done','undone'].includes(e.status)).length;
+  const retry=entries.filter(e=>e.status==='retry').length;if(retry)parts.push(t(`${retry} email changes will be retried at the next automatic check`,`${retry} 封邮件的改动将在下次自动检查时重试`));
+  const unknown=entries.filter(e=>!['done','undone','retry','skipped'].includes(e.status)).length;
   if(unknown)parts.push(t(`${unknown} email changes need checking in Gmail or Undo`,`${unknown} 封改动未确认，请到 Gmail 检查或撤销`));
   if(run.skipped_count)parts.push(t(`${run.skipped_count} emails skipped and left in place`,`${run.skipped_count} 封已跳过，未改动`));
   const rest=Math.max(0,total-entries.length-(run.skipped_count||0));
@@ -211,5 +212,6 @@ export function undoText(run,status,lang='en'){
 
 export function pendingImpact(items,selected,lang='en'){
  const chosen=items.filter(x=>selected.has(mailKey(x))),n=chosen.filter(x=>x.unread===true).length,unknown=chosen.filter(x=>typeof x.unread!=='boolean').length;
- return lang==='zh'?`所选邮件预计可从收件箱清除 ${n} 封未读邮件；处理前会重新核对。${unknown?`另有 ${unknown} 封的未读状态未知，请等待新清单。`:''}`:`Selected emails would clear ${n} unread emails from the inbox; checked again before cleanup.${unknown?` Unread state unknown for ${unknown} older list items; wait for a new list.`:''}`;
+ if(unknown)return lang==='zh'?`${n?`至少有 ${n} 封未读邮件；`:''}所选邮件可减少的未读总数未知：${unknown} 封的未读状态尚无法确定，处理前会重新核对。`:`${n?`At least ${n} unread emails; `:''}the unread inbox total for this selection is unknown: ${unknown} emails have no confirmed read state. Checked again before cleanup.`;
+ return lang==='zh'?`所选邮件预计可从收件箱清除 ${n} 封未读邮件；处理前会重新核对。`:`Selected emails would clear ${n} unread emails from the inbox; checked again before cleanup.`;
 }

@@ -30,9 +30,10 @@ export async function connectMailbox(config,env,createClient){
   async function locate(id){
     if(!/^\d+$/.test(String(id)))throw Error('Invalid stable ID');
     // Recheck INBOX first so execution always has fresh flags, labels, and tab evidence.
-    for(const box of ['INBOX',all,trash]){await client.mailboxOpen(box);const u=await client.search({emailId:String(id)},{uid:true})||[];if(u.length===1){if(box==='INBOX')await tabs();const m=await client.fetchOne(u[0],fetchFields,{uid:true});if(m&&String(m.emailId)===String(id))return {m,box};}}
+    for(const box of ['INBOX',all,trash]){await client.mailboxOpen(box);const u=await client.search({emailId:String(id)},{uid:true})||[];if(u.length===1){if(box==='INBOX')await tabs();const m=await client.fetchOne(u[0],fetchFields,{uid:true});if(m&&String(m.emailId)===String(id))return {m,box};throw Error('Message metadata unavailable');}}
     return null;
   }
+  async function checked(operation){if(await operation===false)throw Error('Mailbox operation refused');}
   async function withMessage(id,fn){const x=await locate(id);if(!x)throw Error('Message unavailable');return fn(x);}
   return {
     async scan({after,expectedUidValidity,limit,primaryOnly}){await inbox();await tabs();const validity=String(client.mailbox.uidValidity||'');const reset=expectedUidValidity!=null&&expectedUidValidity!==validity;if(reset)after=0;const u=(await client.search(primaryOnly?{gmailRaw:'category:primary'}:{all:true},{uid:true})||[]).filter(x=>x>after).sort((a,b)=>a-b);const page=u.slice(0,limit),messages=[];
@@ -46,13 +47,13 @@ export async function connectMailbox(config,env,createClient){
       const rows=messages.filter(m=>!before||m.date<before.date||(m.date===before.date&&m.uid<before.uid)),page=rows.slice(0,limit),last=page.at(-1);
       return {messages:page,done:rows.length<=limit,next:last?{date:last.date,uid:last.uid}:null};
     },
-    get:id=>withMessage(id,async x=>metadata(x.m,x.box==='INBOX')).catch(()=>null),
+    get:async id=>{const x=await locate(id);return x?metadata(x.m,x.box==='INBOX'):null;},
     addLabel:(id,label)=>withMessage(id,async x=>{try{await client.mailboxCreate(label);}catch{/* existing label */}await client.messageFlagsAdd(x.m.uid,[label],{uid:true,useLabels:true});}),
     removeLabel:(id,label)=>withMessage(id,x=>client.messageFlagsRemove(x.m.uid,[label],{uid:true,useLabels:true})),
-    markRead:id=>withMessage(id,x=>client.messageFlagsAdd(x.m.uid,['\\Seen'],{uid:true})),
+    markRead:id=>withMessage(id,x=>checked(client.messageFlagsAdd(x.m.uid,['\\Seen'],{uid:true}))),
     markUnread:id=>withMessage(id,x=>client.messageFlagsRemove(x.m.uid,['\\Seen'],{uid:true})),
-    archive:id=>withMessage(id,x=>{if(x.box!=='INBOX')throw Error('Inbox changed');return client.messageMove(x.m.uid,all,{uid:true});}),
-    trash:id=>withMessage(id,x=>{if(x.box!=='INBOX')throw Error('Inbox changed');return client.messageMove(x.m.uid,trash,{uid:true});}),
+    archive:id=>withMessage(id,x=>{if(x.box!=='INBOX')throw Error('Inbox changed');return checked(client.messageMove(x.m.uid,all,{uid:true}));}),
+    trash:id=>withMessage(id,x=>{if(x.box!=='INBOX')throw Error('Inbox changed');return checked(client.messageMove(x.m.uid,trash,{uid:true}));}),
     restore:id=>withMessage(id,x=>x.box==='INBOX'?true:x.box===trash?client.messageMove(x.m.uid,'INBOX',{uid:true}):client.messageCopy(x.m.uid,'INBOX',{uid:true})),
     // Stage 2 supplies the privacy boundary; never fetch source/full MIME content here.
     async readBody(id){return withMessage(id,async x=>{

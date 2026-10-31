@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {settings} from './settings.mjs';
-import {emptyState,runCycle} from './core.mjs';
+import {emptyState,runCycle,seedProtection} from './core.mjs';
 import {connectMailbox} from './imap.mjs';
 import {scopeState,mergeState,scopeApproval,scopeDealt} from './mailboxes.mjs';
 
@@ -14,7 +14,7 @@ const ROOT=fileURLToPath(new URL('../',import.meta.url));
 const read=(root,name,fallback)=>{const f=path.join(root,name);return fs.existsSync(f)?JSON.parse(fs.readFileSync(f,'utf8')):fallback;};
 export function atomic(root,name,data){const f=path.join(root,name),temp=f+'.tmp';fs.mkdirSync(path.dirname(f),{recursive:true});const fd=fs.openSync(temp,'w',0o600);try{fs.writeFileSync(fd,JSON.stringify(data,null,2)+'\n');fs.fsyncSync(fd);}finally{fs.closeSync(fd);}fs.renameSync(temp,f);const dir=fs.openSync(path.dirname(f),'r');try{fs.fsyncSync(dir);}finally{fs.closeSync(dir);}}
 export async function main({root=ROOT,env=process.env,connect=connectMailbox,output=console.log,clock=Date.now}={}){
-  let lock,mailbox;
+  let lock,mailbox;const contexts=[];
   // A cancelled workflow sends SIGINT then SIGTERM: stop between mailbox changes so the batch in hand is saved.
   const stop=new AbortController(),onSignal=()=>stop.abort();process.once('SIGINT',onSignal);process.once('SIGTERM',onSignal);
   try{
@@ -34,6 +34,11 @@ export async function main({root=ROOT,env=process.env,connect=connectMailbox,out
     const shared=state,initial=structuredClone(shared);
     const approval=await store.read('cleanup-approval.json',null),undoRequests=(await store.read('cleanup-undo.json',{requests:[]})).requests,dealtRequests=(await store.read('dealt-queue.json',{requests:[]})).requests;
     let failed=false;
+    const keys=['primary','secondary'].filter(key=>(key==='primary'||c.second_mailbox_enabled)&&(key==='primary'?env.GMAIL_USER&&env.GMAIL_APP_PASSWORD:env.GMAIL2_USER&&env.GMAIL2_APP_PASSWORD));
+    // Seed all protective settings before either account's evaluator is created.
+    let seeded=c;for(const key of keys){const s=scopeState(initial,key);if(!s.runtime.protection_seeded)seeded=seedProtection(seeded,s.digest);}
+    if(JSON.stringify(seeded)!==JSON.stringify(c)){await store.write('config.json',seeded);c=seeded;}
+    const sortEnd=clock()+(deadline-clock())/2;
     for(const key of ['primary','secondary']){
       if(stop.signal.aborted){failed=true;break;}
       if(clock()>=deadline){output('Time budget reached; this mailbox has not been sorted. Pending work continues at the next automatic check.');break;}
@@ -50,7 +55,7 @@ export async function main({root=ROOT,env=process.env,connect=connectMailbox,out
       const persist=async s=>{try{mergeState(shared,s,key,account,s.proposal?.id!==proposalId);proposalId=s.proposal?.id;await saveShared(shared);}catch(error){phase=stopCategory(error,'state write failed');throw error;}};
       try{
         // One-time migration seeds only protective settings from pre-existing metadata. No body is accessed.
-        if(!state.runtime.protection_seeded){const {seedProtection}=await import('./core.mjs');const seeded=seedProtection(c,state.digest);if(JSON.stringify(seeded)!==JSON.stringify(c)){await store.write('config.json',seeded);c=seeded;}state.runtime.protection_seeded=true;await persist(state);}
+        if(!state.runtime.protection_seeded){state.runtime.protection_seeded=true;await persist(state);}
         await persist(state);
         phase='mailbox connection';
         mailbox=await connect(c,accountEnv);
@@ -69,15 +74,30 @@ export async function main({root=ROOT,env=process.env,connect=connectMailbox,out
           }});classify=null;
         }
         const now=new Date(),evaluate=createEvaluator({config:c,mailbox,classify,now,diagnostics});
-        const result=await runCycle({config:c,state,mailbox,persist,approval:proposalOnly?null:scopeApproval(approval,initial.proposal,key),undoRequests:proposalOnly?[]:undoRequests,dealtRequests:proposalOnly?[]:scopeDealt(dealtRequests,key),force:proposalOnly||env.RUN_NOW==='1',backfill:env.BACKFILL==='1',evaluate,now,signal:stop.signal,deadline,clock});
-        if(stop.signal.aborted){output('Run cancelled; progress so far was saved.');failed=true;}
-        output('Mailbox '+key+': '+(result.skipped?'Skipped: '+result.skipped:'Sorting checked; review list prepared. Proposed: '+result.proposed));
-        if(!proposalOnly){output('Mailbox '+key+' classification diagnostics: '+JSON.stringify(diagnostics));if(diagnostics.errors){output('::error title=Mail classification incomplete::Classification errors: '+diagnostics.errors+'; see fixed diagnostic counts.');failed=true;}}
+        const args={config:c,state,mailbox,persist,approval:proposalOnly?null:scopeApproval(approval,initial.proposal,key),undoRequests:proposalOnly?[]:undoRequests,dealtRequests:proposalOnly?[]:scopeDealt(dealtRequests,key),force:proposalOnly||env.RUN_NOW==='1',backfill:env.BACKFILL==='1',evaluate,now,signal:stop.signal,deadline,clock};
+        const digestDecisions=new Map(),slotEnd=clock()+Math.max(0,sortEnd-clock())/Math.max(1,keys.length-keys.indexOf(key));
+        const result=await runCycle({...args,phase:'sort',digestDecisions,deadline:slotEnd});
+        contexts.push({key,mailbox,args,digestDecisions,diagnostics,sortingFailed:result.sorted!==true});
+        output('Mailbox '+key+' sorting: '+(result.sorted?'checked; digest saved.':'incomplete; approved work will still be tried.'));
+        if(!result.sorted)failed=true;
+        mailbox=null; // owned by its context until the work phase or outer cleanup
       }catch(error){output('Mailbox '+key+' stopped safely; category: '+stopCategory(error,phase)+'; no sensitive error details retained.');failed=true;}
       finally{try{await mailbox?.close();}catch{}mailbox=null;}
     }
+    // Every configured account has had its sorting turn before any long cleanup starts.
+    // Divide the remaining time between accounts; an unfinished first cleanup cannot consume the second's share.
+    for(let at=0;at<contexts.length;at++){
+      const ctx=contexts[at],slotEnd=clock()+Math.max(0,deadline-clock())/(contexts.length-at);
+      try{
+        const result=await runCycle({...ctx.args,phase:'work',digestDecisions:ctx.digestDecisions,sortingFailed:ctx.sortingFailed,deadline:slotEnd});
+        if(stop.signal.aborted){output('Run cancelled; progress so far was saved.');failed=true;}
+        output('Mailbox '+ctx.key+': '+(result.skipped?'Skipped: '+result.skipped:'Sorting checked; review list prepared. Proposed: '+result.proposed));
+        if(!proposalOnly){output('Mailbox '+ctx.key+' classification diagnostics: '+JSON.stringify(ctx.diagnostics));if(ctx.diagnostics.errors){output('::error title=Mail classification incomplete::Classification errors: '+ctx.diagnostics.errors+'; see fixed diagnostic counts.');failed=true;}}
+      }catch(error){output('Mailbox '+ctx.key+' stopped safely; category: '+stopCategory(error,'other')+'; no sensitive error details retained.');failed=true;}
+      finally{try{await ctx.mailbox.close();}catch{}ctx.closed=true;}
+    }
     return failed?1:0;
   }catch(error){output('Run stopped safely; category: '+stopCategory(error)+'; check configuration, dependencies, or runner lock; no sensitive error details retained.');return 1;}
-  finally{process.off('SIGINT',onSignal);process.off('SIGTERM',onSignal);try{await mailbox?.close();}catch{/* never print provider/mailbox errors */}if(lock!==undefined){fs.closeSync(lock);fs.unlinkSync(path.join(root,'.runner.lock'));}}
+  finally{for(const ctx of contexts)if(!ctx.closed)try{await ctx.mailbox.close();}catch{}process.off('SIGINT',onSignal);process.off('SIGTERM',onSignal);try{await mailbox?.close();}catch{/* never print provider/mailbox errors */}if(lock!==undefined){fs.closeSync(lock);fs.unlinkSync(path.join(root,'.runner.lock'));}}
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))process.exitCode=await main();

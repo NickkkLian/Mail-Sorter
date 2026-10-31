@@ -29,7 +29,7 @@ for(const id of ['O1','O2','O3','O4','O5','O6','O7'])test(id+' matches synthetic
   const row=synthetic().items.find(x=>x.expected.rule===id);check(decide(row.message,c,now).rule===id);check(!decide(row.message,{...c,rules:{[id]:{enabled:false}}},now).rule);
 });
 test('age thresholds are strict; future and invalid dates stay',()=>{
-  for(const [sub,extra,days]of [['Verification code',{},1],['Package delivered',{shippingSender:true},7],['Package shipped',{shippingSender:true},30],['Sale',{tab:'promotions'},30],['Newsletter',{bulk:true},60],['Profile viewed',{tab:'social'},14],['Password changed',{},90]]){
+  for(const [sub,extra,days]of [['Verification code',{},1],['Package delivered',{shippingSender:true},7],['Package shipped',{shippingSender:true},30],['Sale',{tab:'promotions'},30],['Newsletter',{bulk:true},60],['Profile viewed',{tab:'social'},14],['New login from a browser',{},90]]){
     check(!decide(m({subject:sub,...extra,date:new Date(now-days*DAY).toISOString()}),c,now).rule);
     check(!!decide(m({subject:sub,...extra,date:new Date(now-days*DAY-1).toISOString()}),c,now).rule);
   }for(const date of ['invalid','2027-01-01'])check(!decide(m({date}),c,now).rule);
