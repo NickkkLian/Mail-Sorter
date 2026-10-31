@@ -6,6 +6,10 @@ import {emptyState,runCycle} from './core.mjs';
 import {connectMailbox} from './imap.mjs';
 import {scopeState,mergeState,scopeApproval,scopeDealt} from './mailboxes.mjs';
 
+// Only these fixed values may reach runner output; never include provider error text.
+export function stopCategory(error,fallback='other'){
+  return new Map([['STATE_WRITE_CONFLICT','state write conflict'],['STATE_WRITE_FAILED','state write failed'],['STATE_READ_FAILED','state read failed']]).get(error?.code)||fallback;
+}
 const ROOT=fileURLToPath(new URL('../',import.meta.url));
 const read=(root,name,fallback)=>{const f=path.join(root,name);return fs.existsSync(f)?JSON.parse(fs.readFileSync(f,'utf8')):fallback;};
 export function atomic(root,name,data){const f=path.join(root,name),temp=f+'.tmp';fs.mkdirSync(path.dirname(f),{recursive:true});const fd=fs.openSync(temp,'w',0o600);try{fs.writeFileSync(fd,JSON.stringify(data,null,2)+'\n');fs.fsyncSync(fd);}finally{fs.closeSync(fd);}fs.renameSync(temp,f);const dir=fs.openSync(path.dirname(f),'r');try{fs.fsyncSync(dir);}finally{fs.closeSync(dir);}}
@@ -42,12 +46,15 @@ export async function main({root=ROOT,env=process.env,connect=connectMailbox,out
       if(!account||/[\r\n]/.test(account)||(bound&&bound!==account)||account===shared.runtime.mailboxes?.[key==='primary'?'secondary':'primary']?.account||(key==='secondary'&&account===String(env.GMAIL_USER||'').trim().toLowerCase())){output('Mailbox '+key+' account binding mismatch; stopped safely.');failed=true;continue;}
       const state=scopeState(initial,key);
       let proposalId=state.proposal?.id;
-      const persist=async s=>{mergeState(shared,s,key,account,s.proposal?.id!==proposalId);proposalId=s.proposal?.id;await saveShared(shared);};
+      let phase='state write failed';
+      const persist=async s=>{try{mergeState(shared,s,key,account,s.proposal?.id!==proposalId);proposalId=s.proposal?.id;await saveShared(shared);}catch(error){phase=stopCategory(error,'state write failed');throw error;}};
       try{
         // One-time migration seeds only protective settings from pre-existing metadata. No body is accessed.
         if(!state.runtime.protection_seeded){const {seedProtection}=await import('./core.mjs');const seeded=seedProtection(c,state.digest);if(JSON.stringify(seeded)!==JSON.stringify(c)){await store.write('config.json',seeded);c=seeded;}state.runtime.protection_seeded=true;await persist(state);}
         await persist(state);
+        phase='mailbox connection';
         mailbox=await connect(c,accountEnv);
+        phase='other';
         const {createEvaluator,modelClassifier}=await import('./intelligence.mjs');let classify=null;
         const diagnostics={errors:0};
         if(!proposalOnly)try{classify=modelClassifier(accountEnv,{maxRetries:c.max_retries});}catch{diagnostics.errors++;diagnostics.config_errors=1;}
@@ -66,11 +73,11 @@ export async function main({root=ROOT,env=process.env,connect=connectMailbox,out
         if(stop.signal.aborted){output('Run cancelled; progress so far was saved.');failed=true;}
         output('Mailbox '+key+': '+(result.skipped?'Skipped: '+result.skipped:'Cycle complete. Proposed: '+result.proposed));
         if(!proposalOnly){output('Mailbox '+key+' classification diagnostics: '+JSON.stringify(diagnostics));if(diagnostics.errors){output('::error title=Mail classification incomplete::Classification errors: '+diagnostics.errors+'; see fixed diagnostic counts.');failed=true;}}
-      }catch{output('Mailbox '+key+' stopped safely; no sensitive error details retained.');failed=true;}
+      }catch(error){output('Mailbox '+key+' stopped safely; category: '+stopCategory(error,phase)+'; no sensitive error details retained.');failed=true;}
       finally{try{await mailbox?.close();}catch{}mailbox=null;}
     }
     return failed?1:0;
-  }catch{output('Run stopped safely. Check configuration, dependencies, or runner lock; no sensitive error details retained.');return 1;}
+  }catch(error){output('Run stopped safely; category: '+stopCategory(error)+'; check configuration, dependencies, or runner lock; no sensitive error details retained.');return 1;}
   finally{process.off('SIGINT',onSignal);process.off('SIGTERM',onSignal);try{await mailbox?.close();}catch{/* never print provider/mailbox errors */}if(lock!==undefined){fs.closeSync(lock);fs.unlinkSync(path.join(root,'.runner.lock'));}}
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))process.exitCode=await main();
