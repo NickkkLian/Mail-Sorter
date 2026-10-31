@@ -17,7 +17,7 @@ on:
         type: boolean
         default: false
       backfill:
-        description: 'Scan up to max_backfill oldest Inbox messages, through the same approval path'
+        description: 'Review up to max_backfill newest unread Primary emails; approval still required'
         type: boolean
         default: false
 

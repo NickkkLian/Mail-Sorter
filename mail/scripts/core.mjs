@@ -13,10 +13,15 @@ export function autoEligible(c,id,reviews,now){
   return days.size>=r.clean_days&&clean.length>0&&Date.parse(now)-Date.parse(clean[0].at)>=r.clean_days*DAY&&Date.parse(now)-Date.parse(clean.at(-1).at)<=2*DAY;
 }
 const item=(m,v,c)=>({gmailId:m.gmailId,uid:m.uid,msgid:m.msgid||null,from:m.from||'',subject:m.subject||'',date:m.date,rule:v.rule,reason:v.reason,action:c.rules[v.rule].action,unread:m.seen===false});
-export async function makeProposal({messages,config,state,now=new Date(),evaluate=async m=>decide(m,config,now)}){
+export async function makeProposal({messages,config,state,backfill=false,pendingIds=[],now=new Date(),evaluate=async m=>decide(m,config,now)}){
   const c=settings(config),items=[];const unique=new Set();
-  for(const m of [...messages].filter(m=>m.inInbox!==false&&m.seen!==true).sort((a,b)=>String(b.date).localeCompare(String(a.date))||b.uid-a.uid)){if(items.length>=c.max_per_run)break;if(unique.has(m.gmailId)||quarantined(state,m.gmailId))continue;unique.add(m.gmailId);const v=await evaluate(m);if(v.rule)items.push(item(m,v,c));}
-  const proposal={id:randomUUID(),created_at:now.toISOString(),policy:policyHash(c),items};
+  const newest=(a,b)=>String(b.date).localeCompare(String(a.date))||b.uid-a.uid;
+  const rows=[...messages].filter(m=>m.inInbox!==false&&m.seen!==true).sort(newest),pending=new Set(pendingIds);
+  // A one-time larger review must retain already-pending choices even when newer arrivals fill the page.
+  const ordered=backfill?[...rows.filter(m=>pending.has(m.gmailId)),...rows.filter(m=>!pending.has(m.gmailId))]:rows;
+  for(const m of ordered){if(items.length>=(backfill?c.max_backfill:c.max_per_run))break;if(unique.has(m.gmailId)||quarantined(state,m.gmailId))continue;unique.add(m.gmailId);const v=await evaluate(m);if(v.rule)items.push(item(m,v,c));}
+  items.sort(newest);
+  const proposal={...(backfill?{review_mode:'primary_backfill'}:{}),id:randomUUID(),created_at:now.toISOString(),policy:policyHash(c),items};
   proposal.revision=fingerprint({policy:proposal.policy,items});state.proposal=proposal;state.runtime.lastProposalAt=now.toISOString();return proposal;
 }
 // persist must durably record the journal BEFORE any side effect. Only these mailbox verbs are used.
@@ -198,7 +203,10 @@ export async function runCycle({config,state,mailbox,persist,approval=null,undoR
   await applyApproval({config:c,state,approval,mailbox,persist,now,evaluate,signal,deadline,clock});
   if(state.journal.runs.some(r=>r.status==='in_progress'&&!r.resume_cancelled))return {skipped:clock()>=deadline?'budget':'continuing'};
   if(signal?.aborted)return {skipped:clock()>=deadline?'budget':'cancelled'};
-  if(!force&&state.runtime.lastProposalAt&&Date.parse(now)-Date.parse(state.runtime.lastProposalAt)<c.frequency_hours*3600000)return {skipped:'cadence',sorted:true};
+  const outstanding=state.proposal&&!state.journal.runs.some(r=>r.proposal_id===state.proposal.id)?state.proposal:null;
+  // Daily work must not replace an unapproved one-time batch with a smaller daily list.
+  if(outstanding?.items.length&&((!backfill&&outstanding.review_mode==='primary_backfill')||(backfill&&outstanding.items.length>c.max_backfill)))return {skipped:'pending review',sorted:true};
+  if(!force&&!backfill&&state.runtime.lastProposalAt&&Date.parse(now)-Date.parse(state.runtime.lastProposalAt)<c.frequency_hours*3600000)return {skipped:'cadence',sorted:true};
   const page=await mailbox.scan({after:state.runtime.scanAfter||0,expectedUidValidity:state.runtime.uidValidity,limit:backfill?c.max_backfill:c.max_per_run,primaryOnly:c.primary_only});
   if(page.reset){state.runtime.scanAfter=0;state.digest.lastUid=0;state.digest.total_is_floor=true;}
   for(const m of page.messages){
@@ -211,13 +219,13 @@ export async function runCycle({config,state,mailbox,persist,approval=null,undoR
   if(page.done&&page.messages.every(m=>m.uid<=(state.runtime.scanAfter||0)))state.runtime.scanAfter=0;
   if(signal?.aborted){state.runtime.scanAfter=page.reset?0:scanAfter;await persist(state);return {skipped:clock()>=deadline?'budget':'cancelled'};}
   // A separate descending unread walk reaches older candidates after newer pages.
-  const review=mailbox.scanReview?await mailbox.scanReview({before:state.runtime.reviewBefore,limit:c.max_per_run,primaryOnly:c.primary_only}):{messages:all,done:true};
+  const review=mailbox.scanReview?await mailbox.scanReview({before:backfill?null:state.runtime.reviewBefore,limit:backfill?c.max_backfill:c.max_per_run,primaryOnly:backfill||c.primary_only}):{messages:all,done:true};
   const pending=[];
   if(state.proposal&&!state.journal.runs.some(r=>r.proposal_id===state.proposal.id))for(const x of state.proposal.items){if(signal?.aborted)break;const m=await mailbox.get(x.gmailId);if(m?.inInbox&&m.seen===false)pending.push(m);}
   if(signal?.aborted){await persist(state);return {skipped:'budget',sorted:true};}
-  const p=await makeProposal({messages:[...pending,...review.messages],config:c,state,now,evaluate:async m=>decisions.get(m.gmailId)||evaluate(m)});
+  const p=await makeProposal({messages:[...pending,...review.messages],config:c,state,backfill,pendingIds:pending.map(m=>m.gmailId),now,evaluate:async m=>decisions.get(m.gmailId)||evaluate(m)});
   // Do not advance past candidates displaced by a still-pending batch.
-  if(!pending.length)state.runtime.reviewBefore=review.done?null:review.next;
+  if(!backfill&&!pending.length)state.runtime.reviewBefore=review.done?null:review.next;
   await persist(state);
   const eligible=p.items.filter(x=>autoEligible(c,x.rule,state.journal.reviews,now));
   // Automated reviews never add clean-history evidence; only human approval can establish eligibility.
