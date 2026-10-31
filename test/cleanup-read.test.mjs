@@ -18,14 +18,14 @@ async function setup({seen=false,enabled=true,action='archive',count=1}={}){
   restore:mutate('restore',m=>{m.inInbox=true;},true),
   removeLabel:mutate('unlabel',(m,l)=>{m.labels=m.labels.filter(x=>x!==l);},true)};
  const evaluate=async()=>({rule:'O1'});
- await makeProposal({messages:[...data.values()],config,state,now,evaluate});
+ await makeProposal({messages:[...data.values()].map(m=>({...m,seen:false})),config,state,now,evaluate});
  const p=state.proposal,approval={proposal_id:p.id,revision:p.revision,selected:[...data.keys()]};
  return {config,state,mailbox,persist,now,evaluate,approval,data,calls,reload:()=>structuredClone(durable)};
 }
 for(const action of ['archive','trash'])for(const seen of [false,true])for(const enabled of [false,true])test(`cleanup ${action}, seen=${seen}, preference=${enabled}: durable intent and exact Undo`,async()=>{
  const x=await setup({action,seen,enabled});const result=await applyApproval(x);
- const e=x.state.journal.runs[0].entries[0];assert.equal(e.changeRead,enabled&&!seen);assert.equal(result.applied,1);
- assert.equal(x.data.get('1').seen,seen||enabled);assert(!x.data.get('1').inInbox);
+ const e=x.state.journal.runs[0].entries[0];assert.equal(e.changeRead,(action==='archive'||enabled)&&!seen);assert.equal(result.applied,1);
+ assert.equal(x.data.get('1').seen,seen||action==='archive'||enabled);assert(!x.data.get('1').inInbox);
  await undoRun({...x,runId:x.state.journal.runs[0].id});
  assert.deepEqual(x.data.get('1'),{gmailId:'1',uid:1,inInbox:true,seen,labels:['Original']});
  const n=x.calls.length;await undoRun({...x,runId:x.state.journal.runs[0].id});assert.equal(x.calls.length,n);

@@ -8,7 +8,7 @@ export function fake({sent=0,missingThread=false,bodySize=20,seen=true,downloadE
     on(){}async connect(){actions.push('connect');}async logout(){actions.push('close');}
     async list(){return ['All','Trash','Sent'].map(x=>({path:x,specialUse:'\\'+x}));}
     async mailboxOpen(box){this.box=box;}
-    async search(query){if(this.box==='Sent')return Array.from({length:sent},(_,i)=>i+1);if(query.gmailRaw)return query.gmailRaw==='category:primary'&&this.inbox?[11]:[];if(query.emailId)return (this.box==='INBOX'&&this.inbox||this.box==='All'&&!this.inbox)?[record.uid]:[];return this.box==='INBOX'&&this.inbox?[11]:[];}
+    async search(query){if(this.box==='Sent')return Array.from({length:sent},(_,i)=>i+1);if(query.gmailRaw?.startsWith('in:inbox is:unread'))return this.box==='INBOX'&&this.inbox&&!flags.has('\\Seen')?[record.uid]:[];if(query.gmailRaw)return query.gmailRaw==='category:primary'&&this.inbox?[11]:[];if(query.emailId)return (this.box==='INBOX'&&this.inbox||this.box==='All'&&!this.inbox)?[record.uid]:[];return this.box==='INBOX'&&this.inbox?[11]:[];}
     async *fetch(uids){if(this.box==='Sent'){for(const uid of uids)yield {...sentRecord,uid};}else if(uids.length)yield record;}
     async fetchOne(){return record;}async mailboxCreate(){}
     async messageFlagsAdd(uid,labels,options){if(!options.useLabels){check(labels.length===1&&labels[0]==='\\Seen');flags.add('\\Seen');actions.push('seen');return;}check(labels.every(x=>!x.startsWith('\\')));for(const x of labels)record.labels.add(x);actions.push('label');}

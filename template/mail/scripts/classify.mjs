@@ -36,7 +36,7 @@ export async function main({root=ROOT,env=process.env,connect=connectMailbox,out
     let failed=false;
     for(const key of ['primary','secondary']){
       if(stop.signal.aborted){failed=true;break;}
-      if(clock()>=deadline){output('Time budget reached; pending cleanup continues at the next automatic check.');break;}
+      if(clock()>=deadline){output('Time budget reached; this mailbox has not been sorted. Pending work continues at the next automatic check.');break;}
       if(key==='secondary'&&!c.second_mailbox_enabled){output('Skipped: secondary mailbox disabled.');continue;}
       const accountEnv=key==='primary'?env:{...env,GMAIL_USER:env.GMAIL2_USER,GMAIL_APP_PASSWORD:env.GMAIL2_APP_PASSWORD};
       if(!accountEnv.GMAIL_USER||!accountEnv.GMAIL_APP_PASSWORD){output('Skipped: '+key+' mailbox not configured.');continue;}
@@ -71,7 +71,7 @@ export async function main({root=ROOT,env=process.env,connect=connectMailbox,out
         const now=new Date(),evaluate=createEvaluator({config:c,mailbox,classify,now,diagnostics});
         const result=await runCycle({config:c,state,mailbox,persist,approval:proposalOnly?null:scopeApproval(approval,initial.proposal,key),undoRequests:proposalOnly?[]:undoRequests,dealtRequests:proposalOnly?[]:scopeDealt(dealtRequests,key),force:proposalOnly||env.RUN_NOW==='1',backfill:env.BACKFILL==='1',evaluate,now,signal:stop.signal,deadline,clock});
         if(stop.signal.aborted){output('Run cancelled; progress so far was saved.');failed=true;}
-        output('Mailbox '+key+': '+(result.skipped?'Skipped: '+result.skipped:'Cycle complete. Proposed: '+result.proposed));
+        output('Mailbox '+key+': '+(result.skipped?'Skipped: '+result.skipped:'Sorting checked; review list prepared. Proposed: '+result.proposed));
         if(!proposalOnly){output('Mailbox '+key+' classification diagnostics: '+JSON.stringify(diagnostics));if(diagnostics.errors){output('::error title=Mail classification incomplete::Classification errors: '+diagnostics.errors+'; see fixed diagnostic counts.');failed=true;}}
       }catch(error){output('Mailbox '+key+' stopped safely; category: '+stopCategory(error,phase)+'; no sensitive error details retained.');failed=true;}
       finally{try{await mailbox?.close();}catch{}mailbox=null;}

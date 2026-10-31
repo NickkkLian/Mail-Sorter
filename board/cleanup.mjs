@@ -1,4 +1,4 @@
-import {text,ruleName,historyText,undoText} from './cleanup-copy.mjs';
+import {text,ruleName,historyText,undoText,pendingImpact} from './cleanup-copy.mjs';
 import {mailKey} from '../mail/scripts/mailbox-key.mjs';
 import {ReviewController,RULE_NAMES,undoStatus} from './review.mjs';
 import {settings} from '../mail/scripts/settings.mjs';
@@ -33,8 +33,8 @@ export function mountReview(bridge,document){
     else if(!p.items.length)host.append(el('p','No outdated mail proposed in the latest scan.'));
     else{
       host.append(el('p',new Date(p.created_at).toLocaleString(language()==='zh'?'zh-CN':undefined)+' · '+t(p.items.length+' emails to review',p.items.length+' 封邮件待确认')));
-      const checks=new Map(),protectButtons=new Map(),ruleChecks=new Map();let approve;
-      const update=()=>{approve.textContent=t('Approve cleanup of '+controller.selected.size+' emails','批准清理 '+controller.selected.size+' 封邮件');approve.disabled=!c.enabled;for(const[id,button]of protectButtons)button.hidden=controller.selected.has(id);for(const[rule,{input}]of ruleChecks){const group=p.items.filter(x=>x.rule===rule),n=group.filter(x=>controller.selected.has(mailKey(x))).length;input.checked=n===group.length;input.indeterminate=n>0&&n<group.length;}};
+      const checks=new Map(),protectButtons=new Map(),ruleChecks=new Map();let approve;const impact=el('p','',{class:'review-impact','aria-live':'polite'});host.append(impact);
+      const update=()=>{impact.textContent=pendingImpact(p.items,controller.selected,language());approve.textContent=t('Approve cleanup of '+controller.selected.size+' emails','批准清理 '+controller.selected.size+' 封邮件');approve.disabled=!c.enabled;for(const[id,button]of protectButtons)button.hidden=controller.selected.has(id);for(const[rule,{input}]of ruleChecks){const group=p.items.filter(x=>x.rule===rule),n=group.filter(x=>controller.selected.has(mailKey(x))).length;input.checked=n===group.length;input.indeterminate=n>0&&n<group.length;}};
       for(const[rule,name]of Object.entries(RULE_NAMES)){
         const group=p.items.filter(x=>x.rule===rule);if(!group.length)continue;const field=el('fieldset'),legend=el('legend');const ruleCheck=checkbox(ruleName(rule,language())+' · '+t(group.length+' emails',group.length+' 封邮件'),true,on=>{controller.setRule(rule,on);for(const x of group)checks.get(mailKey(x)).checked=on;update();});ruleChecks.set(rule,ruleCheck);legend.append(ruleCheck.label);field.append(legend);
         for(const x of group){const row=el('div',null,{class:'review-item'}),input=el('input',null,{type:'checkbox','aria-label':t('Select ','选择 ')+x.subject});input.checked=controller.selected.has(mailKey(x));checks.set(mailKey(x),input);const body=el('span'),label=el('label',x.subject),id='cleanup-'+mailKey(x);input.id=id;label.setAttribute('for',id);body.append(label,el('small',(x.mailbox_address||x.mailbox||tr('Primary mailbox'))+' · '+x.from+' · '+new Date(x.date).toLocaleDateString(language()==='zh'?'zh-CN':undefined)),el('small',ruleName(x.rule,language())+' · '+tr(x.action==='trash'?'Trash — Gmail deletes after 30 days':'Archive — kept in All Mail')));

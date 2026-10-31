@@ -1,3 +1,4 @@
+import {mailKey} from '../mail/scripts/mailbox-key.mjs';
 export const COPY = {
   "Cleanup review": [
     "Review older emails",
@@ -206,4 +207,9 @@ export function undoText(run,status,lang='en'){
  if(status==='Undo queued')return t('Restore requested — refresh after next check','已申请恢复，下次检查后请刷新');
  const n=run.entries.filter(e=>e.status!=='undone').length;
  return status==='Needs retry or manual check'?t(`Retry putting ${n} emails back in inbox`, `重试将 ${n} 封邮件放回收件箱`):t(`Undo: put up to ${n} emails back in inbox`, `撤销：将最多 ${n} 封邮件放回收件箱`);
+}
+
+export function pendingImpact(items,selected,lang='en'){
+ const chosen=items.filter(x=>selected.has(mailKey(x))),n=chosen.filter(x=>x.unread===true).length,unknown=chosen.filter(x=>typeof x.unread!=='boolean').length;
+ return lang==='zh'?`所选邮件预计可从收件箱清除 ${n} 封未读邮件；处理前会重新核对。${unknown?`另有 ${unknown} 封的未读状态未知，请等待新清单。`:''}`:`Selected emails would clear ${n} unread emails from the inbox; checked again before cleanup.${unknown?` Unread state unknown for ${unknown} older list items; wait for a new list.`:''}`;
 }

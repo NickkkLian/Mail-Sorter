@@ -38,6 +38,14 @@ export async function connectMailbox(config,env,createClient){
     async scan({after,expectedUidValidity,limit,primaryOnly}){await inbox();await tabs();const validity=String(client.mailbox.uidValidity||'');const reset=expectedUidValidity!=null&&expectedUidValidity!==validity;if(reset)after=0;const u=(await client.search(primaryOnly?{gmailRaw:'category:primary'}:{all:true},{uid:true})||[]).filter(x=>x>after).sort((a,b)=>a-b);const page=u.slice(0,limit),messages=[];
       if(page.length)for await(const m of client.fetch(page,fetchFields,{uid:true}))messages.push(metadata(m,true));
       messages.sort((a,b)=>a.uid-b.uid);return {messages,done:u.length<=limit,uidValidity:validity,reset};},
+    async scanReview({before=null,limit,primaryOnly}){
+      await inbox();await tabs();
+      const u=await client.search({gmailRaw:'in:inbox is:unread'+(primaryOnly?' category:primary':'')},{uid:true})||[],messages=[];
+      if(u.length)for await(const m of client.fetch(u,fetchFields,{uid:true})){const row=metadata(m,true);if(row.seen===false)messages.push(row);}
+      messages.sort((a,b)=>String(b.date).localeCompare(String(a.date))||b.uid-a.uid);
+      const rows=messages.filter(m=>!before||m.date<before.date||(m.date===before.date&&m.uid<before.uid)),page=rows.slice(0,limit),last=page.at(-1);
+      return {messages:page,done:rows.length<=limit,next:last?{date:last.date,uid:last.uid}:null};
+    },
     get:id=>withMessage(id,async x=>metadata(x.m,x.box==='INBOX')).catch(()=>null),
     addLabel:(id,label)=>withMessage(id,async x=>{try{await client.mailboxCreate(label);}catch{/* existing label */}await client.messageFlagsAdd(x.m.uid,[label],{uid:true,useLabels:true});}),
     removeLabel:(id,label)=>withMessage(id,x=>client.messageFlagsRemove(x.m.uid,[label],{uid:true,useLabels:true})),
