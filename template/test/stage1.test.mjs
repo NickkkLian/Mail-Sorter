@@ -14,6 +14,7 @@ function mocks(messages=[m()]){
   const box=new Proxy({
     markRead:async id=>{data.get(id).seen=true;},markUnread:async id=>{data.get(id).seen=false;},
     get:async id=>structuredClone(data.get(id)||null),
+    scanReview:async({limit})=>({messages:[...data.values()].filter(x=>x.inInbox&&!x.seen).sort((a,b)=>b.uid-a.uid).slice(0,limit),done:true}),
     scan:async({after,limit})=>({messages:[...data.values()].filter(x=>x.inInbox&&x.uid>after).sort((a,b)=>a.uid-b.uid).slice(0,limit),done:[...data.values()].filter(x=>x.inInbox&&x.uid>after).length<=limit,uidValidity:'1'}),
     addLabel:async(id,label)=>{calls.push('label');data.get(id).labels.push(label);},
     removeLabel:async(id,label)=>{calls.push('unlabel');data.get(id).labels=data.get(id).labels.filter(x=>x!==label);},
@@ -28,7 +29,7 @@ for(const id of ['O1','O2','O3','O4','O5','O6','O7'])test(id+' matches synthetic
   const row=synthetic().items.find(x=>x.expected.rule===id);check(decide(row.message,c,now).rule===id);check(!decide(row.message,{...c,rules:{[id]:{enabled:false}}},now).rule);
 });
 test('age thresholds are strict; future and invalid dates stay',()=>{
-  for(const [sub,extra,days]of [['Verification code',{},1],['Package delivered',{shippingSender:true},7],['Package shipped',{shippingSender:true},30],['Sale',{tab:'promotions'},30],['Newsletter',{bulk:true},60],['Profile viewed',{tab:'social'},14],['Password changed',{},90]]){
+  for(const [sub,extra,days]of [['Verification code',{},1],['Package delivered',{shippingSender:true},7],['Package shipped',{shippingSender:true},30],['Sale',{tab:'promotions'},30],['Newsletter',{bulk:true},60],['Profile viewed',{tab:'social'},14],['New login from a browser',{},90]]){
     check(!decide(m({subject:sub,...extra,date:new Date(now-days*DAY).toISOString()}),c,now).rule);
     check(!!decide(m({subject:sub,...extra,date:new Date(now-days*DAY-1).toISOString()}),c,now).rule);
   }for(const date of ['invalid','2027-01-01'])check(!decide(m({date}),c,now).rule);
@@ -76,10 +77,10 @@ test('Trash expires at 30 days; crash-uncertain intents remain recoverable by un
   const state=emptyState(),{box,calls}=mocks();state.journal.runs=[{id:'r',entries:[{gmailId:'1001',rule:'O1',action:'trash',at:new Date(now-30*DAY).toISOString(),status:'done'}]}];await undoRun({state,runId:'r',mailbox:box,persist:async()=>{},now});check(calls.length===0);
   state.journal.runs[0].entries[0]={gmailId:'1001',rule:'O1',action:'archive',at:NOW,status:'intent',label:'AI/Cleaned/O1'};await undoRun({state,runId:'r',mailbox:box,persist:async()=>{},now});check(calls.includes('restore'));
 });
-test('cadence, bounded oldest-first scan and aging sweep do not skip overflow',async()=>{
+test('cadence and bounded historical sorting preserve progress while review stays capped',async()=>{
   const state=emptyState(),messages=Array.from({length:5},(_,i)=>m({uid:i+1,gmailId:String(1001+i)})),{box}=mocks(messages),cfg={...c,max_per_run:2};
   for(let i=0;i<3;i++)await runCycle({config:cfg,state,mailbox:box,persist:async()=>{},now:new Date(now.getTime()+i*DAY),force:true});
-  check(state.proposal.items.length===5&&state.runtime.scanAfter===0&&state.digest.total_classified===5);
+  check(state.proposal.items.length===2&&state.runtime.scanAfter===0&&state.digest.total_classified===5);
   const before=state.proposal.id;const r=await runCycle({config:cfg,state,mailbox:box,persist:async()=>{},now:new Date(now.getTime()+2*DAY)});check(r.skipped==='cadence'&&state.proposal.id===before);
 });
 test('automatic eligibility requires opt-in and 28 clean reviewed days; rejection/config edits reset it',()=>{

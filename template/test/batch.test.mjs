@@ -106,6 +106,7 @@ test('a cancel during Undo does not start the pending approval or use it up',asy
   const more=Array.from({length:3},(_,i)=>message({uid:20+i,gmailId:String(6000+i),subject:'Verification code'}));
   for(const m of more)a.data.set(m.gmailId,structuredClone(m));
   await makeProposal({messages:more,config,state:a.state,now});const p=a.state.proposal,approvalB={proposal_id:p.id,revision:p.revision,selected:p.items.map(x=>x.gmailId)};
+  a.mailbox.scan=async()=>({messages:[],done:true,uidValidity:'1'});
   a.hooks.before=async v=>{if(v==='restore')stop.abort();};
   const r=await runCycle({config,state:a.state,mailbox:a.mailbox,persist:async()=>{},approval:approvalB,undoRequests:[{run_id:runA}],now,signal:stop.signal});
   check(r.skipped==='cancelled'&&!a.state.journal.runs.some(x=>x.proposal_id===p.id));

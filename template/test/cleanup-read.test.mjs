@@ -18,14 +18,14 @@ async function setup({seen=false,enabled=true,action='archive',count=1}={}){
   restore:mutate('restore',m=>{m.inInbox=true;},true),
   removeLabel:mutate('unlabel',(m,l)=>{m.labels=m.labels.filter(x=>x!==l);},true)};
  const evaluate=async()=>({rule:'O1'});
- await makeProposal({messages:[...data.values()],config,state,now,evaluate});
+ await makeProposal({messages:[...data.values()].map(m=>({...m,seen:false})),config,state,now,evaluate});
  const p=state.proposal,approval={proposal_id:p.id,revision:p.revision,selected:[...data.keys()]};
  return {config,state,mailbox,persist,now,evaluate,approval,data,calls,reload:()=>structuredClone(durable)};
 }
 for(const action of ['archive','trash'])for(const seen of [false,true])for(const enabled of [false,true])test(`cleanup ${action}, seen=${seen}, preference=${enabled}: durable intent and exact Undo`,async()=>{
  const x=await setup({action,seen,enabled});const result=await applyApproval(x);
- const e=x.state.journal.runs[0].entries[0];assert.equal(e.changeRead,enabled&&!seen);assert.equal(result.applied,1);
- assert.equal(x.data.get('1').seen,seen||enabled);assert(!x.data.get('1').inInbox);
+ const e=x.state.journal.runs[0].entries[0];assert.equal(e.changeRead,(action==='archive'||enabled)&&!seen);assert.equal(result.applied,1);
+ assert.equal(x.data.get('1').seen,seen||action==='archive'||enabled);assert(!x.data.get('1').inInbox);
  await undoRun({...x,runId:x.state.journal.runs[0].id});
  assert.deepEqual(x.data.get('1'),{gmailId:'1',uid:1,inInbox:true,seen,labels:['Original']});
  const n=x.calls.length;await undoRun({...x,runId:x.state.journal.runs[0].id});assert.equal(x.calls.length,n);
@@ -48,10 +48,10 @@ for(const crash of ['before intent save','after intent save','after read'])test(
  x.state=durable;const n=x.calls.length;await applyApproval({...x,resumeRun:x.state.journal.runs[0]});assert.equal(x.calls.length,n);
  await undoRun({...x,runId:x.state.journal.runs[0].id});assert.equal(x.data.get('1').seen,false);assert(x.data.get('1').inInbox);
 });
-for(const changed of [false,true])test('markRead error (changed='+changed+') is uncertain, never done or replayed; Undo repairs',async()=>{
+for(const changed of [false,true])test('markRead error (changed='+changed+') stays retryable, never repeats archive; Undo repairs',async()=>{
  const x=await setup(),read=x.mailbox.markRead;x.mailbox.markRead=async id=>{if(changed)await read(id);throw Error('connection lost');};
- assert.equal((await applyApproval(x)).applied,0);assert.equal(x.state.journal.runs[0].entries[0].status,'uncertain');assert.equal(x.state.journal.reviews[0].complete,false);
- const n=x.calls.length;await applyApproval(x);assert.equal(x.calls.length,n);
+ assert.equal((await applyApproval(x)).applied,0);assert.equal(x.state.journal.runs[0].entries[0].status,'retry');assert.equal(x.state.journal.reviews[0].complete,false);
+ const n=x.calls.filter(v=>v.startsWith('archive:')).length;await applyApproval(x);assert.equal(x.calls.filter(v=>v.startsWith('archive:')).length,n);
  await undoRun({...x,runId:x.state.journal.runs[0].id});assert.equal(x.data.get('1').seen,false);assert(x.data.get('1').inInbox);
 });
 for(const seen of [false,true])test('legacy cleanup Undo without changeRead preserves seen='+seen,async()=>{
