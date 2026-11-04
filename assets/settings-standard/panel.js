@@ -12,6 +12,7 @@
   const message=code=>(text[code]||text.unknown)[A.language()==='zh'?1:0];
   let keyBase, modelBase, key='', model='', keyDirty=false, modelDirty=false, keyConflict=false, keyInvalid=false, source='missing',sourceFailedRaw=null,sourceGeneration=0,keySet=false;
   let prefs;
+  const unsavedPreferences={};
   let connectionBase, connectionChoice, connectionDraft, connectionDirty=false, connectionConflict=false;
   let staged=null, busy=false, stopModal=null,connectionInvalid=false,appearanceInvalid=false,showKey=false,showToken=false;
   const feedback={};let inputMode='keyboard';
@@ -55,10 +56,10 @@
     connectionConflict=false;connectionInvalid=false;
   }
   function currentPreferences(){
-    const value={lang:C.rawRead(localStorage,HubSettingsContract.preferenceKey("pha-lang"))===null&&A.defaultLanguage?A.defaultLanguage:C.preferencesRead(localStorage).lang,...C.migrateTheme(localStorage,A.app)};
+    const value={lang:C.rawRead(localStorage,HubSettingsContract.preferenceKey("pha-lang"))===null&&A.defaultLanguage?A.defaultLanguage:C.preferencesRead(localStorage).lang,...C.migrateTheme(localStorage,A.app,error=>{feedback.appearance=error.code||'storage';window.SuiteHeaderEntry?.announce(message(feedback.appearance));})};
     if(!C.hosted)value.themeMode='app';
     if(A.palette){value.palette=R.read(A.app).palette??A.palette.legacy();if(!A.palette.values.includes(value.palette))throw new C.SettingsError('invalid');}
-    return value;
+    return {...value,...unsavedPreferences};
   }
   function readPreferences(){
     appearanceInvalid=true;
@@ -75,16 +76,21 @@
       readPreferences();
       if(kind==='language'){
         const next=prefs.lang==='en'?'zh':'en';
+        unsavedPreferences.lang=next;prefs.lang=next;setPreview();
         try{localStorage.setItem(HubSettingsContract.preferenceKey("pha-lang"),next);}catch{throw new C.SettingsError('storage');}
         if(C.rawRead(localStorage,HubSettingsContract.preferenceKey("pha-lang"))!==next)throw new C.SettingsError('readback');
+        delete unsavedPreferences.lang;
       }else{
         const theme=C.resolveAppTheme(prefs,C.preferencesRead(localStorage).theme);
         const dark=theme==='dark'||theme==='system'&&matchMedia('(prefers-color-scheme: dark)').matches;
-        R.write(A.app,{themeMode:'app',theme:dark?'light':'dark'});
+        Object.assign(unsavedPreferences,{themeMode:'app',theme:dark?'light':'dark'});
+        prefs={...prefs,...unsavedPreferences};setPreview();
+        R.write(A.app,{themeMode:prefs.themeMode,theme:prefs.theme});
+        delete unsavedPreferences.themeMode;delete unsavedPreferences.theme;
       }
       readPreferences();setPreview();
       window.SuiteHeaderEntry?.announce(kind==='language'?tr('Language: English','语言：中文'):tr('Theme: ','主题：')+(document.documentElement.dataset.settingsScheme==='dark'?tr('dark','深色'):tr('light','浅色')));
-    }catch(error){window.SuiteHeaderEntry?.announce(message(error.code||'storage'));}
+    }catch(error){feedback.appearance=error.code||'storage';window.SuiteHeaderEntry?.announce(message(feedback.appearance));}
   }
   function syncAIDraft(){
     if(!cap||A.demo)return;
@@ -267,5 +273,8 @@ ${cap&&!A.demo?'</details>':''}</section>
   }).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
   C.observeSettings(refresh);matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(prefs)setPreview();});
   A.install(window.SuiteSettings);
-  try{readPreferences();setPreview();readConnection();readAI();}catch(e){feedback.connection=e.code||'invalid';}
+  window.SuiteHeaderEntry?.update({language:A.language(),theme:matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light',error:false});
+  try{readPreferences();setPreview();}catch(e){feedback.appearance=e.code||'invalid';}
+  try{readConnection();}catch(e){feedback.connection=e.code||'invalid';}
+  readAI();
 })();

@@ -200,7 +200,7 @@ function connectionSession(initial) {
     };
 }
 const LEGACY_THEME = {"Mail-Sorter":preferenceKey("nl-scheme")};
-function migrateTheme(store, app) {
+function migrateTheme(store, app, onSaveError = () => console.warn('Could not persist theme preference')) {
     const slot = preferenceKey("pha-settings-v1:") + app, raw = rawRead(store, slot);
     if (raw !== null) {
         const v = object(raw);
@@ -211,7 +211,13 @@ function migrateTheme(store, app) {
     let legacy = rawRead(store, LEGACY_THEME[app] || slot);
     const explicit = legacy === 'light' || legacy === 'dark' || legacy === 'auto' || legacy === 'system';
     const next = { themeMode: explicit ? 'app' : 'hub', theme: legacy === 'light' || legacy === 'dark' ? legacy : 'system' };
-    persist(store, slot, JSON.stringify(next)); // Retain original legacy bytes and palette keys.
+    // Migration must remain usable when this browser cannot persist a preference.
+    try {
+        persist(store, slot, JSON.stringify(next));
+    }
+    catch (error) {
+        onSaveError(error);
+    }
     return next;
 }
 function resolveAppTheme(choice, hub) { return choice.themeMode === 'hub' ? hub : choice.theme; }
@@ -317,7 +323,8 @@ const R = window.HubSettingsRuntime = {
     catch(error){if(mode===undefined&&['owner','repo','token'].some(field=>local[field]))mode='override';else throw error;}
     const effective = C.effectiveConnection(local, shared, mode, R.origin());
     // Original local tuple bytes remain intact. Commit only the selected mode after durable readback.
-    if (!saved.connectionMode) R.write(app, {connectionMode: effective.mode});
+    if (!saved.connectionMode) try{R.write(app, {connectionMode: effective.mode});}
+    catch(error){window.SuiteHeaderEntry?.announce(error.code==='readback'?'Could not verify saved settings. / 无法验证保存结果。':'Could not save settings in this browser. / 无法在此浏览器中保存设置。');}
     return effective;
   },
 };
