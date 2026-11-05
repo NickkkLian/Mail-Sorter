@@ -1111,6 +1111,7 @@ input[type=password],input[type=search]{height:var(--control-h);padding:0 var(--
 .mail .subj{font-size:var(--text-sm);font-weight:var(--weight-medium);color:var(--text);text-decoration:none;overflow-wrap:anywhere}
 @media (hover:hover) and (pointer:fine){.mail .subj:hover{text-decoration:underline}}
 .mail .meta{grid-column:2;font-size:var(--text-xs);color:var(--text-2);display:flex;flex-wrap:wrap;gap:var(--space-1) var(--space-2);align-items:center}
+@media(max-width:639px){.mail .meta{min-width:0}.mail .meta .chip{display:inline-block;min-width:0;max-width:100%;height:auto;min-height:calc(19 * var(--suite-px, 1px));white-space:normal;overflow-wrap:anywhere}}
 .mail .when{font:var(--weight-regular) var(--text-xs)/1 var(--font-mono);color:var(--text-3);white-space:nowrap;grid-row:span 2}
 .tag{display:inline-flex;align-items:center;gap:var(--space-1);height:calc(21 * var(--suite-px, 1px));padding:0 var(--space-2);border-radius:var(--radius-full);font-size:var(--text-2xs);font-weight:var(--weight-medium);border:calc(1 * var(--suite-px, 1px)) solid transparent;white-space:nowrap}
 .tag::before{content:"";width:calc(5 * var(--suite-px, 1px));height:calc(5 * var(--suite-px, 1px));border-radius:50%;background:currentColor}
