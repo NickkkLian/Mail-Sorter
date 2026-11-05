@@ -1,0 +1,11 @@
+{
+  "version": "1.0.0",
+  "sourceHashes": {
+    "scale.css": "acde2599ad466311477dc3136692b2152eec8ef671e7cb462549fc4fe4a5603a",
+    "html-app/panel.css": "74d7f6b4ef63d627ae0402c7f67d856d1dc7b079fcacd96222ab80c9b0a56aca",
+    "html-app/entry.css": "123fd64d23467edab0e73d0ef147c702701abe82b767cc2ca0900a7959eba87e"
+  },
+  "files": {
+    "scale.css": "e8a19b78e9271faef9cd8a2c053d3fa02c67fd0529de6fa5b5559472e0026449"
+  }
+}
