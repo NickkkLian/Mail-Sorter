@@ -3,6 +3,15 @@ import {randomUUID} from 'node:crypto';
 import {settings,RULE_IDS} from './settings.mjs';
 import {decide,policyHash,fingerprint,DAY,protectedReason,address} from './rules.mjs';
 export const emptyState=()=>({digest:{items:[],lastUid:0,total_classified:0,total_is_floor:true},runtime:{scanAfter:0,lastProposalAt:null},proposal:null,journal:{runs:[],reviews:[]}});
+export async function recordInboxCounts({state,mailbox,persist,now=new Date()}){
+  if(!mailbox.inboxCounts)return false;
+  let counts;
+  try{counts=await mailbox.inboxCounts();}catch{return false;}
+  if(!['inbox_unread_primary','inbox_unread_all'].every(key=>Number.isSafeInteger(counts[key])&&counts[key]>=0)||counts.inbox_unread_primary>counts.inbox_unread_all)return false;
+  const sample={at:now.toISOString(),...counts};
+  state.digest.inbox_history=[...(state.digest.inbox_history||[]).filter(row=>row.at!==sample.at),sample].slice(-60);
+  await persist(state);return true;
+}
 const confirmed=async operation=>{if(await operation===false)throw Error('Mailbox operation refused');};
 const quarantined=(state,id)=>state.journal.runs.some(r=>r.entries.some(e=>e.gmailId===id&&((e.action==='dealt'&&e.status==='done')||e.status==='intent'||e.status==='uncertain'||['intent','retry','missing'].includes(e.undo_status))));
 export function seedProtection(config,digest){const c=settings(config),senders=new Set(c.protected.senders.map(address));for(const x of digest.items||[])if(['action','job','finance','school','health','official'].includes(x.category)){const a=address(x.fromAddr||x.from);if(a.includes('@'))senders.add(a);}c.protected.senders=[...senders];return c;}

@@ -36,6 +36,20 @@ export async function connectMailbox(config,env,createClient){
   async function checked(operation){if(await operation===false)throw Error('Mailbox operation refused');}
   async function withMessage(id,fn){const x=await locate(id);if(!x)throw Error('Message unavailable');return fn(x);}
   return {
+    async inboxCounts(){
+      await inbox();
+      // Reuse the tab evidence collected by this run's scans. Count threads, not messages.
+      if(!tabSets.primary)tabSets.primary=new Set(await client.search({gmailRaw:'category:primary'},{uid:true})||[]);
+      const uids=await client.search({gmailRaw:'in:inbox is:unread'},{uid:true})||[];
+      const allThreads=new Set(),primaryThreads=new Set();let fetched=0;
+      if(uids.length)for await(const message of client.fetch(uids,{uid:true,threadId:true},{uid:true})){
+        if(message.threadId==null)throw Error('Unread conversation count unavailable');
+        fetched++;const thread=String(message.threadId);allThreads.add(thread);
+        if(tabSets.primary.has(message.uid))primaryThreads.add(thread);
+      }
+      if(fetched!==uids.length)throw Error('Unread conversation count incomplete');
+      return {inbox_unread_primary:primaryThreads.size,inbox_unread_all:allThreads.size};
+    },
     async scan({after,expectedUidValidity,limit,primaryOnly}){await inbox();await tabs();const validity=String(client.mailbox.uidValidity||'');const reset=expectedUidValidity!=null&&expectedUidValidity!==validity;if(reset)after=0;const u=(await client.search(primaryOnly?{gmailRaw:'category:primary'}:{all:true},{uid:true})||[]).filter(x=>x>after).sort((a,b)=>a-b);const page=u.slice(0,limit),messages=[];
       if(page.length)for await(const m of client.fetch(page,fetchFields,{uid:true}))messages.push(metadata(m,true));
       messages.sort((a,b)=>a.uid-b.uid);return {messages,done:u.length<=limit,uidValidity:validity,reset};},

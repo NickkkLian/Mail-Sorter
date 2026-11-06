@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {settings} from './settings.mjs';
-import {emptyState,runCycle,seedProtection} from './core.mjs';
+import {emptyState,runCycle,seedProtection,recordInboxCounts} from './core.mjs';
 import {connectMailbox} from './imap.mjs';
 import {scopeState,mergeState,scopeApproval,scopeDealt} from './mailboxes.mjs';
 
@@ -90,6 +90,7 @@ export async function main({root=ROOT,env=process.env,connect=connectMailbox,out
       const ctx=contexts[at],slotEnd=clock()+Math.max(0,deadline-clock())/(contexts.length-at);
       try{
         const result=await runCycle({...ctx.args,phase:'work',digestDecisions:ctx.digestDecisions,sortingFailed:ctx.sortingFailed,deadline:slotEnd});
+        if(!stop.signal.aborted&&clock()<slotEnd)await recordInboxCounts(ctx.args);
         if(stop.signal.aborted){output('Run cancelled; progress so far was saved.');failed=true;}
         output('Mailbox '+ctx.key+': '+(result.skipped?'Skipped: '+result.skipped:'Sorting checked; review list prepared. Proposed: '+result.proposed));
         if(!proposalOnly){output('Mailbox '+ctx.key+' classification diagnostics: '+JSON.stringify(ctx.diagnostics));if(ctx.diagnostics.errors){output('::error title=Mail classification incomplete::Classification errors: '+ctx.diagnostics.errors+'; see fixed diagnostic counts.');failed=true;}}

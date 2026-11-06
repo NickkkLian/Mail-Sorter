@@ -26,6 +26,8 @@ export function mergeState(shared,s,key,address,newProposal=false){
  if(!shared.digest.mailboxes){const {items,...legacy}=shared.digest;shared.digest.mailboxes={primary:legacy};}
  const {items,...counter}=s.digest;delete counter.mailboxes;
  shared.digest.mailboxes[key]=counter;
+ shared.digest.mailboxes[key].mailbox_address=address;
+ shared.digest.inbox_history=Object.entries(shared.digest.mailboxes).flatMap(([mailbox,d])=>(d.inbox_history||[]).map(row=>({...row,mailbox}))).sort((a,b)=>a.at.localeCompare(b.at)).slice(-60);
  shared.digest.items=replace(shared.digest.items,items).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
  shared.digest.total_classified=Object.values(shared.digest.mailboxes).reduce((n,d)=>n+Number(d.total_classified||0),0);
  shared.digest.total_is_floor=true;shared.digest.updated_at=s.digest.updated_at||shared.digest.updated_at;
