@@ -17,6 +17,16 @@ export function localTime(value,language='en',timeZone=Intl.DateTimeFormat().res
   const formatted=new Intl.DateTimeFormat(language==='zh'?'zh-CN':'en-US',{hour:'numeric',minute:'2-digit',timeZone:zone}).format(new Date(value));
   return language==='zh'?formatted:formatted.replace(/\s*AM$/,' a.m.').replace(/\s*PM$/,' p.m.');
 }
+export function clockTime(value,timeZone=Intl.DateTimeFormat().resolvedOptions().timeZone){
+  if(!Number.isFinite(new Date(value).getTime()))return '—';
+  const zone=['America/Vancouver','Canada/Pacific'].includes(timeZone)?'Etc/GMT+7':timeZone;
+  return new Intl.DateTimeFormat('en',{hour:'numeric',minute:'2-digit',hourCycle:'h23',timeZone:zone}).format(new Date(value)).replace(/^0(?=\d:)/,'');
+}
+export function historySpan(history){
+  if(history.length<2)return 0;
+  const days=history.map(row=>Date.parse(row.at?.slice(0,10))).filter(Number.isFinite);
+  return days.length>1?Math.round((Math.max(...days)-Math.min(...days))/86400000)+1:0;
+}
 
 export function senderAddress(from){return (String(from||'').match(/<([^>]+)>/)?.[1]||String(from||'')).trim().toLowerCase();}
 export function senderName(from){return String(from||'').replace(/<[^>]*>/,'').trim()||senderAddress(from);}

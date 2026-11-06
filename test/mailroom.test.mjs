@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-import {nextSort,localTime,groupSenders,selectedImpact,projectedDrop,meterData,safetyCopy} from '../board/report.mjs';
+import {nextSort,localTime,clockTime,historySpan,groupSenders,selectedImpact,projectedDrop,meterData,safetyCopy} from '../board/report.mjs';
 import {ReviewController} from '../board/review.mjs';
 import {DealtController} from '../board/dealt.mjs';
 import {createDemoRunner} from '../board/demo-runner.mjs';
@@ -17,6 +17,16 @@ function demoMail(){
   const source=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8'),start=source.indexOf('function makeDemo(){'),end=source.indexOf('const DEMO=',start);
   return vm.runInNewContext(source.slice(start,end)+';makeDemo()',{Date});
 }
+test('postmark clocks retain minutes and use the same local clock in either language',()=>{
+  assert.equal(clockTime('2026-11-05T15:02:00Z','America/Vancouver'),'8:02');
+  assert.equal(clockTime('2026-11-06T03:02:00Z','America/Vancouver'),'20:02');
+  assert.equal(clockTime('bad','America/Vancouver'),'—');
+});
+test('trend labels describe the calendar span instead of the number of samples',()=>{
+  assert.equal(historySpan([{at:'2026-10-23T15:00:00Z'},{at:'2026-11-05T15:00:00Z'}]),14);
+  assert.equal(historySpan([{at:'2026-11-01T15:00:00Z'},{at:'2026-11-05T22:00:00Z'}]),5);
+  assert.equal(historySpan([]),0);
+});
 
 test('next sort uses explicit UTC schedule, local display, midnight rollover and absent metadata',()=>{
   const schedule=['15:00','22:00'];

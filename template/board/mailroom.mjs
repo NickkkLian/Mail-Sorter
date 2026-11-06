@@ -2,7 +2,7 @@ import {ReviewController,undoStatus} from './review.mjs';
 import {DealtController} from './dealt.mjs';
 import {mailKey,mailboxOf} from '../mail/scripts/mailbox-key.mjs';
 import {ruleName} from './cleanup-copy.mjs';
-import {nextSort,localTime,groupSenders,selectedImpact,projectedDrop,meterData,safetyCopy,senderAddress,senderName} from './report.mjs';
+import {nextSort,localTime,clockTime,historySpan,groupSenders,selectedImpact,projectedDrop,meterData,safetyCopy,senderAddress,senderName} from './report.mjs';
 import {createDemoRunner} from './demo-runner.mjs';
 import {installMailSettings} from './mail-settings.mjs';
 
@@ -114,10 +114,10 @@ async function undoRun(id){const ok=await perform(()=>review.undo(id));if(ok)ann
 function stepLine(history){
   if(history.length<2)return '';
   const samples=history.slice(-14),values=samples.map(row=>row.inbox_unread_primary),max=Math.max(...values,1),min=Math.min(...values),range=Math.max(max-min,1);
-  const points=values.map((value,index)=>({x:4+index/(values.length-1)*152,y:4+(max-value)/range*28}));
+  const points=values.map((value,index)=>({x:4+index/(values.length-1)*392,y:4+(max-value)/range*28}));
   const path=points.map((point,index)=>index?`H${point.x}V${point.y}`:`M${point.x} ${point.y}`).join('');
   const dots=points.filter((point,index)=>index===0||values[index]!==values[index-1]).map(point=>`<circle cx="${point.x}" cy="${point.y}" r="2"/>`).join('');
-  return `<svg class="step-line" viewBox="0 0 160 40" role="img" aria-label="${esc(t('Unread conversations after each sort','每次整理后的未读会话数'))}"><path d="${path}"/>${dots}</svg>`;
+  return `<svg class="step-line" viewBox="0 0 400 40" role="img" aria-label="${esc(t('Unread conversations after each sort','每次整理后的未读会话数'))}"><path d="${path}"/>${dots}</svg>`;
 }
 
 function renderMeter(mail,mailbox){
@@ -158,7 +158,7 @@ function safetyInfo(items,selected,key){
 }
 function conciseImpact(items,selected){
   const impact=selectedImpact(items,selected);
-  return impact.primary===null?t('Inbox impact unknown','未读变化未知'):t(`about ${impact.primary} fewer unread`,`未读约少 ${impact.primary}`);
+  return impact.primary===null?t('Inbox impact unknown','未读变化未知'):t(`unread drops by about ${impact.primary}`,`未读约减少 ${impact.primary}`);
 }
 function sortDetails(mail,boxes){
   const at=mail.updated_at;
@@ -177,7 +177,7 @@ function renderDecisions(){
     return `<section class="decision" data-decision-mailbox="${mailbox}"><h2>${esc(decisionTitle(items))}</h2>
       <p class="decision-context">${esc(mailboxLabel(mailbox))} · ${esc(conciseImpact(items,selected))}</p>
       <div class="decision-controls"><div class="actions"><button type="button" class="btn primary" data-command="approve-mailbox" data-mailbox="${mailbox}" ${noWrite(mailbox)?'disabled':''}>${esc(t(`Approve ${items.length}`,`确认 ${items.length} 封`))}</button><button type="button" class="btn" data-command="review" data-mailbox="${mailbox}" data-focus="review-${mailbox}" aria-label="${esc(t('Review the list and safety details','查看清单和安全说明'))}">${esc(t('Review','查看清单'))}</button></div></div>
-      ${bridge.getConfig()?.enabled===false?`<p class="error-text">${esc(t('Sorting is off. Turn it on in Settings to approve.','整理已关闭，请在设置中开启后再确认。'))}</p>`:''}</section>`;
+      </section>`;
   }).join('');
 }
 
@@ -185,12 +185,12 @@ function gmailLink(item){const home=item.mailbox_address?'https://mail.google.co
 function ageText(date){const days=Math.max(0,Math.floor((Date.now()-Date.parse(date))/86400000));return days?t(`${days} d`,`${days} 天`):t('Today','今天');}
 function renderNeed(item){
   const id=mailKey(item),address=item.mailbox_address||mailboxLabel(mailboxOf(item));
-  return `<details class="need-entry" data-id="${esc(id)}"><summary data-focus="need-${esc(id)}"><h2>${esc(bridge.subjectFor(item.subject))}</h2><svg class="entry-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg><span class="need-top"><span>${esc(senderName(item.from))}</span><span class="mailbox-dot ${mailboxOf(item)==='secondary'?'secondary':''}" role="img" aria-label="${esc(address)}" title="${esc(address)}"></span></span></summary><div class="need-actions"><p class="entry-details">${esc(formatDay(item.date)+' · '+bridge.catLabel(item.category)+(bridge.reasonFor(item)?' · '+bridge.reasonFor(item):''))}</p><div class="actions"><a class="btn text-button gmail-link" href="${esc(gmailLink(item))}" target="_blank" rel="noopener" data-demo-gmail="${bridge.demo}" data-focus="open-${esc(id)}">${esc(t('Open in Gmail','在 Gmail 打开'))}</a><button type="button" class="btn text-button" data-command="done" data-id="${esc(id)}" data-dealt-id="${esc(id)}" data-focus="done-${esc(id)}" ${noWrite(mailboxOf(item))||!/^\d+$/.test(item.gmailId)?'disabled':''}>${esc(t('Done','处理完'))}</button></div></div></details>`;
+  return `<details class="need-entry" data-id="${esc(id)}"><summary data-focus="need-${esc(id)}"><h2>${esc(bridge.subjectFor(item.subject))}</h2><svg class="entry-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg><span class="need-top"><span>${esc(senderName(item.from))}</span><span class="mailbox-name" title="${esc(address)}">${esc(address.includes('@')?address.split('@')[0]:mailboxOf(item))}</span></span></summary><div class="need-actions"><p class="entry-details">${esc(formatDay(item.date)+' · '+bridge.catLabel(item.category)+(bridge.reasonFor(item)?' · '+bridge.reasonFor(item):''))}</p><div class="actions"><a class="btn text-button gmail-link" href="${esc(gmailLink(item))}" target="_blank" rel="noopener" data-demo-gmail="${bridge.demo}" data-focus="open-${esc(id)}">${esc(t('Open in Gmail','在 Gmail 打开'))}</a><button type="button" class="btn text-button" data-command="done" data-id="${esc(id)}" data-dealt-id="${esc(id)}" data-focus="done-${esc(id)}" ${noWrite(mailboxOf(item))||!/^\d+$/.test(item.gmailId)?'disabled':''}>${esc(t('Done','处理完'))}</button></div></div></details>`;
 }
 
 function postmark(at){
-  const date=new Date(at),time=isNaN(date)?'—':formatTime(date).replace(/:\d{2}/,'');
-  return `<svg class="postmark" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="20.5"/><circle cx="22" cy="22" r="17.5"/><text x="22" y="26" text-anchor="middle">${esc(time.replace(/\s/g,''))}</text></svg>`;
+  const time=clockTime(at);
+  return `<svg class="postmark" viewBox="0 0 54 54" aria-hidden="true"><circle cx="27" cy="27" r="25.5"/><circle class="postmark-inner" cx="27" cy="27" r="23"/><text x="27" y="31" text-anchor="middle">${esc(time)}</text></svg>`;
 }
 
 function ledgerRows(){
@@ -226,25 +226,36 @@ function keptSafe(){
   return `<div class="safe-summary"><h3>${esc(t('Kept safe','已保护'))}</h3><p>${esc(t(`Never proposed in the latest scan · ${counts.wrote_to} from people you wrote to, ${counts.starred} starred, ${counts.protected} protected`, `本次没有进清单的 · 你回过信的人 ${counts.wrote_to} 封，加星 ${counts.starred} 封，受保护 ${counts.protected} 封`))}</p>${counts.labels||counts.uncertain?`<p>${esc(t(`${counts.labels} with keep labels · ${counts.uncertain} left because the checks were uncertain`,`${counts.labels} 封有保留标签 · ${counts.uncertain} 封因无法确定而保留`))}</p>`:''}</div>`;
 }
 
+function healthLine(mail,config,boxes){
+  const readError=bridge.loadError?.(),stale=boxes.map(key=>meterData(mail,key,{demo:bridge.demo})).find(data=>data.at&&Date.now()-Date.parse(data.at)>36*3600000);
+  let state='on',content='';
+  if(readError||error){
+    state='error';const message=readError?[readError.reason,readError.fix,t('Your saved work is unchanged.','已保存的内容没有改动。')].filter(Boolean).join(' '):error;
+    const action=readError?`<button class="btn text-button" type="button" data-act="${readError.kind==='auth'?'openSettings':'loadAll'}">${esc(readError.kind==='auth'?t('Settings','设置'):t('Retry','重试'))}</button>`:button(t('Get latest','获取最新结果'),'reload-review');
+    content=`<details class="health-details"><summary>${esc(t('Results unavailable','结果暂不可用'))}</summary><p class="disclosure-body">${esc(message)}</p></details>${action}`;
+  }else if(config?.enabled===false){state='off';content=`<span>${esc(t('Sorting off','自动整理已关闭'))}</span>${button(t('Turn on','开启'),'settings')}`;
+  }else if(stale){state='stale';content=`<span title="${esc(stale.address+' · '+formatDay(stale.at)+' '+formatTime(stale.at))}">${esc(t('No sort for '+Math.floor((Date.now()-Date.parse(stale.at))/3600000)+' hours','已 '+Math.floor((Date.now()-Date.parse(stale.at))/3600000)+' 小时未整理'))}</span><a href="${esc(runLogURL())}" target="_blank" rel="noopener">${esc(t('Check runs','检查运行记录'))}</a>`;
+  }else if(bridge.loading()){state='updating';content=`<span>${esc(t('Updating results…','正在更新结果…'))}</span>`;
+  }else{content=`<span>${esc(t('Sorting on','自动整理中')+' · '+(mail.updated_at?t('last '+formatTime(mail.updated_at),'上次 '+formatTime(mail.updated_at)):t('no sort recorded','尚无整理记录'))+' · '+(next()?t('next about '+sortTime(),'下次约 '+sortTime()):t('Next sort time unavailable','下次时间暂不可用')))}</span>`;}
+  return `<div class="sort-health" data-state="${state}" role="${state==='error'?'alert':'status'}"><span class="health-dot" aria-hidden="true"></span>${content}</div>`;
+}
+
 function renderToday(){
   const mail=bridge.getMail()||{items:[]},config=bridge.getConfig(),boxes=[...new Set([...Object.keys(mail.mailboxes||{}),...(mail.items||[]).map(mailboxOf)])];
-  if(!bridge.available()&&!mail.items.length){$('today-view').innerHTML='';return;}
+  if(!bridge.available()&&!mail.items.length&&!bridge.loadError?.()){$('today-view').innerHTML='';return;}
   if(!boxes.length)boxes.push('primary');
   const needs=(mail.items||[]).filter(item=>item.action&&!requestStatus(mailKey(item))).sort((a,b)=>String(b.date).localeCompare(String(a.date))),done=(mail.items||[]).filter(item=>item.action&&requestStatus(mailKey(item)));
-  const staleMailbox=boxes.find(mailbox=>{const at=meterData(mail,mailbox,{demo:bridge.demo}).at;return at&&(Date.now()-Date.parse(at))/3600000>36;});
-  const at=staleMailbox?meterData(mail,staleMailbox,{demo:bridge.demo}).at:mail.updated_at,late=Boolean(staleMailbox);
-  const notices=[error?`<div class="notice error" role="alert">${esc(error)} ${button(t('Refresh the list','刷新清单'),'reload-review')}</div>`:'',config?.enabled===false?`<div class="notice">${esc(t('Sorting is off. Turn it on to apply your choices.','整理已关闭，开启后才会执行你的选择。'))} ${button(t('Turn on','开启'),'settings')}</div>`:'',late?`<div class="notice error">${esc(t(`No sort since ${formatDay(at)} ${formatTime(at)} (${Math.floor((Date.now()-Date.parse(at))/3600000)} hours). Sorting may be off or failing.`,`从 ${formatDay(at)} ${formatTime(at)} 起没有整理过，已 ${Math.floor((Date.now()-Date.parse(at))/3600000)} 小时，可能被关掉了或出了错。`))} <a class="btn" href="${esc(runLogURL())}" target="_blank" rel="noopener">${esc(t('Open the run log','打开运行记录'))}</a></div>`:''].join('');
   const allVerified=boxes.every(key=>meterData(mail,key,{demo:bridge.demo}).available),mixed=boxes.some(key=>meterData(mail,key,{demo:bridge.demo}).available)&&!allVerified;
-  const visibleNeeds=matchMedia('(max-width:899px)').matches?1:2;
-  $('today-view').innerHTML=notices+`<div class="today-grid"><div class="main-report"><section class="inbox-report${mixed?' mixed-counts':''}"><h2 class="inbox-heading">${esc(allVerified?t('Unread in Inbox','收件箱未读'):mixed?t('Unread mail','未读邮件'):t('Unread in the sorted list','已整理列表里的未读'))}</h2><div class="meters">${boxes.map(mailbox=>renderMeter(mail,mailbox)).join('')}</div><p class="sort-status" title="${esc(t('GitHub may start scheduled sorts hours late. Review the list for safety and schedule details.','GitHub 可能晚几小时才整理。查看清单可了解安全和计划详情。'))}">${esc(mail.updated_at?t('Last sort '+formatTime(mail.updated_at),'上次整理 '+formatTime(mail.updated_at)):t('No sort recorded','还没有整理记录'))}<span class="phone-next-sort"> · ${esc(next()?t('Next: about '+sortTime(),'下次约 '+sortTime()):t('Next sort time unavailable','下次时间暂不可用'))}</span></p></section>
-    ${bridge.loading()?`<p class="last-sort">${esc(t('Updating…','更新中…'))}</p>`:''}
-    ${renderDecisions()}
+  const spans=boxes.map(key=>historySpan(meterData(mail,key,{demo:bridge.demo}).history)).filter(Boolean),minSpan=Math.min(...spans),maxSpan=Math.max(...spans);
+  const spanLabel=spans.length?t(minSpan===maxSpan?`${maxSpan} days`:`${minSpan}–${maxSpan} days`,minSpan===maxSpan?`近 ${maxSpan} 天`:`近 ${minSpan}–${maxSpan} 天`):'';
+  const visibleNeeds=matchMedia('(max-width:899px)').matches?1:2,hasWork=review.queued||review.policyChanged||dealt.requests.some(request=>!dealt.undone(request))||review.data.undo.requests.length;
+  $('today-view').innerHTML=`<div class="today-grid"><section class="inbox-report${mixed?' mixed-counts':''}"><div class="report-heading"><h2 class="inbox-heading">${esc(allVerified?t('Unread in Inbox','收件箱未读'):mixed?t('Unread mail','未读邮件'):t('Unread in the sorted list','已整理列表里的未读'))}</h2>${healthLine(mail,config,boxes)}</div><div class="meters">${boxes.map(mailbox=>renderMeter(mail,mailbox)).join('')}</div>${spanLabel?`<p class="trend-span">${esc(spanLabel)}</p>`:''}</section>
+    <div class="decision-row"><div class="decision-stack">${renderDecisions()}</div><section class="latest-panel${hasWork?' has-work':''}"><div class="latest-change"><h2>${esc(t('Latest change','最近改动'))}</h2><div class="ledger">${ledgerRows().slice(0,1).map(row=>renderLedgerRow(row,true)).join('')||`<p>${esc(t('No changes yet','还没有改动'))}</p>`}</div></div>${bridge.demo?`<button type="button" class="btn demo-sort" data-command="simulate" ${busy?'disabled':''}>${clock}${esc(t('Run next sort','模拟下次整理'))}</button>`:''}</section></div>
     <section class="needs" aria-labelledby="needs-title"><div class="section-heading"><h1 id="needs-title">${esc(t('Needs you','需要你处理'))}</h1><span class="count" id="needs-count">${needs.length}</span></div>
     <div class="need-grid">${(showAll?needs:needs.slice(0,visibleNeeds)).map(renderNeed).join('')}</div>
-    ${!needs.length?`<div class="quiet-line">${postmark(new Date())}<p>${esc(t(`Nothing needs you. Next sort ${sortTime()}.`,`没有需要你处理的。下次整理 ${sortTime()}。`))}</p></div>`:''}
+    ${!needs.length?`<div class="quiet-line">${postmark(new Date())}<p>${esc(t('Nothing needs you.','没有需要你处理的。'))}</p></div>`:''}
     ${needs.length>visibleNeeds?button(showAll?t('Show fewer','收起'):t(`Show all ${needs.length}`,`查看全部 ${needs.length} 封`),'show-all','data-show-needs'):''}
-    ${done.length?`<div class="done-tray"><span>${esc(t(`${done.length} done · applies ${atSort()}`,`${done.length} 封处理完 · ${atSort()}生效`))}</span>${button(showDone?t('Hide','收起'):t('Show','查看'),'show-done')}</div>${showDone?done.map(item=>`<p class="done-tray">${esc(item.subject)} · ${esc(t(requestStatus(mailKey(item))==='queued'?'Waiting for the next sort':'Applied',requestStatus(mailKey(item))==='queued'?'等待下次整理':'已生效'))}</p>`).join(''):''}`:''}</section></div>
-    <aside class="ledger-side${review.queued||review.policyChanged||dealt.requests.some(request=>!dealt.undone(request))||review.data.undo.requests.length?' has-work':''}"><div class="latest-change"><h2>${esc(t('Latest change','最近改动'))}</h2><div class="ledger">${ledgerRows().slice(0,1).map(row=>renderLedgerRow(row,true)).join('')||`<p>${esc(t('No changes yet','还没有改动'))}</p>`}</div></div>${bridge.demo?`<button type="button" class="btn demo-sort" data-command="simulate" ${busy?'disabled':''}>${clock}${esc(t('Run next sort','模拟下次整理'))}</button>`:''}</aside></div>`;
+    ${done.length?`<div class="done-tray"><span>${esc(t(`${done.length} done · applies ${atSort()}`,`${done.length} 封处理完 · ${atSort()}生效`))}</span>${button(showDone?t('Hide','收起'):t('Show','查看'),'show-done')}</div>${showDone?done.map(item=>`<p class="done-tray">${esc(item.subject)} · ${esc(t(requestStatus(mailKey(item))==='queued'?'Waiting for the next sort':'Applied',requestStatus(mailKey(item))==='queued'?'等待下次整理':'已生效'))}</p>`).join(''):''}`:''}</section></div>`;
   for(const value of document.querySelectorAll('.meter-value'))if(value.dataset.previous!==value.lastElementChild?.textContent&&!matchMedia('(prefers-reduced-motion: reduce)').matches){
     value.querySelector('.meter-old')?.animate([{opacity:1,transform:'translateY(0)'},{opacity:0,transform:'translateY(-.5rem)'}],{duration:240,easing:'cubic-bezier(.23,1,.32,1)'});
     value.lastElementChild?.animate([{opacity:0,transform:'translateY(.5rem)'},{opacity:1,transform:'translateY(0)'}],{duration:240,easing:'cubic-bezier(.23,1,.32,1)'});
@@ -314,8 +325,7 @@ function render(){
     for(const name of ['today','sorted','history'])$(name+'-view').hidden=name!==place;
     for(const tab of document.querySelectorAll('[data-place]')){tab.textContent=({today:t('Today','今天'),sorted:t('Sorted','已整理'),history:t('History','记录')})[tab.dataset.place];if(tab.dataset.place===place)tab.setAttribute('aria-current','page');else tab.removeAttribute('aria-current');}
     $('places').setAttribute('aria-label',t('Places','页面'));
-    $('next-sort').textContent=next()?t('Next sort: about '+formatTime(next()),'下次整理：约 '+formatTime(next())):t('Next sort time unavailable','暂时无法获取下次整理时间');
-    $('next-sort').title=t('GitHub can start scheduled runs hours later.','GitHub 有时会晚几小时才开始。');
+    document.body.classList.toggle('today-health-error',place==='today'&&Boolean(bridge.loadError?.()));
     document.querySelector('.topbar .gh').hidden=true;
     $('refresh').hidden=true;
     document.querySelector('.topbar .gh').setAttribute('aria-label',t('Source','源码'));
