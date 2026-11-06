@@ -1,7 +1,7 @@
 import {proposalConsumed} from './mailbox-key.mjs';
 import {randomUUID} from 'node:crypto';
 import {settings,RULE_IDS} from './settings.mjs';
-import {decide,policyHash,fingerprint,DAY,protectedReason,address} from './rules.mjs';
+import {decide,policyHash,fingerprint,DAY,protectedReason,address,safetyKnown} from './rules.mjs';
 export const emptyState=()=>({digest:{items:[],lastUid:0,total_classified:0,total_is_floor:true},runtime:{scanAfter:0,lastProposalAt:null},proposal:null,journal:{runs:[],reviews:[]}});
 export async function recordInboxCounts({state,mailbox,persist,now=new Date()}){
   if(!mailbox.inboxCounts)return false;
@@ -27,13 +27,24 @@ const readEvidence=m=>({...(['primary','promotions','social','updates','forums']
 const item=(m,v,c)=>({gmailId:m.gmailId,uid:m.uid,msgid:m.msgid||null,from:m.from||'',subject:m.subject||'',date:m.date,rule:v.rule,reason:v.reason,action:c.rules[v.rule].action,...readEvidence(m)});
 export async function makeProposal({messages,config,state,backfill=false,pendingIds=[],retainedItems=[],now=new Date(),evaluate=async m=>decide(m,config,now)}){
   const c=settings(config),items=structuredClone(retainedItems);const unique=new Set(items.map(x=>x.gmailId));
+  const kept_back={wrote_to:0,starred:0,protected:0,labels:0,uncertain:0};
   const newest=(a,b)=>String(b.date).localeCompare(String(a.date))||b.uid-a.uid;
   const rows=[...messages].filter(m=>m.inInbox!==false&&m.seen!==true).sort(newest),pending=new Set(pendingIds);
   // A one-time larger review must retain already-pending choices even when newer arrivals fill the page.
   const ordered=backfill?[...rows.filter(m=>pending.has(m.gmailId)),...rows.filter(m=>!pending.has(m.gmailId))]:rows;
-  for(const m of ordered){if(items.length>=(backfill?c.max_backfill:c.max_per_run))break;if(unique.has(m.gmailId)||quarantined(state,m.gmailId)||state.journal.runs.some(r=>r.status==='finished'&&r.kind!=='dealt'&&r.entries.some(e=>e.gmailId===m.gmailId&&e.status==='done')))continue;unique.add(m.gmailId);const v=await evaluate(m);if(v.rule)items.push(item(m,v,c));}
+  for(const m of ordered){
+    if(items.length>=(backfill?c.max_backfill:c.max_per_run))break;
+    if(unique.has(m.gmailId)||quarantined(state,m.gmailId)||state.journal.runs.some(r=>r.status==='finished'&&r.kind!=='dealt'&&r.entries.some(e=>e.gmailId===m.gmailId&&e.status==='done')))continue;
+    unique.add(m.gmailId);const v=await evaluate(m);
+    if(v.rule)items.push(item(m,v,c));
+    else{
+      const reason=protectedReason(m,c),key={'participated':'wrote_to','starred':'starred','protected sender':'protected','keep label':'labels'}[reason];
+      if(key)kept_back[key]++;
+      else if(!safetyKnown(m)||m.classificationFailed===true||/uncertain|veto|unavailable/i.test(v.reason||''))kept_back.uncertain++;
+    }
+  }
   items.sort(newest);
-  const proposal={...(backfill?{review_mode:'primary_backfill'}:{}),id:randomUUID(),created_at:now.toISOString(),policy:policyHash(c),items};
+  const proposal={...(backfill?{review_mode:'primary_backfill'}:{}),id:randomUUID(),created_at:now.toISOString(),policy:policyHash(c),items,kept_back};
   proposal.revision=fingerprint({policy:proposal.policy,items});state.proposal=proposal;state.runtime.lastProposalAt=now.toISOString();return proposal;
 }
 // persist must durably record the journal BEFORE any side effect. Only these mailbox verbs are used.
