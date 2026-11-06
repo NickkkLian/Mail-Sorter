@@ -2,1256 +2,19 @@
 <html lang="en" data-suite-scale="fluid">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-9Q4lbDxmkKa0OiSEdhM3shTqoTB8RwPSia5TbLdwrmM=' 'sha256-/46Bqio80s2CmyDlRf/EpQl8JTXxfme0gW3U/eVA6y4=' 'sha256-iBdV3krzPgWmdwSBwGCxWwfwW4jZAP+mc+Ps0UULS18='; connect-src https://api.github.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-9Q4lbDxmkKa0OiSEdhM3shTqoTB8RwPSia5TbLdwrmM=' 'sha256-/46Bqio80s2CmyDlRf/EpQl8JTXxfme0gW3U/eVA6y4=' 'sha256-MqD5z40bVlNr8WY7RJHkBG81AoEy3ossrIiWm+nJdh4='; connect-src https://api.github.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'">
 <script src="assets/settings-standard/core.js"></script>
 <script>/* appearance boot — runs before any stylesheet so the stored palette and light/dark apply on the first paint */(function(){try{var d=document.documentElement,L=window.localStorage,t=L.getItem(HubSettingsContract.preferenceKey("nl-theme")),s=L.getItem(HubSettingsContract.preferenceKey("nl-scheme"));if(s===null){var o=L.getItem(HubSettingsContract.preferenceKey("theme"))||L.getItem(HubSettingsContract.preferenceKey("qm-theme"));if(o==='dark'||o==='light')s=o;}if(t==='paper'||t==='ink')d.setAttribute('data-theme',t);if(s==='dark'||s==='light')d.setAttribute('data-scheme',s);}catch(e){}})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="Sort what matters. Review outdated mail before cleanup. Headersort: a scheduled Action writes a capped digest to your private repo; this board reads it.">
-<meta name="theme-color" content="#f7e9e8" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#130e15" media="(prefers-color-scheme: dark)">
-<title>Headersort</title>
+<meta name="theme-color" content="#e8eae7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141518" media="(prefers-color-scheme: dark)">
+<title>Mail Sorter</title>
 <link rel="icon" href="assets/app-logo/logo.svg" type="image/svg+xml">
 <link rel="icon" href="assets/app-logo/32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="assets/app-logo/128.png" sizes="128x128">
 <link rel="manifest" href="app.webmanifest">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500..600;1,9..144,400&family=Inter:wght@400..600&family=Space+Mono:wght@400;700&display=swap">
-<style>
-/* ---- design tokens (shared across the product family; inlined because this app is one file) ---- */
-/* Design tokens — the only source of colour, type, spacing and motion values for this app.
-   Three palettes: Plaster (default), <html data-theme="paper">, <html data-theme="ink">.
-   Light/dark: follows the OS unless <html data-scheme="light|dark"> is set (appearance.js stores the choice).
-   Pages consume semantic tokens (--bg, --surface, --text, --accent …), never raw values. */
-/* ------------------------------------------------------------------
-   THEMES.  data-theme picks the palette, data-scheme picks light/dark.
 
-     <html>                                        Plaster, follows the OS
-     <html data-theme="paper">                     Paper, follows the OS
-     <html data-theme="ink" data-scheme="dark">    Ink, forced dark
-
-   Plaster and "follow the system" are the DEFAULTS and write no attribute
-   at all - the attribute being present means the user chose something.
-
-   data-theme="dark" / "light" is a LEGACY alias. Every shipped product has
-   moved to data-scheme; the one remaining consumer is a token-migration
-   script outside this repository, which locates the dark values by matching
-   ^:root[data-theme="dark"]{ at the start of a line. Keep this block
-   standalone and line-start until that script stops parsing for it.
-
-   Each palette is declared twice: once on :root, once on a bare
-   [data-theme] so a nested element can preview a theme (used by the theme
-   picker) without the page hardcoding any colour.
-
-   A palette block overrides colour only. Spacing, type scale, radius,
-   shadow geometry and motion are declared once on :root and shared.
-   ------------------------------------------------------------------ */
-
-:root {
-
-  color-scheme: light;
-
-  /* ---- 1. Surfaces: four levels. Lightness AND hue both step ---- */
-  --paper:          #fdf6f2;   /* cards, table body, inputs - lit plane */
-  --surface:        var(--paper); /* v2 name kept: --surface is the card surface */
-  --bg:             #f7e9e8;   /* canvas - the local colour of the scene */
-  --surface-2:      #d3e3d8;   /* sunken: nav, table head, code - shadow side */
-  --surface-raised: #fef9f4;   /* menus, popovers (pair with --shadow-2) */
-  --surface-hover:  #faeff2;
-
-  /* ---- 2. Anchor: the weight of the page. Top bar / signature panel / footer / primary button ---- */
-  --anchor:         #053333;
-  --anchor-2:       #052627;   /* hover + active step */
-  --anchor-line:    #2f5859;   /* rules drawn on the anchor surface */
-  --on-anchor:      #f7f0e9;
-  --on-anchor-2:    #c7beb4;
-
-  /* ---- 3. Point colour: lily pink. Under 1.5% of page area. Seal, signature rule, one chart key ---- */
-  --point:          #ca6980;
-  --point-text:     #9c4059;   /* use this step when it has to be text */
-  --point-tint:     #ffdce2;
-  --point-tint-text:#7d2d44;
-
-  /* ---- 4. Text and borders. The ink is a deep violet-blue, not black ---- */
-  --text:           #1d1b24;
-  --text-2:         #4c4a54;
-  --text-3:         #605e67;
-  --text-inverse:   #f7f0e9;
-  --text-disabled:  #929198;   /* below 4.5 on purpose: disabled is exempt */
-  --neutral-tint:   #faeff2;
-  --neutral-tint-text: #4c4a54;
-
-  --border:         #d6d4df;        /* component edge, calc(1 * var(--suite-px, 1px)), shadow-hue tinted */
-  --border-strong:  #bebcc8;
-  --border-input:   #797781;  /* control edge, >=3:1 on every surface */
-  --hairline:       rgb(40 23 74 / 0.10); /* second, lighter rule weight, shadow hue */
-  --border-width:   calc(1 * var(--suite-px, 1px));
-  --border-focus-width: calc(2 * var(--suite-px, 1px));
-
-  /* ---- 5. Structural roles: which surface carries the band and the nav ----
-     The band is the top bar, the signature panel and the footer taken together. */
-  --band:          #053333;
-  --on-band:       #f7f0e9;
-  --on-band-2:     #c7beb4;
-  --band-line:     #2f5859;
-  --nav-surface:   #d3e3d8;
-  --on-nav:        #1d1b24;
-  --on-nav-2:      #605e67;
-  --nav-line:      #d6d4df;
-  --nav-selected:  #fdf6f2;
-  /* Non-text marks placed ON the band (legend keys, bar segments, icons, status dots).
-     Solved against --band, so they hold >=3:1 whether the band is paper or a deep anchor.
-     Never put --viz-seq-* or --warning on the band: fixed values fail on one of the two. */
-  --on-band-3:     #877d72;
-  --on-band-warning: #a97d23;
-
-  /* ---- 6. Accent and semantic colours ---- */
-  --accent:        #053333;
-  --accent-hover:  #052627;
-  --accent-active: #052627;
-  --on-accent:     #f7f0e9;
-  --accent-text:   #94484a;   /* links, icons, focus ring */
-  --accent-tint:   #f7e3e2;   /* selected row (plus a calc(3 * var(--suite-px, 1px)) leading bar) */
-  --accent-tint-text: #783739;
-
-  --brand-rose:    #bf8887;   /* decoration only: seal, charts, illustration. Never text */
-  --brand-sage:    #69866d;
-  --sage-tint:     #dae7db;   /* classification tint, never a status */
-  --sage-tint-text:#27512f;
-  --sage-text:     #4a7851;   /* decorative small labels only, never a status or link */
-
-  --success:       #006d49;  --success-tint: #c4f4db;  --success-tint-text: #005739;
-  --warning:       #7e5800;  --warning-tint: #fde5bd;  --warning-tint-text: #654500;
-  --danger:        #a93920;  --danger-hover: #99290e;
-  --danger-tint:   #ffe1d9;  --danger-tint-text: #902003;  --on-danger: #f9f6ee;
-
-  --info: var(--accent-text); --info-tint: var(--accent-tint); --info-tint-text: var(--accent-tint-text);
-  --focus:         #94484a;
-  --overlay:       rgb(36 35 41 / 0.50);   /* shadow hue, low chroma: a full-screen veil dims, it does not repaint */
-  --selection-bg:  var(--accent-tint);
-
-  /* ---- 7. Grain: the only non-flat surface treatment ----
-     Inline SVG noise, no network request, greyscale on purpose: it modulates
-     lightness only, so it cannot shift a hue or move a contrast ratio. It is the
-     cheap stand-in for broken brushwork - a coloured or painterly texture here
-     would read as a filter, which is the thing this system must not become.
-     Fixed layer BEHIND content (z-index 0, content z-index 1). Never z-index:-1. */
-  --grain-opacity: 0.034;
-  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
-
-  /* ---- 8. Data visualisation. Fixed order, assigned in sequence, never cycled ---- */
-  --viz-1: #de7476;  --viz-2: #447838;  --viz-3: #a25089;  --viz-4: #ca9d33;
-  --viz-5: #3c7ebe;  --viz-6: #ab2e45;  --viz-7: #14938d;  --viz-8: #7860b5;
-  --viz-seq-100: #ffe4e3; --viz-seq-150: #fbd0cf; --viz-seq-200: #f5bcba;
-  --viz-seq-250: #eca5a4; --viz-seq-300: #e09090; --viz-seq-350: #d47b7c;
-  --viz-seq-400: #c5686a; --viz-seq-450: #b55658; --viz-seq-500: #a44448;
-  --viz-seq-550: #91343a; --viz-seq-600: #7c272d; --viz-seq-650: #651d22;
-  --viz-seq-700: #4d1418;
-  --viz-div-neg: var(--viz-5); --viz-div-mid: #d6d4df; --viz-div-pos: var(--viz-1);
-  --viz-grid: var(--border); --viz-axis: var(--text-3);
-  --viz-unknown: repeating-linear-gradient(135deg, #bebcc8 0 calc(3 * var(--suite-px, 1px)), transparent calc(3 * var(--suite-px, 1px)) calc(7 * var(--suite-px, 1px)));
-
-  /* ---- 9. Type (unchanged from v3.1: the brief changed the palette, not the type) ---- */
-  --font-display: "Fraunces", "Fraunces Fallback", Georgia, "Noto Serif SC", "Songti SC", serif;
-  --font-sans:    "Inter", "Inter Fallback", system-ui, -apple-system, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
-  --font-mono:    "Space Mono", "Space Mono Fallback", ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
-  --display-weight: 600;
-  --caption-style:  italic;
-  --opsz-display: 144;   /* page title at calc(28 * var(--suite-px, 1px)) and above */
-  --opsz-title:    28;   /* panel titles, 16calc(-24 * var(--suite-px, 1px)) */
-  --opsz-caption:  11;   /* italic captions - low opsz is what looks engraved */
-
-  --text-2xs: .75rem; --text-xs: 0.75rem;  --text-sm: 0.8125rem; --text-md: 0.875rem;
-  --text-lg:  1rem;      --text-xl: 1.25rem;  --text-2xl: 1.5rem;   --text-3xl: 2rem;
-  --text-4xl: 2.5rem;    /* page title, Fraunces at opsz 144 */
-  --leading-tight: 1.14; --leading-lede: 1.45; --leading-normal: 1.5; --leading-relaxed: 1.65;
-  --weight-regular: 400; --weight-medium: 500; --weight-semibold: 600;
-  --tracking-caps:    0.09em;
-  --tracking-display: -0.021em;
-  --tracking-title:   -0.009em;
-  --measure: 33em;               /* prose line length, about 60–75 characters of Inter (em, not ch: 66ch ran 78–96) */
-
-  /* ---- 10. Space / radius / shadow / motion / layers / layout ---- */
-  --space-0-5: 0.125rem; --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem; --space-4: 1rem;
-  --space-5: 1.25rem; --space-6: 1.5rem; --space-8: 2rem; --space-10: 2.5rem; --space-12: 3rem; --space-16: 4rem;
-  --gutter: var(--space-4);
-  --radius-xs: calc(3 * var(--suite-px, 1px)); --radius-sm: calc(5 * var(--suite-px, 1px)); --radius-md: calc(8 * var(--suite-px, 1px)); --radius-lg: calc(12 * var(--suite-px, 1px)); --radius-full: calc(999 * var(--suite-px, 1px));
-  /* Shadows carry the SHADOW hue, not the ink hue and never grey; light still
-     comes from the top left so every offset is +x +y. */
-  --shadow-1: calc(1 * var(--suite-px, 1px)) calc(1 * var(--suite-px, 1px)) calc(2 * var(--suite-px, 1px)) rgb(40 23 74 / 0.06),
-              calc(2 * var(--suite-px, 1px)) calc(3 * var(--suite-px, 1px)) calc(8 * var(--suite-px, 1px)) calc(-2 * var(--suite-px, 1px)) rgb(40 23 74 / 0.10);
-  --shadow-2: calc(2 * var(--suite-px, 1px)) calc(3 * var(--suite-px, 1px)) calc(8 * var(--suite-px, 1px)) rgb(40 23 74 / 0.11),
-              calc(6 * var(--suite-px, 1px)) calc(14 * var(--suite-px, 1px)) calc(34 * var(--suite-px, 1px)) calc(-10 * var(--suite-px, 1px)) rgb(40 23 74 / 0.24);
-  --dur-fast: 120ms; --dur-base: 200ms; --dur-slow: 300ms; --dur-exit: 150ms;
-  --ease-out: cubic-bezier(0.23, 1, 0.32, 1); --ease-soft: cubic-bezier(0.32, 0.72, 0, 1); --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
-  --press-scale: 0.97;
-  --motion-distance: calc(8 * var(--suite-px, 1px)); --flash-dur: 600ms;
-  --z-sticky: 10; --z-drawer: 20; --z-overlay: 30; --z-modal: 40; --z-toast: 50;
-  --topbar-h: calc(52 * var(--suite-px, 1px)); --nav-w: calc(232 * var(--suite-px, 1px)); --nav-w-min: calc(56 * var(--suite-px, 1px)); --inspector-w: calc(360 * var(--suite-px, 1px)); --content-max: calc(1440 * var(--suite-px, 1px));
-  --control-h: calc(32 * var(--suite-px, 1px)); --row-h: calc(38 * var(--suite-px, 1px)); --touch-min: calc(44 * var(--suite-px, 1px));
-}
-
-/* Nested preview of the default theme. */
-[data-theme="plaster"] {
-  color-scheme: light;
-  --paper: #fdf6f2;
-  --surface: var(--paper);
-  --bg: #f7e9e8;
-  --surface-2: #d3e3d8;
-  --point: #ca6980;
-  --text: #1d1b24;
-  --text-2: #4c4a54;
-  --border: #d6d4df;
-  --band: #053333;
-  --on-band: #f7f0e9;
-  --band-line: #2f5859;
-  --accent: #053333;
-  --on-accent: #f7f0e9;
-  --accent-text: #94484a;
-}
-
-/* --- Paper, light (59 colour tokens differ from the default; 2 preview tokens restated) --- */
-:root[data-theme="paper"], [data-theme="paper"] {
-  color-scheme: light;
-  --paper: #fdf6f2;
-  --surface: var(--paper);
-  --bg: #f7f4ed;
-  --surface-2: #e8f4f1;
-  --surface-raised: #fef7f4;
-  --surface-hover: #f5f7f0;
-  --anchor: #19222e;
-  --anchor-2: #0f1722;
-  --anchor-line: #3c4551;
-  --on-anchor: #f9efeb;
-  --on-anchor-2: #c9bcb6;
-  --point: #b54a60;
-  --point-text: #ad3b55;
-  --point-tint: #ffdce0;
-  --point-tint-text: #87233d;
-  --text: #181d25;
-  --text-2: #4b5158;
-  --text-3: #5f646c;
-  --text-inverse: #f9efeb;
-  --text-disabled: #8e9398;
-  --neutral-tint: #f5f7f0;
-  --neutral-tint-text: #4b5158;
-  --border: #d0d7e0;
-  --border-strong: #b6bec9;
-  --border-input: #787e87;
-  --hairline: rgb(0 34 78 / 0.10);
-  --band: #fdf6f2;
-  --on-band: #181d25;
-  --on-band-2: #4b5158;
-  --band-line: #d0d7e0;
-  --nav-surface: #f7f4ed;
-  --on-nav: #181d25;
-  --on-nav-2: #5f646c;
-  --nav-line: #d0d7e0;
-  --on-band-3: #92837d;
-  --on-band-warning: #a5781e;
-  --accent: #b54a60;
-  --accent-hover: #a43b53;
-  --accent-active: #a43b53;
-  --on-accent: #fdf3f1;
-  --accent-text: #984d5a;
-  --accent-tint: #f7e2e5;
-  --accent-tint-text: #773643;
-  --brand-rose: #be878f;
-  --brand-sage: #638773;
-  --sage-tint: #d7e8de;
-  --sage-tint-text: #195238;
-  --sage-text: #3d795b;
-  --success: #007253;
-  --success-tint: #c2f5de;
-  --success-tint-text: #00573e;
-  --warning: #845d00;
-  --danger: #8c1b00;
-  --danger-hover: #771200;
-  --on-danger: #fdf3f1;
-  --focus: #984d5a;
-  --overlay: rgb(32 36 42 / 0.50);
-  --viz-div-mid: #d0d7e0;
-  --viz-unknown: repeating-linear-gradient(135deg, #b6bec9 0 calc(3 * var(--suite-px, 1px)), transparent calc(3 * var(--suite-px, 1px)) calc(7 * var(--suite-px, 1px)));
-  --shadow-1: calc(1 * var(--suite-px, 1px)) calc(1 * var(--suite-px, 1px)) calc(2 * var(--suite-px, 1px)) rgb(0 34 78 / 0.06), calc(2 * var(--suite-px, 1px)) calc(3 * var(--suite-px, 1px)) calc(8 * var(--suite-px, 1px)) calc(-2 * var(--suite-px, 1px)) rgb(0 34 78 / 0.10);
-  --shadow-2: calc(2 * var(--suite-px, 1px)) calc(3 * var(--suite-px, 1px)) calc(8 * var(--suite-px, 1px)) rgb(0 34 78 / 0.11), calc(6 * var(--suite-px, 1px)) calc(14 * var(--suite-px, 1px)) calc(34 * var(--suite-px, 1px)) calc(-10 * var(--suite-px, 1px)) rgb(0 34 78 / 0.24);
-}
-
-/* --- Ink, light (63 colour tokens differ from the default; 1 preview tokens restated) --- */
-:root[data-theme="ink"], [data-theme="ink"] {
-  color-scheme: light;
-  --paper: #fbf8f1;
-  --surface: var(--paper);
-  --bg: #e7f2ef;
-  --surface-2: #f0e1e4;
-  --surface-raised: #fef8f4;
-  --surface-hover: #edf6f8;
-  --anchor: #241b34;
-  --anchor-2: #1a1028;
-  --anchor-line: #473f58;
-  --on-anchor: #f8f0ea;
-  --on-anchor-2: #c8bdb4;
-  --point: #cf5821;
-  --point-text: #ad3e00;
-  --point-tint: #ffded2;
-  --point-tint-text: #842c00;
-  --text: #1e1b24;
-  --text-2: #504d56;
-  --text-3: #64616a;
-  --text-inverse: #f8f0ea;
-  --text-disabled: #939198;
-  --neutral-tint: #edf6f8;
-  --neutral-tint-text: #504d56;
-  --border: #d7d4df;
-  --border-strong: #bfbbc8;
-  --border-input: #7e7b85;
-  --hairline: rgb(44 22 72 / 0.10);
-  --band: #241b34;
-  --on-band: #f8f0ea;
-  --on-band-2: #c8bdb4;
-  --band-line: #473f58;
-  --nav-surface: #241b34;
-  --on-nav: #f8f0ea;
-  --on-nav-2: #c8bdb4;
-  --nav-line: #473f58;
-  --nav-selected: #1a1028;
-  --on-band-3: #7b7066;
-  --on-band-warning: #9c700e;
-  --accent: #241b34;
-  --accent-hover: #1a1028;
-  --accent-active: #1a1028;
-  --on-accent: #f8f0ea;
-  --accent-text: #984b54;
-  --accent-tint: #f7e2e4;
-  --accent-tint-text: #77363e;
-  --brand-rose: #be878b;
-  --brand-sage: #5c877d;
-  --sage-tint: #d5e8e3;
-  --sage-tint-text: #005346;
-  --sage-text: #2c7a6b;
-  --success: #21703f;
-  --success-tint: #caf3d4;
-  --success-tint-text: #005829;
-  --warning: #835b00;
-  --danger: #ac3857;
-  --danger-hover: #9b284a;
-  --danger-tint: #ffdfe4;
-  --danger-tint-text: #8f1a40;
-  --on-danger: #fdf4f0;
-  --focus: #984b54;
-  --overlay: rgb(37 35 41 / 0.50);
-  --viz-div-mid: #d7d4df;
-  --viz-unknown: repeating-linear-gradient(135deg, #bfbbc8 0 calc(3 * var(--suite-px, 1px)), transparent calc(3 * var(--suite-px, 1px)) calc(7 * var(--suite-px, 1px)));
-  --shadow-1: calc(1 * var(--suite-px, 1px)) calc(1 * var(--suite-px, 1px)) calc(2 * var(--suite-px, 1px)) rgb(44 22 72 / 0.06), calc(2 * var(--suite-px, 1px)) calc(3 * var(--suite-px, 1px)) calc(8 * var(--suite-px, 1px)) calc(-2 * var(--suite-px, 1px)) rgb(44 22 72 / 0.10);
-  --shadow-2: calc(2 * var(--suite-px, 1px)) calc(3 * var(--suite-px, 1px)) calc(8 * var(--suite-px, 1px)) rgb(44 22 72 / 0.11), calc(6 * var(--suite-px, 1px)) calc(14 * var(--suite-px, 1px)) calc(34 * var(--suite-px, 1px)) calc(-10 * var(--suite-px, 1px)) rgb(44 22 72 / 0.24);
-}
-
-@media (prefers-color-scheme: dark) {
-:root:not([data-scheme="light"]):not([data-theme="light"]) {
-    color-scheme: dark;
-    --paper: #241f27;
-    --surface: var(--paper);
-    --bg: #130e15;
-    --surface-2: #0b1e16;
-    --surface-raised: #2e2831;
-    --surface-hover: #2c232f;
-    --anchor: #163437;
-    --anchor-2: #224042;
-    --anchor-line: #395456;
-    --on-anchor: #ece5de;
-    --on-anchor-2: #afa69d;
-    --point: #f8a1b3;
-    --point-text: #d17d8f;
-    --point-tint: #3f1f26;
-    --point-tint-text: #f09eaf;
-    --text: #ebe5df;
-    --text-2: #b2adb6;
-    --text-3: #98949b;
-    --text-inverse: #130e15;
-    --text-disabled: #5a565c;
-    --neutral-tint: #2c232f;
-    --neutral-tint-text: #b2adb6;
-    --border: #35323d;
-    --border-strong: #4a4753;
-    --border-input: #7c7780;
-    --hairline: rgb(235 229 223 / 0.15);
-    --band: #163437;
-    --on-band: #ece5de;
-    --on-band-2: #afa69d;
-    --band-line: #395456;
-    --nav-surface: #0b1e16;
-    --on-nav: #ebe5df;
-    --on-nav-2: #98949b;
-    --nav-line: #35323d;
-    --nav-selected: #241f27;
-    --on-band-3: #897f74;
-    --on-band-warning: #a98034;
-    --accent: #add5d8;
-    --accent-hover: #c4e3e6;
-    --accent-active: #f8a1b3;
-    --on-accent: #121116;
-    --accent-text: #c78383;
-    --accent-tint: #352222;
-    --accent-tint-text: #e3a2a0;
-    --brand-rose: #d39a99;
-    --brand-sage: #7f9481;
-    --sage-tint: #212b22;
-    --sage-tint-text: #94bf99;
-    --sage-text: #6a9770;
-    --success: #3ca77a;
-    --success-tint: #03301f;
-    --success-tint-text: #60c999;
-    --warning: #b98e40;
-    --warning-tint: #362505;
-    --warning-tint-text: #d9ad60;
-    --danger: #da7b66;
-    --danger-hover: #eb8b75;
-    --danger-tint: #3d2019;
-    --danger-tint-text: #fb9a83;
-    --on-danger: #0d0c12;
-    --info: var(--accent-text);
-    --info-tint: var(--accent-tint);
-    --info-tint-text: var(--accent-tint-text);
-    --focus: #c78383;
-    --overlay: rgb(4 3 7 / 0.72);
-    --selection-bg: var(--accent-tint);
-    --grain-opacity: 0.046;
-    --viz-1: #d67072;
-    --viz-2: #3c7030;
-    --viz-3: #b25e98;
-    --viz-4: #b3880f;
-    --viz-5: #488acb;
-    --viz-6: #b84455;
-    --viz-7: #169d97;
-    --viz-8: #866ec5;
-    --viz-div-mid: #35323d;
-    --viz-grid: var(--border);
-    --viz-axis: var(--text-3);
-    --viz-unknown: repeating-linear-gradient(135deg, #4a4753 0 calc(3 * var(--suite-px, 1px)), transparent calc(3 * var(--suite-px, 1px)) calc(7 * var(--suite-px, 1px)));
-    --shadow-1: calc(1 * var(--suite-px, 1px)) calc(1 * var(--suite-px, 1px)) calc(2 * var(--suite-px, 1px)) rgb(6 0 21 / 0.50), calc(2 * var(--suite-px, 1px)) calc(3 * var(--suite-px, 1px)) calc(8 * var(--suite-px, 1px)) calc(-2 * var(--suite-px, 1px)) rgb(6 0 21 / 0.46);
-    --shadow-2: calc(2 * var(--suite-px, 1px)) calc(3 * var(--suite-px, 1px)) calc(10 * var(--suite-px, 1px)) rgb(6 0 21 / 0.55), calc(6 * var(--suite-px, 1px)) calc(16 * var(--suite-px, 1px)) calc(38 * var(--suite-px, 1px)) calc(-10 * var(--suite-px, 1px)) rgb(6 0 21 / 0.70);
-}
-[data-theme="plaster"]:not([data-scheme="light"]) {
-    color-scheme: dark;
-    --paper: #241f27;
-    --surface: var(--paper);
-    --bg: #130e15;
-    --surface-2: #0b1e16;
-    --point: #f8a1b3;
-    --text: #ebe5df;
-    --text-2: #b2adb6;
-    --border: #35323d;
-    --band: #163437;
-    --on-band: #ece5de;
-    --band-line: #395456;
-    --accent: #add5d8;
-    --on-accent: #121116;
-    --accent-text: #c78383;
-}
-:root[data-theme="paper"]:not([data-scheme="light"]) {
-    color-scheme: dark;
-    --paper: #1d2129;
-    --surface: var(--paper);
-    --bg: #0b1117;
-    --surface-2: #061e1e;
-    --surface-raised: #272b34;
-    --surface-hover: #1b2b25;
-    --anchor: #233041;
-    --anchor-2: #2e3b4d;
-    --anchor-line: #434f60;
-    --on-anchor: #eee4e0;
-    --on-anchor-2: #b1a5a0;
-    --point: #ff9dac;
-    --point-text: #dd7889;
-    --point-tint: #431c23;
-    --point-tint-text: #fb98a7;
-    --text: #ede4e0;
-    --text-2: #abb0b9;
-    --text-3: #93969e;
-    --text-inverse: #0b1117;
-    --text-disabled: #55585e;
-    --neutral-tint: #1b2b25;
-    --neutral-tint-text: #abb0b9;
-    --border: #2e353d;
-    --border-strong: #424a54;
-    --border-input: #757a83;
-    --hairline: rgb(237 228 224 / 0.15);
-    --band: #233041;
-    --on-band: #eee4e0;
-    --on-band-2: #b1a5a0;
-    --band-line: #434f60;
-    --nav-surface: #0b1117;
-    --on-nav: #ede4e0;
-    --on-nav-2: #93969e;
-    --nav-line: #2e353d;
-    --nav-selected: #1d2129;
-    --on-band-3: #8c7d77;
-    --on-band-warning: #a88034;
-    --accent: #f5bac2;
-    --accent-hover: #feced4;
-    --accent-active: #ff9dac;
-    --on-accent: #0e1216;
-    --accent-text: #c7848d;
-    --accent-tint: #352225;
-    --accent-tint-text: #e3a2aa;
-    --brand-rose: #d299a1;
-    --brand-sage: #7a9586;
-    --sage-tint: #1f2b24;
-    --sage-tint-text: #8ac0a2;
-    --sage-text: #5f987a;
-    --success: #33a981;
-    --success-tint: #003121;
-    --success-tint-text: #5acaa0;
-    --warning: #ba8f41;
-    --warning-tint: #362505;
-    --warning-tint-text: #d9ad60;
-    --danger: #db7c66;
-    --danger-hover: #ec8c75;
-    --danger-tint: #3d2019;
-    --danger-tint-text: #fb9a83;
-    --on-danger: #0a0e12;
-    --info: var(--accent-text);
-    --info-tint: var(--accent-tint);
-    --info-tint-text: var(--accent-tint-text);
-    --focus: #c7848d;
-    --overlay: rgb(2 4 7 / 0.72);
-    --selection-bg: var(--accent-tint);
-    --grain-opacity: 0.046;
-    --viz-1: #d67072;
-    --viz-2: #3c7030;
-    --viz-3: #b25e98;
-    --viz-4: #b3880f;
-    --viz-5: #488acb;
-    --viz-6: #b84455;
-    --viz-7: #169d97;
-    --viz-8: #866ec5;
-    --viz-div-mid: #2e353d;
-    --viz-grid: var(--border);
-    --viz-axis: var(--text-3);
-    --viz-unknown: repeating-linear-gradient(135deg, #424a54 0 calc(3 * var(--suite-px, 1px)), transparent calc(3 * var(--suite-px, 1px)) calc(7 * var(--suite-px, 1px)));
-    --shadow-1: calc(1 * var(--suite-px, 1px)) calc(1 * var(--suite-px, 1px)) calc(2 * var(--suite-px, 1px)) rgb(0 2 23 / 0.50), calc(2 * var(--suite-px, 1px)) calc(3 * var(--suite-px, 1px)) calc(8 * var(--suite-px, 1px)) calc(-2 * var(--suite-px, 1px)) rgb(0 2 23 / 0.46);
-    --shadow-2: calc(2 * var(--suite-px, 1px)) calc(3 * var(--suite-px, 1px)) calc(10 * var(--suite-px, 1px)) rgb(0 2 23 / 0.55), calc(6 * var(--suite-px, 1px)) calc(16 * var(--suite-px, 1px)) calc(38 * var(--suite-px, 1px)) calc(-10 * var(--suite-px, 1px)) rgb(0 2 23 / 0.70);
-}
-[data-theme="paper"]:not([data-scheme="light"]) {
-    color-scheme: dark;
-    --paper: #1d2129;
-    --surface: var(--paper);
-    --bg: #0b1117;
-    --surface-2: #061e1e;
-    --point: #ff9dac;
-    --text: #ede4e0;
-    --text-2: #abb0b9;
-    --border: #2e353d;
-    --band: #233041;
-    --on-band: #eee4e0;
-    --band-line: #434f60;
-    --accent: #f5bac2;
-    --on-accent: #0e1216;
-    --accent-text: #c7848d;
-}
-:root[data-theme="ink"]:not([data-scheme="light"]) {
-    color-scheme: dark;
-    --paper: #251e26;
-    --surface: var(--paper);
-    --bg: #081314;
-    --surface-2: #201522;
-    --surface-raised: #2e2831;
-    --surface-hover: #1c2932;
-    --anchor: #322b3f;
-    --anchor-2: #3d364b;
-    --anchor-line: #514b5e;
-    --on-anchor: #ece5de;
-    --on-anchor-2: #afa69e;
-    --point: #ffa37f;
-    --point-text: #e0794f;
-    --point-tint: #441d0d;
-    --point-tint-text: #ff9a73;
-    --text: #ece5df;
-    --text-2: #b4acb4;
-    --text-3: #9a939a;
-    --text-inverse: #081314;
-    --text-disabled: #5b565b;
-    --neutral-tint: #1c2932;
-    --neutral-tint-text: #b4acb4;
-    --border: #35323c;
-    --border-strong: #4a4752;
-    --border-input: #7e777e;
-    --hairline: rgb(236 229 223 / 0.15);
-    --band: #322b3f;
-    --on-band: #ece5de;
-    --on-band-2: #afa69e;
-    --band-line: #514b5e;
-    --nav-surface: #322b3f;
-    --on-nav: #ece5de;
-    --on-nav-2: #afa69e;
-    --nav-line: #514b5e;
-    --nav-selected: #3d364b;
-    --on-band-3: #897d74;
-    --on-band-warning: #a77f33;
-    --accent: #d0c6e4;
-    --accent-hover: #dfd8f0;
-    --accent-active: #ffa37f;
-    --on-accent: #121116;
-    --accent-text: #c68388;
-    --accent-tint: #352224;
-    --accent-tint-text: #e3a2a6;
-    --brand-rose: #d29a9e;
-    --brand-sage: #75968e;
-    --sage-tint: #1d2b28;
-    --sage-tint-text: #80c1b1;
-    --sage-text: #529888;
-    --success: #51a66b;
-    --success-tint: #0d3019;
-    --success-tint-text: #73c88b;
-    --warning: #b98e40;
-    --warning-tint: #362505;
-    --warning-tint-text: #d9ad60;
-    --danger: #d9788b;
-    --danger-hover: #ea879a;
-    --danger-tint: #3d1e24;
-    --danger-tint-text: #fa96a9;
-    --on-danger: #0e0c11;
-    --info: var(--accent-text);
-    --info-tint: var(--accent-tint);
-    --info-tint-text: var(--accent-tint-text);
-    --focus: #c68388;
-    --overlay: rgb(4 3 7 / 0.72);
-    --selection-bg: var(--accent-tint);
-    --grain-opacity: 0.046;
-    --viz-1: #d67072;
-    --viz-2: #3c7030;
-    --viz-3: #b25e98;
-    --viz-4: #b3880f;
-    --viz-5: #488acb;
-    --viz-6: #b84455;
-    --viz-7: #169d97;
-    --viz-8: #866ec5;
-    --viz-div-mid: #35323c;
-    --viz-grid: var(--border);
-    --viz-axis: var(--text-3);
-    --viz-unknown: repeating-linear-gradient(135deg, #4a4752 0 calc(3 * var(--suite-px, 1px)), transparent calc(3 * var(--suite-px, 1px)) calc(7 * var(--suite-px, 1px)));
-    --shadow-1: calc(1 * var(--suite-px, 1px)) calc(1 * var(--suite-px, 1px)) calc(2 * var(--suite-px, 1px)) rgb(7 0 20 / 0.50), calc(2 * var(--suite-px, 1px)) calc(3 * var(--suite-px, 1px)) calc(8 * var(--suite-px, 1px)) calc(-2 * var(--suite-px, 1px)) rgb(7 0 20 / 0.46);
-    --shadow-2: calc(2 * var(--suite-px, 1px)) calc(3 * var(--suite-px, 1px)) calc(10 * var(--suite-px, 1px)) rgb(7 0 20 / 0.55), calc(6 * var(--suite-px, 1px)) calc(16 * var(--suite-px, 1px)) calc(38 * var(--suite-px, 1px)) calc(-10 * var(--suite-px, 1px)) rgb(7 0 20 / 0.70);
-}
-[data-theme="ink"]:not([data-scheme="light"]) {
-    color-scheme: dark;
-    --paper: #251e26;
-    --surface: var(--paper);
-    --bg: #081314;
-    --surface-2: #201522;
-    --point: #ffa37f;
-    --text: #ece5df;
-    --text-2: #b4acb4;
-    --border: #35323c;
-    --band: #322b3f;
-    --on-band: #ece5de;
-    --band-line: #514b5e;
-    --accent: #d0c6e4;
-    --on-accent: #121116;
-    --accent-text: #c68388;
-}
-}
-
-/* Legacy alias. Must stay a standalone, line-start block: a token-migration script
-   outside this repository locates the dark values with ^:root\[data-theme="dark"\]\s*\{
-   and would silently read light values as dark if this were folded into a selector list. */
-:root[data-theme="dark"] {
-  color-scheme: dark;
-  --paper: #241f27;
-  --surface: var(--paper);
-  --bg: #130e15;
-  --surface-2: #0b1e16;
-  --surface-raised: #2e2831;
-  --surface-hover: #2c232f;
-  --anchor: #163437;
-  --anchor-2: #224042;
-  --anchor-line: #395456;
-  --on-anchor: #ece5de;
-  --on-anchor-2: #afa69d;
-  --point: #f8a1b3;
-  --point-text: #d17d8f;
-  --point-tint: #3f1f26;
-  --point-tint-text: #f09eaf;
-  --text: #ebe5df;
-  --text-2: #b2adb6;
-  --text-3: #98949b;
-  --text-inverse: #130e15;
-  --text-disabled: #5a565c;
-  --neutral-tint: #2c232f;
-  --neutral-tint-text: #b2adb6;
-  --border: #35323d;
-  --border-strong: #4a4753;
-  --border-input: #7c7780;
-  --hairline: rgb(235 229 223 / 0.15);
-  --band: #163437;
-  --on-band: #ece5de;
-  --on-band-2: #afa69d;
-  --band-line: #395456;
-  --nav-surface: #0b1e16;
-  --on-nav: #ebe5df;
-  --on-nav-2: #98949b;
-  --nav-line: #35323d;
-  --nav-selected: #241f27;
-  --on-band-3: #897f74;
-  --on-band-warning: #a98034;
-  --accent: #add5d8;
-  --accent-hover: #c4e3e6;
-  --accent-active: #f8a1b3;
-  --on-accent: #121116;
-  --accent-text: #c78383;
-  --accent-tint: #352222;
-  --accent-tint-text: #e3a2a0;
-  --brand-rose: #d39a99;
-  --brand-sage: #7f9481;
-  --sage-tint: #212b22;
-  --sage-tint-text: #94bf99;
-  --sage-text: #6a9770;
-  --success: #3ca77a;
-  --success-tint: #03301f;
-  --success-tint-text: #60c999;
-  --warning: #b98e40;
-  --warning-tint: #362505;
-  --warning-tint-text: #d9ad60;
-  --danger: #da7b66;
-  --danger-hover: #eb8b75;
-  --danger-tint: #3d2019;
-  --danger-tint-text: #fb9a83;
-  --on-danger: #0d0c12;
-  --info: var(--accent-text);
-  --info-tint: var(--accent-tint);
-  --info-tint-text: var(--accent-tint-text);
-  --focus: #c78383;
-  --overlay: rgb(4 3 7 / 0.72);
-  --selection-bg: var(--accent-tint);
-  --grain-opacity: 0.046;
-  --viz-1: #d67072;
-  --viz-2: #3c7030;
-  --viz-3: #b25e98;
-  --viz-4: #b3880f;
-  --viz-5: #488acb;
-  --viz-6: #b84455;
-  --viz-7: #169d97;
-  --viz-8: #866ec5;
-  --viz-div-mid: #35323d;
-  --viz-grid: var(--border);
-  --viz-axis: var(--text-3);
-  --viz-unknown: repeating-linear-gradient(135deg, #4a4753 0 calc(3 * var(--suite-px, 1px)), transparent calc(3 * var(--suite-px, 1px)) calc(7 * var(--suite-px, 1px)));
-  --shadow-1: calc(1 * var(--suite-px, 1px)) calc(1 * var(--suite-px, 1px)) calc(2 * var(--suite-px, 1px)) rgb(6 0 21 / 0.50), calc(2 * var(--suite-px, 1px)) calc(3 * var(--suite-px, 1px)) calc(8 * var(--suite-px, 1px)) calc(-2 * var(--suite-px, 1px)) rgb(6 0 21 / 0.46);
-  --shadow-2: calc(2 * var(--suite-px, 1px)) calc(3 * var(--suite-px, 1px)) calc(10 * var(--suite-px, 1px)) rgb(6 0 21 / 0.55), calc(6 * var(--suite-px, 1px)) calc(16 * var(--suite-px, 1px)) calc(38 * var(--suite-px, 1px)) calc(-10 * var(--suite-px, 1px)) rgb(6 0 21 / 0.70);
-}
-
-:root[data-scheme="dark"] {
-  color-scheme: dark;
-  --paper: #241f27;
-  --surface: var(--paper);
-  --bg: #130e15;
-  --surface-2: #0b1e16;
-  --surface-raised: #2e2831;
-  --surface-hover: #2c232f;
-  --anchor: #163437;
-  --anchor-2: #224042;
-  --anchor-line: #395456;
-  --on-anchor: #ece5de;
-  --on-anchor-2: #afa69d;
-  --point: #f8a1b3;
-  --point-text: #d17d8f;
-  --point-tint: #3f1f26;
-  --point-tint-text: #f09eaf;
-  --text: #ebe5df;
-  --text-2: #b2adb6;
-  --text-3: #98949b;
-  --text-inverse: #130e15;
-  --text-disabled: #5a565c;
-  --neutral-tint: #2c232f;
-  --neutral-tint-text: #b2adb6;
-  --border: #35323d;
-  --border-strong: #4a4753;
-  --border-input: #7c7780;
-  --hairline: rgb(235 229 223 / 0.15);
-  --band: #163437;
-  --on-band: #ece5de;
-  --on-band-2: #afa69d;
-  --band-line: #395456;
-  --nav-surface: #0b1e16;
-  --on-nav: #ebe5df;
-  --on-nav-2: #98949b;
-  --nav-line: #35323d;
-  --nav-selected: #241f27;
-  --on-band-3: #897f74;
-  --on-band-warning: #a98034;
-  --accent: #add5d8;
-  --accent-hover: #c4e3e6;
-  --accent-active: #f8a1b3;
-  --on-accent: #121116;
-  --accent-text: #c78383;
-  --accent-tint: #352222;
-  --accent-tint-text: #e3a2a0;
-  --brand-rose: #d39a99;
-  --brand-sage: #7f9481;
-  --sage-tint: #212b22;
-  --sage-tint-text: #94bf99;
-  --sage-text: #6a9770;
-  --success: #3ca77a;
-  --success-tint: #03301f;
-  --success-tint-text: #60c999;
-  --warning: #b98e40;
-  --warning-tint: #362505;
-  --warning-tint-text: #d9ad60;
-  --danger: #da7b66;
-  --danger-hover: #eb8b75;
-  --danger-tint: #3d2019;
-  --danger-tint-text: #fb9a83;
-  --on-danger: #0d0c12;
-  --info: var(--accent-text);
-  --info-tint: var(--accent-tint);
-  --info-tint-text: var(--accent-tint-text);
-  --focus: #c78383;
-  --overlay: rgb(4 3 7 / 0.72);
-  --selection-bg: var(--accent-tint);
-  --grain-opacity: 0.046;
-  --viz-1: #d67072;
-  --viz-2: #3c7030;
-  --viz-3: #b25e98;
-  --viz-4: #b3880f;
-  --viz-5: #488acb;
-  --viz-6: #b84455;
-  --viz-7: #169d97;
-  --viz-8: #866ec5;
-  --viz-div-mid: #35323d;
-  --viz-grid: var(--border);
-  --viz-axis: var(--text-3);
-  --viz-unknown: repeating-linear-gradient(135deg, #4a4753 0 calc(3 * var(--suite-px, 1px)), transparent calc(3 * var(--suite-px, 1px)) calc(7 * var(--suite-px, 1px)));
-  --shadow-1: calc(1 * var(--suite-px, 1px)) calc(1 * var(--suite-px, 1px)) calc(2 * var(--suite-px, 1px)) rgb(6 0 21 / 0.50), calc(2 * var(--suite-px, 1px)) calc(3 * var(--suite-px, 1px)) calc(8 * var(--suite-px, 1px)) calc(-2 * var(--suite-px, 1px)) rgb(6 0 21 / 0.46);
-  --shadow-2: calc(2 * var(--suite-px, 1px)) calc(3 * var(--suite-px, 1px)) calc(10 * var(--suite-px, 1px)) rgb(6 0 21 / 0.55), calc(6 * var(--suite-px, 1px)) calc(16 * var(--suite-px, 1px)) calc(38 * var(--suite-px, 1px)) calc(-10 * var(--suite-px, 1px)) rgb(6 0 21 / 0.70);
-}
-
-[data-theme="plaster"][data-scheme="dark"] {
-  color-scheme: dark;
-  --paper: #241f27;
-  --surface: var(--paper);
-  --bg: #130e15;
-  --surface-2: #0b1e16;
-  --point: #f8a1b3;
-  --text: #ebe5df;
-  --text-2: #b2adb6;
-  --border: #35323d;
-  --band: #163437;
-  --on-band: #ece5de;
-  --band-line: #395456;
-  --accent: #add5d8;
-  --on-accent: #121116;
-  --accent-text: #c78383;
-}
-
-:root[data-theme="paper"][data-scheme="dark"], [data-theme="paper"][data-scheme="dark"] {
-  color-scheme: dark;
-  --paper: #1d2129;
-  --surface: var(--paper);
-  --bg: #0b1117;
-  --surface-2: #061e1e;
-  --surface-raised: #272b34;
-  --surface-hover: #1b2b25;
-  --anchor: #233041;
-  --anchor-2: #2e3b4d;
-  --anchor-line: #434f60;
-  --on-anchor: #eee4e0;
-  --on-anchor-2: #b1a5a0;
-  --point: #ff9dac;
-  --point-text: #dd7889;
-  --point-tint: #431c23;
-  --point-tint-text: #fb98a7;
-  --text: #ede4e0;
-  --text-2: #abb0b9;
-  --text-3: #93969e;
-  --text-inverse: #0b1117;
-  --text-disabled: #55585e;
-  --neutral-tint: #1b2b25;
-  --neutral-tint-text: #abb0b9;
-  --border: #2e353d;
-  --border-strong: #424a54;
-  --border-input: #757a83;
-  --hairline: rgb(237 228 224 / 0.15);
-  --band: #233041;
-  --on-band: #eee4e0;
-  --on-band-2: #b1a5a0;
-  --band-line: #434f60;
-  --nav-surface: #0b1117;
-  --on-nav: #ede4e0;
-  --on-nav-2: #93969e;
-  --nav-line: #2e353d;
-  --nav-selected: #1d2129;
-  --on-band-3: #8c7d77;
-  --on-band-warning: #a88034;
-  --accent: #f5bac2;
-  --accent-hover: #feced4;
-  --accent-active: #ff9dac;
-  --on-accent: #0e1216;
-  --accent-text: #c7848d;
-  --accent-tint: #352225;
-  --accent-tint-text: #e3a2aa;
-  --brand-rose: #d299a1;
-  --brand-sage: #7a9586;
-  --sage-tint: #1f2b24;
-  --sage-tint-text: #8ac0a2;
-  --sage-text: #5f987a;
-  --success: #33a981;
-  --success-tint: #003121;
-  --success-tint-text: #5acaa0;
-  --warning: #ba8f41;
-  --warning-tint: #362505;
-  --warning-tint-text: #d9ad60;
-  --danger: #db7c66;
-  --danger-hover: #ec8c75;
-  --danger-tint: #3d2019;
-  --danger-tint-text: #fb9a83;
-  --on-danger: #0a0e12;
-  --info: var(--accent-text);
-  --info-tint: var(--accent-tint);
-  --info-tint-text: var(--accent-tint-text);
-  --focus: #c7848d;
-  --overlay: rgb(2 4 7 / 0.72);
-  --selection-bg: var(--accent-tint);
-  --grain-opacity: 0.046;
-  --viz-1: #d67072;
-  --viz-2: #3c7030;
-  --viz-3: #b25e98;
-  --viz-4: #b3880f;
-  --viz-5: #488acb;
-  --viz-6: #b84455;
-  --viz-7: #169d97;
-  --viz-8: #866ec5;
-  --viz-div-mid: #2e353d;
-  --viz-grid: var(--border);
-  --viz-axis: var(--text-3);
-  --viz-unknown: repeating-linear-gradient(135deg, #424a54 0 calc(3 * var(--suite-px, 1px)), transparent calc(3 * var(--suite-px, 1px)) calc(7 * var(--suite-px, 1px)));
-  --shadow-1: calc(1 * var(--suite-px, 1px)) calc(1 * var(--suite-px, 1px)) calc(2 * var(--suite-px, 1px)) rgb(0 2 23 / 0.50), calc(2 * var(--suite-px, 1px)) calc(3 * var(--suite-px, 1px)) calc(8 * var(--suite-px, 1px)) calc(-2 * var(--suite-px, 1px)) rgb(0 2 23 / 0.46);
-  --shadow-2: calc(2 * var(--suite-px, 1px)) calc(3 * var(--suite-px, 1px)) calc(10 * var(--suite-px, 1px)) rgb(0 2 23 / 0.55), calc(6 * var(--suite-px, 1px)) calc(16 * var(--suite-px, 1px)) calc(38 * var(--suite-px, 1px)) calc(-10 * var(--suite-px, 1px)) rgb(0 2 23 / 0.70);
-}
-
-:root[data-theme="ink"][data-scheme="dark"], [data-theme="ink"][data-scheme="dark"] {
-  color-scheme: dark;
-  --paper: #251e26;
-  --surface: var(--paper);
-  --bg: #081314;
-  --surface-2: #201522;
-  --surface-raised: #2e2831;
-  --surface-hover: #1c2932;
-  --anchor: #322b3f;
-  --anchor-2: #3d364b;
-  --anchor-line: #514b5e;
-  --on-anchor: #ece5de;
-  --on-anchor-2: #afa69e;
-  --point: #ffa37f;
-  --point-text: #e0794f;
-  --point-tint: #441d0d;
-  --point-tint-text: #ff9a73;
-  --text: #ece5df;
-  --text-2: #b4acb4;
-  --text-3: #9a939a;
-  --text-inverse: #081314;
-  --text-disabled: #5b565b;
-  --neutral-tint: #1c2932;
-  --neutral-tint-text: #b4acb4;
-  --border: #35323c;
-  --border-strong: #4a4752;
-  --border-input: #7e777e;
-  --hairline: rgb(236 229 223 / 0.15);
-  --band: #322b3f;
-  --on-band: #ece5de;
-  --on-band-2: #afa69e;
-  --band-line: #514b5e;
-  --nav-surface: #322b3f;
-  --on-nav: #ece5de;
-  --on-nav-2: #afa69e;
-  --nav-line: #514b5e;
-  --nav-selected: #3d364b;
-  --on-band-3: #897d74;
-  --on-band-warning: #a77f33;
-  --accent: #d0c6e4;
-  --accent-hover: #dfd8f0;
-  --accent-active: #ffa37f;
-  --on-accent: #121116;
-  --accent-text: #c68388;
-  --accent-tint: #352224;
-  --accent-tint-text: #e3a2a6;
-  --brand-rose: #d29a9e;
-  --brand-sage: #75968e;
-  --sage-tint: #1d2b28;
-  --sage-tint-text: #80c1b1;
-  --sage-text: #529888;
-  --success: #51a66b;
-  --success-tint: #0d3019;
-  --success-tint-text: #73c88b;
-  --warning: #b98e40;
-  --warning-tint: #362505;
-  --warning-tint-text: #d9ad60;
-  --danger: #d9788b;
-  --danger-hover: #ea879a;
-  --danger-tint: #3d1e24;
-  --danger-tint-text: #fa96a9;
-  --on-danger: #0e0c11;
-  --info: var(--accent-text);
-  --info-tint: var(--accent-tint);
-  --info-tint-text: var(--accent-tint-text);
-  --focus: #c68388;
-  --overlay: rgb(4 3 7 / 0.72);
-  --selection-bg: var(--accent-tint);
-  --grain-opacity: 0.046;
-  --viz-1: #d67072;
-  --viz-2: #3c7030;
-  --viz-3: #b25e98;
-  --viz-4: #b3880f;
-  --viz-5: #488acb;
-  --viz-6: #b84455;
-  --viz-7: #169d97;
-  --viz-8: #866ec5;
-  --viz-div-mid: #35323c;
-  --viz-grid: var(--border);
-  --viz-axis: var(--text-3);
-  --viz-unknown: repeating-linear-gradient(135deg, #4a4752 0 calc(3 * var(--suite-px, 1px)), transparent calc(3 * var(--suite-px, 1px)) calc(7 * var(--suite-px, 1px)));
-  --shadow-1: calc(1 * var(--suite-px, 1px)) calc(1 * var(--suite-px, 1px)) calc(2 * var(--suite-px, 1px)) rgb(7 0 20 / 0.50), calc(2 * var(--suite-px, 1px)) calc(3 * var(--suite-px, 1px)) calc(8 * var(--suite-px, 1px)) calc(-2 * var(--suite-px, 1px)) rgb(7 0 20 / 0.46);
-  --shadow-2: calc(2 * var(--suite-px, 1px)) calc(3 * var(--suite-px, 1px)) calc(10 * var(--suite-px, 1px)) rgb(7 0 20 / 0.55), calc(6 * var(--suite-px, 1px)) calc(16 * var(--suite-px, 1px)) calc(38 * var(--suite-px, 1px)) calc(-10 * var(--suite-px, 1px)) rgb(7 0 20 / 0.70);
-}
-
-@media (pointer: coarse) { :root { --control-h: calc(40 * var(--suite-px, 1px)); --row-h: calc(44 * var(--suite-px, 1px)); } }
-
-/* Reduced motion: keep the feedback, drop the movement.
-   Not a blanket kill switch - colour and opacity still transition (they carry meaning),
-   only transforms and travel distance are removed. */
-@media (prefers-reduced-motion: reduce) {
-  :root { --dur-slow: 120ms; --motion-distance: calc(0 * var(--suite-px, 1px)); --flash-dur: 1ms; }
-  *, *::before, *::after { transition-property: opacity, background-color, border-color, color, box-shadow, outline-color !important; }
-  *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; }
-}
-/* ---- base ---- */
-/* ===== Fallback faces: until the web fonts load (or if they never do), system fonts are scaled to the measured widths so line lengths and column widths do not jump ===== */
-@font-face{font-family:"Fraunces Fallback";src:local("Georgia"),local("Times New Roman");size-adjust:93.3%}
-@font-face{font-family:"Fraunces Fallback";src:local("Georgia Bold"),local("Georgia-Bold"),local("Times New Roman Bold");font-weight:600 700;size-adjust:92.3%}
-@font-face{font-family:"Inter Fallback";src:local("Helvetica Neue"),local("Arial"),local("Segoe UI");size-adjust:106.5%}
-@font-face{font-family:"Space Mono Fallback";src:local("Menlo Regular"),local("Menlo-Regular"),local("Consolas"),local("DejaVu Sans Mono");size-adjust:101.7%}
-*,*::before,*::after{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
-body{margin:0;background:var(--bg);color:var(--text);font:var(--weight-regular) var(--text-md)/var(--leading-normal) var(--font-sans);-webkit-tap-highlight-color:transparent;touch-action:manipulation;font-variant-numeric:lining-nums}
-::selection{background:var(--selection-bg)}
-:focus-visible{outline:var(--border-focus-width) solid var(--focus);outline-offset:calc(2 * var(--suite-px, 1px));border-radius:var(--radius-xs)}
-button,input,select{font:inherit;color:inherit}
-a{color:var(--accent-text);text-underline-offset:.18em;text-decoration-thickness:from-font}
-code,kbd,.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums lining-nums}
-h1,h2,h3{margin:0;font-family:var(--font-display);font-weight:var(--display-weight);line-height:var(--leading-tight);text-wrap:balance;letter-spacing:var(--tracking-title);font-variation-settings:"opsz" var(--opsz-title)}
-p{margin:0}
-.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;white-space:nowrap;clip-path:inset(50%)}
-.skip{position:absolute;left:var(--space-2);top:calc(-48 * var(--suite-px, 1px));background:var(--surface);padding:var(--space-2) var(--space-3);border:calc(1 * var(--suite-px, 1px)) solid var(--border-input);border-radius:var(--radius-sm);z-index:var(--z-toast)}
-.skip:focus-visible{outline-color:var(--on-band)}   /* the link shows on top of the dark top bar, so its ring is drawn on the band */
-.skip:focus{top:var(--space-2)}
-[hidden]{display:none!important}
-.muted{color:var(--text-2)}.faint{color:var(--text-3)}
-/* ---- topbar ---- */
-.topbar{position:sticky;top:0;z-index:var(--z-sticky);height:var(--topbar-h);display:flex;flex-wrap:nowrap;align-items:center;gap:var(--space-2);padding:0 var(--gutter);background:var(--band);border-bottom:calc(1 * var(--suite-px, 1px)) solid var(--band-line);color:var(--on-band)}
-.brand{display:flex;align-items:center;gap:var(--space-2);color:inherit;text-decoration:none;min-width:0;flex:0 1 auto}
-.brand svg{flex:none}.brand b{white-space:nowrap;font-weight:var(--display-weight);flex:none;font-family:var(--font-display);font-variation-settings:"opsz" var(--opsz-title);font-size:var(--text-xl);letter-spacing:-0.014em}
-.brand span{color:var(--on-band-2);font-size:var(--text-xs);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pill{display:inline-flex;align-items:center;gap:var(--space-1);height:calc(22 * var(--suite-px, 1px));padding:0 var(--space-2);border-radius:var(--radius-full);font:var(--weight-medium) var(--text-2xs)/1 var(--font-mono);letter-spacing:.02em;border:calc(1 * var(--suite-px, 1px)) solid var(--warning);color:var(--warning-tint-text);background:var(--warning-tint);white-space:nowrap;flex:none}
-.pill::before{content:"";width:calc(6 * var(--suite-px, 1px));height:calc(6 * var(--suite-px, 1px));border-radius:50%;background:var(--warning)}
-.pill.live{border-color:var(--success);color:var(--success-tint-text);background:var(--success-tint)}.pill.live::before{background:var(--success)}
-.spacer{flex:1}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--space-1);height:var(--control-h);padding:0 var(--space-4);border-radius:var(--radius-sm);border:calc(1 * var(--suite-px, 1px)) solid var(--border-input);background:var(--paper);color:var(--text);cursor:pointer;font-size:var(--text-sm);font-weight:var(--weight-medium);white-space:nowrap;text-decoration:none;transition:background-color var(--dur-fast) var(--ease-out),transform var(--dur-fast) var(--ease-out)}
-@media (hover:hover) and (pointer:fine){.btn:hover{background:var(--surface-hover)}}.btn:active{transform:scale(var(--press-scale))}
-.btn-primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}@media (hover:hover) and (pointer:fine){.btn-primary:hover{background:var(--accent-hover)}}
-.btn-ghost{border-color:transparent;background:transparent}@media (hover:hover) and (pointer:fine){.btn-ghost:hover{background:var(--neutral-tint)}}
-.btn-icon{width:var(--control-h);padding:0}.btn-sm{height:calc(26 * var(--suite-px, 1px));font-size:var(--text-xs);padding:0 var(--space-2)}
-.btn[disabled]{color:var(--text-disabled);background:var(--neutral-tint);border-color:var(--border);cursor:not-allowed;transform:none;box-shadow:none}
-.switch{display:inline-flex;align-items:center;gap:var(--space-2);height:var(--control-h);padding:0 var(--space-2);border:calc(1 * var(--suite-px, 1px)) solid var(--border-input);border-radius:var(--radius-sm);background:var(--surface);cursor:pointer;font-size:var(--text-sm);transition:background-color var(--dur-fast) var(--ease-out),transform var(--dur-fast) var(--ease-out)}
-.switch i{width:calc(28 * var(--suite-px, 1px));height:calc(16 * var(--suite-px, 1px));border-radius:calc(999 * var(--suite-px, 1px));background:var(--border-strong);position:relative;transition:background-color var(--dur-fast) var(--ease-out)}
-.switch i::after{content:"";position:absolute;top:calc(2 * var(--suite-px, 1px));left:calc(2 * var(--suite-px, 1px));width:calc(12 * var(--suite-px, 1px));height:calc(12 * var(--suite-px, 1px));border-radius:50%;background:var(--surface);transition:transform var(--dur-fast) var(--ease-out)}
-.switch[aria-checked="true"] i{background:var(--success)}.switch[aria-checked="true"] i::after{transform:translateX(calc(12 * var(--suite-px, 1px)))}
-/* ---- layout ---- */
-.main-col{max-width:calc(960 * var(--suite-px, 1px));margin:0 auto;padding:var(--space-5) var(--gutter) var(--space-10);display:grid;grid-template-columns:minmax(0,1fr);gap:var(--space-4)}
-#digestPlate .plate-in{max-width:calc(calc(960 * var(--suite-px, 1px)) - 2 * var(--gutter));margin:0 auto}
-/* the Classify switch: in the top bar from calc(768 * var(--suite-px, 1px)), first row of the page below that (it needs its visible label) */
-.page-switch{display:none}
-@media (max-width:767px){.page-switch{display:flex}}
-.connect-acts{margin-top:var(--space-3)}
-/* repo connection, as a section of the Settings dialog */
-.nl-connect h3{margin:0 0 var(--space-2);font-size:var(--text-md);font-weight:var(--weight-medium)}
-.nl-connect .row{margin-top:var(--space-3)}
-.nl-connect #setStatus{margin-top:var(--space-2);min-height:1.2em}
-.card{background:var(--paper);border:calc(1 * var(--suite-px, 1px)) solid var(--border);border-radius:var(--radius-md);padding:var(--space-5);box-shadow:var(--shadow-1)}
-.card h2{font-size:var(--text-md);font-weight:var(--weight-medium);margin-bottom:var(--space-2)}
-.hint{font-size:var(--text-xs);color:var(--text-2);max-width:var(--measure)}
-.row{display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center}
-input[type=password],input[type=search]{height:var(--control-h);padding:0 var(--space-2);border:calc(1 * var(--suite-px, 1px)) solid var(--border-input);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-size:var(--text-sm);flex:1 1 calc(200 * var(--suite-px, 1px));min-width:0}
-/* strip */
-.strip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border:calc(1 * var(--suite-px, 1px)) solid var(--border);border-radius:var(--radius-md);background:var(--paper);box-shadow:var(--shadow-1)}
-.strip>div{padding:var(--space-3) var(--space-4);border-right:calc(1 * var(--suite-px, 1px)) solid var(--hairline);min-width:0}
-.strip>div:last-child{border-right:0}
-.strip .k{font-size:var(--text-2xs);color:var(--text-3);text-transform:uppercase;letter-spacing:var(--tracking-caps);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.strip .v{font:var(--weight-semibold) var(--text-2xl)/1.1 var(--font-mono);font-variant-numeric:tabular-nums;margin-top:calc(2 * var(--suite-px, 1px))}
-.strip .v small{font:var(--weight-regular) var(--text-xs)/1 var(--font-mono);color:var(--text-3)}
-/* sum strip (where the digest went) */
-.sum-bar{display:flex;height:calc(8 * var(--suite-px, 1px));border-radius:var(--radius-xs);overflow:hidden;gap:calc(2 * var(--suite-px, 1px));background:var(--surface-2);margin-top:var(--space-2)}
-.sum-bar>span{display:block;height:100%}
-.sum-legend{display:flex;flex-wrap:wrap;gap:var(--space-2) var(--space-6);margin-top:var(--space-4);font-size:var(--text-xs);color:var(--text-2)}
-.sum-legend i{display:inline-block;width:calc(9 * var(--suite-px, 1px));height:calc(9 * var(--suite-px, 1px));border-radius:calc(2 * var(--suite-px, 1px));vertical-align:calc(-1 * var(--suite-px, 1px));margin-right:var(--space-2)}
-.sum-eq{margin-top:var(--space-3);font:var(--weight-regular) var(--text-xs)/1.6 var(--font-mono);color:var(--text-2);overflow-wrap:anywhere;padding-top:var(--space-3);border-top:calc(1 * var(--suite-px, 1px)) solid var(--hairline);font-variant-numeric:tabular-nums}
-/* trend */
-.trend{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:var(--space-1);align-items:end;height:calc(64 * var(--suite-px, 1px))}
-.trend div{display:grid;gap:calc(2 * var(--suite-px, 1px));align-content:end;height:100%}
-.trend i{display:block;background:var(--viz-seq-400);border-radius:calc(2 * var(--suite-px, 1px)) calc(2 * var(--suite-px, 1px)) 0 0;min-height:calc(2 * var(--suite-px, 1px))}
-.trend i.act{background:var(--warning)}
-.trend-x{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:var(--space-1);font:var(--weight-regular) var(--text-2xs)/1 var(--font-mono);color:var(--text-3);text-align:center;margin-top:calc(4 * var(--suite-px, 1px))}
-/* filters + list */
-.filters{display:flex;flex-wrap:wrap;gap:var(--space-1)}
-.filters button{height:calc(24 * var(--suite-px, 1px));padding:0 var(--space-2);border-radius:var(--radius-full);border:calc(1 * var(--suite-px, 1px)) solid var(--border);background:var(--surface);font-size:var(--text-2xs);cursor:pointer;white-space:nowrap;color:var(--text)}
-.filters button[aria-pressed="true"]{background:var(--accent-tint);border-color:var(--accent-text);color:var(--accent-tint-text)}
-.filters button .n{font-family:var(--font-mono);color:var(--text-3);margin-left:calc(4 * var(--suite-px, 1px))}
-.list{border:calc(1 * var(--suite-px, 1px)) solid var(--border);border-radius:var(--radius-md);background:var(--paper);overflow:hidden;box-shadow:var(--shadow-1)}
-.mail{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:var(--space-1) var(--space-3);padding:var(--space-2) var(--space-3);border-bottom:calc(1 * var(--suite-px, 1px)) solid var(--hairline);align-items:center}
-.mail:last-child{border-bottom:0}
-.mail .flag{width:calc(18 * var(--suite-px, 1px));text-align:center;color:var(--warning);font-weight:var(--weight-semibold)}
-.mail .flag svg{display:block;margin:0 auto}
-.mail .subj{font-size:var(--text-sm);font-weight:var(--weight-medium);color:var(--text);text-decoration:none;overflow-wrap:anywhere}
-@media (hover:hover) and (pointer:fine){.mail .subj:hover{text-decoration:underline}}
-.mail .meta{grid-column:2;font-size:var(--text-xs);color:var(--text-2);display:flex;flex-wrap:wrap;gap:var(--space-1) var(--space-2);align-items:center}
-@media(max-width:639px){.mail .meta{min-width:0}.mail .meta .chip{display:inline-block;min-width:0;max-width:100%;height:auto;min-height:calc(19 * var(--suite-px, 1px));white-space:normal;overflow-wrap:anywhere}}
-.mail .when{font:var(--weight-regular) var(--text-xs)/1 var(--font-mono);color:var(--text-3);white-space:nowrap;grid-row:span 2}
-.tag{display:inline-flex;align-items:center;gap:var(--space-1);height:calc(21 * var(--suite-px, 1px));padding:0 var(--space-2);border-radius:var(--radius-full);font-size:var(--text-2xs);font-weight:var(--weight-medium);border:calc(1 * var(--suite-px, 1px)) solid transparent;white-space:nowrap}
-.tag::before{content:"";width:calc(5 * var(--suite-px, 1px));height:calc(5 * var(--suite-px, 1px));border-radius:50%;background:currentColor}
-.tag-neutral{background:var(--neutral-tint);color:var(--neutral-tint-text);border-color:var(--border)}.tag-warning{background:var(--warning-tint);color:var(--warning-tint-text)}
-.chip{display:inline-flex;align-items:center;gap:var(--space-1);height:calc(19 * var(--suite-px, 1px));padding:0 var(--space-2);border-radius:var(--radius-xs);border:calc(1 * var(--suite-px, 1px)) solid var(--border);background:var(--neutral-tint);color:var(--text-3);font:var(--weight-regular) var(--text-2xs)/1 var(--font-mono);white-space:nowrap}
-.chip b{color:var(--text-2);font-weight:700}
-.reason{font-size:var(--text-2xs);color:var(--text-2);overflow-wrap:anywhere}
-.empty{border:calc(1 * var(--suite-px, 1px)) dashed var(--border-input);border-radius:var(--radius-md);padding:var(--space-10) var(--space-4);text-align:center;color:var(--text-2);display:grid;gap:var(--space-2);justify-items:center;background:var(--paper)}
-.empty h3{font-size:var(--text-xl);color:var(--text)}
-.error{border:calc(1 * var(--suite-px, 1px)) solid var(--danger);border-radius:var(--radius-md);padding:var(--space-4);background:var(--paper);display:grid;gap:var(--space-2)}
-.error h2{font-size:var(--text-md);color:var(--danger)}
-.error .row{display:flex;flex-wrap:wrap;gap:var(--space-2)}
-/* a switch that cannot be used looks like a disabled button (family .btn[disabled]): it had the hand cursor and full colour */
-.switch[disabled]{color:var(--text-disabled);background:var(--neutral-tint);border-color:var(--border);cursor:not-allowed;transform:none}
-.switch[disabled] i{opacity:.5}
-.topbar .switch[disabled]{color:var(--on-band-2);background:transparent;border-color:var(--band-line)}
-.steps{display:grid;gap:var(--space-2);font-size:var(--text-sm)}
-.steps li{display:grid;grid-template-columns:calc(24 * var(--suite-px, 1px)) minmax(0,1fr);gap:var(--space-2)}
-.steps li b{font-family:var(--font-mono);color:var(--accent-text)}
-.steps code{background:var(--surface-2);padding:0 calc(4 * var(--suite-px, 1px));border-radius:var(--radius-xs);font-size:var(--text-xs)}
-.honest{border-top:calc(1 * var(--suite-px, 1px)) solid var(--band-line);font-size:var(--text-xs);color:var(--on-band-2);background:var(--band);padding:var(--space-10) var(--gutter) var(--space-12)}
-.honest dl{margin-block:0}.honest dt{font-weight:var(--weight-semibold);color:var(--on-band);font-family:var(--font-sans);font-size:var(--text-2xs);letter-spacing:var(--tracking-caps);text-transform:uppercase;margin-bottom:var(--space-2)}.honest dd{margin:0;max-width:var(--measure);line-height:var(--leading-relaxed)}
-.toast{position:fixed;right:var(--space-4);bottom:var(--space-4);z-index:var(--z-toast);background:var(--surface-raised);border:calc(1 * var(--suite-px, 1px)) solid var(--border);border-radius:var(--radius-md);box-shadow:var(--shadow-2);padding:var(--space-3) var(--space-4);font-size:var(--text-sm);max-width:min(calc(420 * var(--suite-px, 1px)),calc(100vw - 2*var(--gutter)));opacity:0;transform:translateY(var(--motion-distance));transition:opacity var(--dur-base) var(--ease-out),transform var(--dur-base) var(--ease-out);pointer-events:none}
-.toast.show{opacity:1;transform:none}.toast.err{border-color:var(--danger)}
-@media (max-width:899px){.strip{grid-template-columns:repeat(3,minmax(0,1fr))}.strip>div:nth-child(3){border-right:0}.strip>div:nth-child(n+4){border-top:calc(1 * var(--suite-px, 1px)) solid var(--border)}}
-@media (max-width:639px){.brand span{display:none}.brand{flex:1 1 auto}.pill .long{display:none}.topbar .gh,.topbar #theme,.topbar #refresh{display:none}.strip{grid-template-columns:repeat(2,minmax(0,1fr))}.strip>div:nth-child(3){border-right:calc(1 * var(--suite-px, 1px)) solid var(--border)}.strip>div:nth-child(2n){border-right:0}.strip>div:nth-child(n+3){border-top:calc(1 * var(--suite-px, 1px)) solid var(--border)}.mail{grid-template-columns:auto minmax(0,1fr)}.mail .when{grid-row:auto;grid-column:2}}
-@media (prefers-reduced-motion:reduce){.toast{transition:none}}
-/* ===== Family layer v3.1: band surfaces, pressed and focus states, touch targets =====
-   The band (top bar, signature panel, footer) is the anchor surface: deep in Plaster and Ink, a whiter paper in
-   Paper. Everything on it uses the --on-band pair; focus rings and text selection get their own colours there
-   because --focus and --selection-bg are solved for light surfaces. Hover sits behind (hover:hover) so a tap on
-   a touch screen does not leave a stuck highlight. */
-.topbar .pill{border-color:var(--band-line);color:var(--on-band-2);background:transparent;font-weight:var(--weight-regular)}
-.topbar .pill::before{background:var(--warning)}
-.topbar .btn,.plate .btn{background:transparent;border-color:var(--band-line);color:var(--on-band)}
-.topbar .btn-ghost,.plate .btn-ghost{border-color:transparent}
-.topbar .btn-primary,.plate .btn-primary{background:var(--on-band);border-color:var(--on-band);color:var(--band)}
-/* a disabled primary on the band keeps the disabled look: the band rule above has the same weight as .btn[disabled]
-   and comes later, so without this it would paint a disabled button like a live one (hover too) */
-.topbar .btn.btn-primary[disabled],.plate .btn.btn-primary[disabled]{color:var(--text-disabled);background:var(--neutral-tint);border-color:var(--border)}
-@media (hover:hover) and (pointer:fine){
-  .topbar .btn:hover,.plate .btn:hover{background:var(--band-line);border-color:var(--band-line)}
-  .topbar .btn-primary:hover,.plate .btn-primary:hover{background:var(--on-band-2);border-color:var(--on-band-2)}
-}
-.topbar :focus-visible,.plate :focus-visible,.honest :focus-visible{outline-color:var(--on-band)}
-/* Focus scrolls clear of the sticky top bar: a control reached by Tab, or <main> after the skip link, never lands under
-   the bar (2026-09-16: the ring of <main> and most of a button sat behind it). A product whose sticky
-   chrome is taller than the bar, or wraps, sets --sticky-top to its measured height. */
-html{scroll-padding-top:calc(var(--sticky-top,var(--topbar-h)) + var(--space-3))}
-/* Native checkboxes and radios take the palette's accent instead of the browser's blue (contrast:
-   checked fill against its surface 4.55–16.17:1, tick against the fill 4.71–16.34:1 across the three palettes, light and dark). */
-:root{accent-color:var(--accent)}
-.topbar ::selection,.plate ::selection,.honest ::selection{background:var(--on-band-2);color:var(--band)}
-.honest-in{max-width:var(--content-max);margin:0 auto;display:grid;gap:var(--space-6);grid-template-columns:repeat(auto-fit,minmax(min(100%,calc(250 * var(--suite-px, 1px))),1fr))}
-.honest a{color:var(--on-band);text-decoration-color:var(--band-line)}
-.honest code{color:var(--on-band)}
-/* Pressed: the whole control scales, content included (reads as pushed in, not moved). Reduced motion keeps a
-   colour change instead of the scale. */
-.filters button:active,.switch:active{transform:scale(var(--press-scale))}
-@media (prefers-reduced-motion:reduce){.btn:active,.filters button:active,.switch:active{transform:none;background:var(--neutral-tint)}}
-/* Touch: calc(44 * var(--suite-px, 1px)) targets on coarse pointers. */
-@media (pointer:coarse){.btn,.nav a{min-height:var(--touch-min)}.btn-icon{min-width:var(--touch-min)}}
-/* Text fields: the edge darkens and a same-hue ring appears; the outline is for keyboard focus. */
-input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),select,textarea{transition:border-color var(--dur-fast) var(--ease-out),box-shadow var(--dur-fast) var(--ease-out)}
-input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):focus,select:focus,textarea:focus{outline:none;border-color:var(--accent-text);box-shadow:0 0 0 calc(3 * var(--suite-px, 1px)) var(--accent-tint)}
-input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):focus-visible,select:focus-visible,textarea:focus-visible{outline:var(--border-focus-width) solid var(--focus);outline-offset:calc(1 * var(--suite-px, 1px))}
-::placeholder{color:var(--text-3)}
-/* Numeric columns: header text and figures share one right edge, by rule rather than by accident. */
-table.data th.num,table.data td.num{text-align:right}
-table.data th.num button{justify-content:flex-end;width:100%}
-/* Top bar by width. Controls never shrink; only the tagline truncates. The right-hand
-   group starts after the Demo pill. Compact (≤calc(767 * var(--suite-px, 1px))): mark, name, short pill, the one control the product needs, Settings.
-   Middle (768–calc(1023 * var(--suite-px, 1px))): add light/dark, GitHub and help. Full (≥calc(1024 * var(--suite-px, 1px))): everything. Never hidden: mark, name, pill, Settings. */
-.topbar > :not(.brand):not(.spacer){flex:none;white-space:nowrap}
-.topbar .spacer{display:none}
-.topbar .pill{margin-inline-end:auto}
-.topbar .brand{flex:0 1 auto;min-width:0}
-.topbar .brand b{flex:none}
-#nl-settings-button{flex:none}
-@media (pointer:coarse){#nl-settings-button{min-width:var(--touch-min);min-height:var(--touch-min)}}
-@media (max-width:767px){.topbar #theme,.topbar .gh,.topbar #help,.topbar .brand span,.topbar .pill .long{display:none}.topbar .brand b{font-size:var(--text-lg)}}
-@media (min-width:768px) and (max-width:1023px){.topbar .brand span,.topbar .pill .long{display:none}}
-@media (max-width:767px){.topbar #refresh,.topbar #togBtn{display:none}}
-/* Signature panel: the page title and the reconciliation bar share one plate on the band. The point colour
-   appears in three places only: the seal, the calc(56 * var(--suite-px, 1px)) rule under the title, and the first key of the bar. */
-.plate{background:var(--band);color:var(--on-band);padding:var(--space-8) var(--gutter) var(--space-6);border-bottom:calc(1 * var(--suite-px, 1px)) solid var(--band-line)}
-.plate-in{max-width:var(--content-max);display:grid;gap:var(--space-5)}
-.eyebrow{font-family:var(--font-sans);font-size:var(--text-2xs);font-weight:var(--weight-semibold);letter-spacing:var(--tracking-caps);text-transform:uppercase;color:var(--text-3)}
-.display{font-size:var(--text-4xl);font-variation-settings:"opsz" var(--opsz-display);letter-spacing:var(--tracking-display);margin-left:-0.028em}
-.caption{font-family:var(--font-display);font-style:var(--caption-style);font-weight:400;font-variation-settings:"opsz" var(--opsz-caption);font-size:var(--text-sm);line-height:var(--leading-relaxed);color:var(--text-2);max-width:var(--measure)}
-.plate .eyebrow,.plate .caption{color:var(--on-band-2)}
-.eyebrow .tag{margin-left:var(--space-2);text-transform:none;letter-spacing:normal}
-.plate h1{color:var(--on-band)}
-.plate .lede{margin:var(--space-3) 0 0;color:var(--on-band-2);max-width:var(--measure);font-size:var(--text-lg);line-height:var(--leading-lede)}
-.plate .rule{width:calc(56 * var(--suite-px, 1px));height:calc(2 * var(--suite-px, 1px));background:var(--point);margin-top:var(--space-4);border-radius:calc(1 * var(--suite-px, 1px))}
-.plate .sum-bar{background:transparent}
-.plate .sum-legend{color:var(--on-band-2)}
-.plate .sum-legend b{color:var(--on-band);font-family:var(--font-mono);font-variant-numeric:tabular-nums}
-.plate .sum-eq{border-top-color:var(--band-line);color:var(--on-band-2)}
-.plate .sum-eq .ok{color:var(--on-band);font-weight:var(--weight-semibold)}
-.plate .sum-eq .bad{background:var(--danger-tint);color:var(--danger-tint-text);font-weight:var(--weight-semibold);padding:0 var(--space-1);border-radius:var(--radius-xs)}
-.plate .caption{margin-top:var(--space-3)}
-.plate .chip{background:transparent;border-color:var(--band-line);color:var(--on-band-2)}
-.plate .chip b{color:var(--on-band)}
-/* the head row carries the page's own action; it stays compact so the band keeps within the reference share of the
-   first screen (47% at 1280x900, 75% at 375x812, as measured on the reference page) */
-.plate-head{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2) var(--space-3);margin-bottom:var(--space-1)}
-.plate-head .btn{margin-inline-start:auto;height:calc(26 * var(--suite-px, 1px));padding:0 var(--space-3);font-size:var(--text-xs)}
-.hatch{background-image:repeating-linear-gradient(135deg,var(--on-band-2) 0 calc(2 * var(--suite-px, 1px)),transparent calc(2 * var(--suite-px, 1px)) calc(6 * var(--suite-px, 1px)))}
-/* Classification labels are not status pills: a small sage square and the label, no fill, no border */
-.cat{display:inline-flex;align-items:center;gap:var(--space-2);font-size:var(--text-xs);color:var(--text-2)}
-.cat::before{content:"";width:calc(7 * var(--suite-px, 1px));height:calc(7 * var(--suite-px, 1px));border-radius:calc(2 * var(--suite-px, 1px));background:var(--brand-sage);flex:none}
-/* Headersort: a short page keeps the footer band at the bottom; the footer grid matches the calc(960 * var(--suite-px, 1px)) column */
-body{min-height:100vh;display:flex;flex-direction:column}
-main{width:100%;flex:1 0 auto}
-.honest-in{max-width:calc(calc(960 * var(--suite-px, 1px)) - 2 * var(--gutter))}
-/* The on/off switch: state is carried by fill and knob position, not by green alone.
-   Page: off = ring in --border-input + --text-2 knob; on = --success fill + paper knob.
-   Band: off = ring in --on-band-2 + --on-band-2 knob; on = --on-band fill + --band knob. */
-.switch i{background:transparent;box-shadow:inset 0 0 0 calc(1 * var(--suite-px, 1px)) var(--border-input)}
-.switch i::after{background:var(--text-2)}
-.switch[aria-checked="true"] i{background:var(--success);box-shadow:none}
-.switch[aria-checked="true"] i::after{background:var(--paper)}
-@media (pointer:coarse){.switch{min-height:var(--touch-min)}}
-.topbar .switch{background:transparent;border-color:var(--band-line);color:var(--on-band)}
-.topbar .switch i{background:transparent;box-shadow:inset 0 0 0 calc(1 * var(--suite-px, 1px)) var(--on-band-2)}
-.topbar .switch i::after{background:var(--on-band-2)}
-.topbar .switch[aria-checked="true"] i{background:var(--on-band);box-shadow:none}
-.topbar .switch[aria-checked="true"] i::after{background:var(--band)}
-.topbar .pill.live{border-color:var(--band-line);color:var(--on-band-2);background:transparent}
-.topbar .pill.live::before{background:var(--success)}
-@media (hover:hover) and (pointer:fine){.topbar .switch:hover{background:var(--band-line)}}
-/* ===== end of family layer v3.1 ===== */
-
-small{font-size:max(.75rem,.833333em)}
-
-html[data-suite-scale="fluid"]{font-size:var(--suite-screen-unit)}
-@media(min-width:1231px){body{max-width:calc(1215 * var(--suite-px, 1px));margin-inline:auto}.topbar .app-logo{width:calc(32 * var(--suite-px, 1px));height:calc(32 * var(--suite-px, 1px))}}
-</style>
-<link rel="stylesheet" href="board/cleanup.css">
 <link rel="stylesheet" href="assets/settings-standard/panel.css">
 <link rel="stylesheet" href="assets/settings-adapter.css">
 <link rel="stylesheet" href="assets/settings-standard/entry.css">
@@ -1261,91 +24,48 @@ html[data-suite-scale="fluid"]{font-size:var(--suite-screen-unit)}
 <script src="assets/settings-standard/save-status.js"></script>
 <script src="assets/save-status-bridge.js"></script>
 <link rel="stylesheet" href="assets/settings-standard/scale.css?v=1.0.0">
+<link rel="stylesheet" href="board/mailroom.css">
 </head>
 <body>
 <a class="skip" href="#main" data-i18n="skip">Skip to content</a>
 <header class="topbar">
-  <a class="brand" href="./" aria-label="Headersort home"><img class="app-logo" src="assets/app-logo/logo.svg" width="32" height="32" alt="">
-    <b>Headersort</b><span data-i18n="tagline">Sort what matters. Review outdated mail before cleanup.</span>
-  </a>
-  <span class="pill" id="pill" title="">Demo<span class="long" id="pillLong"> · fictional mail</span></span>
+  <a class="brand" href="./" aria-label="Mail Sorter"><img class="app-logo" src="assets/app-logo/logo.svg" width="24" height="24" alt=""><b>Mail Sorter</b></a>
+  <nav class="places" aria-label="Places" id="places">
+    <button type="button" data-place="today" aria-current="page">Today</button>
+    <button type="button" data-place="sorted">Sorted</button>
+    <button type="button" data-place="history">History</button>
+  </nav>
+  <span class="pill" id="pill">Demo<span id="pillLong"> · fictional mail</span></span>
   <div id="app-save-status"></div>
-  <span class="spacer"></span>
-  <span class="pill" id="togBtn" role="status"><span id="togText">—</span></span>
-  <button class="btn btn-ghost" id="refresh" data-act="loadAll" data-i18n="refresh">Refresh</button>
-  <a class="btn btn-ghost gh" href="https://github.com/NickkkLian/Mail-Sorter" rel="noopener">GitHub</a>
-  <button type="button" class="btn btn-ghost btn-icon" id="nl-settings-button" aria-haspopup="dialog" aria-label="Settings" title="Settings" data-i18n-aria="settingsBtn" data-i18n-title="settingsBtn"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10.34 5.10L10.58 2.51L13.42 2.51L13.66 5.10A7.1 7.1 0 0 1 15.71 5.95L17.71 4.28L19.72 6.29L18.05 8.29A7.1 7.1 0 0 1 18.90 10.34L21.49 10.58L21.49 13.42L18.90 13.66A7.1 7.1 0 0 1 18.05 15.71L19.72 17.71L17.71 19.72L15.71 18.05A7.1 7.1 0 0 1 13.66 18.90L13.42 21.49L10.58 21.49L10.34 18.90A7.1 7.1 0 0 1 8.29 18.05L6.29 19.72L4.28 17.71L5.95 15.71A7.1 7.1 0 0 1 5.10 13.66L2.51 13.42L2.51 10.58L5.10 10.34A7.1 7.1 0 0 1 5.95 8.29L4.28 6.29L6.29 4.28L8.29 5.95A7.1 7.1 0 0 1 10.34 5.10Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+  <span id="next-sort" class="next-sort"></span>
+  <button class="btn btn-icon" id="refresh" data-act="loadAll" aria-label="Get the latest results" title="Get the latest results"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2 6M20 4v7h-7"/></svg></button>
+  <a class="btn btn-icon gh" href="https://github.com/NickkkLian/Mail-Sorter" rel="noopener" target="_blank" aria-label="Source" title="Source"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 7-5 5 5 5m8-10 5 5-5 5M14 4l-4 16"/></svg></a>
+  <button type="button" class="btn btn-icon" id="nl-settings-button" aria-haspopup="dialog" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 3-1 3-3 1-2 3 2 2v3l3 2 1 4h6l1-4 3-2v-3l2-2-2-3-3-1-1-3Z"/><circle cx="12" cy="12" r="3"/></svg></button>
 </header>
-
 <main id="main" tabindex="-1">
-  <div class="page-switch">
-    <span class="pill" id="togBtnPage" role="status"><span id="togTextPage">—</span></span>
-  </div>
-  <section class="plate" id="digestPlate" aria-labelledby="digestT" hidden>
-    <div class="plate-in">
-      <div>
-        <div class="plate-head">
-          <span class="eyebrow" id="digestEyebrow"></span>
-          <button class="btn btn-primary" id="actionBtn" type="button" data-act="showAction" hidden></button>
-        </div>
-        <h1 class="display" id="digestT" data-i18n="digestT">Where the digest went</h1>
-        <p class="lede" data-i18n="digestLede">Your recent mail, organized for later. Body reading and cleanup follow your settings.</p>
-        <div class="rule" aria-hidden="true"></div>
-      </div>
-      <div role="group" aria-labelledby="digestT">
-        <div class="sum-bar" id="sumBar" aria-hidden="true"></div>
-        <div class="sum-legend" id="sumLegend"></div>
-        <div class="sum-eq" id="sumEq"></div>
-      </div>
+  <h1 class="sr-only" id="pageT">Mail Sorter</h1>
+  <section class="setup card" id="connectCard" hidden>
+    <h1 data-i18n="setT">Connect your private data repo</h1>
+    <p data-i18n="connHint">Connect your private GitHub repo to see your results.</p>
+    <div class="actions"><button class="btn primary" type="button" data-act="openSettings" data-i18n="connBtn">Connect…</button><a class="btn" href="?demo=1" data-i18n="tryDemo">Try the demo</a></div>
+  </section>
+  <section class="notice error" id="loadError" role="alert" hidden></section>
+  <section class="setup card" id="setupBox" hidden><h2 data-i18n="setupT">Set up your mail</h2><ol class="steps" data-i18n-html="setupB"></ol></section>
+  <section id="today-view"></section>
+  <section id="sorted-view" hidden>
+    <h1 class="view-title" id="sorted-title">Sorted mail</h1>
+    <div id="filterRow" class="filter-toolbar">
+      <input type="search" id="q" placeholder="Search subject or sender…" aria-label="Search" data-i18n-ph="searchPh">
+      <label for="mailbox-filter"><span class="sr-only" id="mailbox-filter-label">Mailbox</span><select id="mailbox-filter"><option value="all">All mailboxes</option></select></label>
+      <button class="btn text-button" data-act="clearFilters" id="clear-filters">Clear filters</button>
+      <div class="filters" id="filter" role="group" aria-label="Folders"></div>
     </div>
+    <div class="sorted-layout"><div id="list"></div><aside id="sorted-summary"></aside></div>
   </section>
-
-  <div class="main-col">
-  <h1 class="sr-only" id="pageT">Headersort</h1>
-
-
-  <section class="card" id="connectCard" hidden>
-    <h2 data-i18n="setT">Connect your private data repo</h2>
-    <p class="hint" data-i18n="connHint">Connect your private GitHub repo to see your digest and cleanup reviews. The demo shows the same board with fictional mail.</p>
-    <div class="row connect-acts">
-      <button class="btn btn-primary" type="button" data-act="openSettings" data-i18n="connBtn">Connect…</button>
-      <a class="btn" href="?demo=1" data-i18n="tryDemo">Try the demo</a>
-    </div>
-  </section>
-
-  <section class="error" id="loadError" role="alert" hidden></section>
-
-  <section class="card" id="setupBox" hidden>
-    <h2 data-i18n="setupT">Not set up yet — three one-time steps (about 5 minutes)</h2>
-    <ol class="steps" data-i18n-html="setupB"></ol>
-  </section>
-
-  <section id="cleanup-panel" aria-label="Cleanup review" hidden></section>
-  <div id="stats"></div>
-  <section class="card" id="trendCard" hidden>
-    <h2 data-i18n="trendT">Last 7 days</h2>
-    <div class="trend" id="trend" role="img"></div><div class="trend-x" id="trendX"></div>
-    <p class="hint" style="margin-top:calc(8 * var(--suite-px, 1px))" data-i18n="trendHint">Bars are emails per day in the digest; the amber part needs action.</p>
-  </section>
-  <div class="row" id="filterRow" hidden>
-    <input type="search" id="q" placeholder="Search subject or sender…" aria-label="Search" data-i18n-ph="searchPh">
-    <label class="hint" for="mailbox-filter"><span id="mailbox-filter-label">Mailbox</span> <select id="mailbox-filter"><option value="all">All mailboxes</option></select></label>
-    <div class="filters" id="filter" role="group" aria-label="Filter by category"></div>
-  </div>
-  <section id="dealt-toolbar" class="card" aria-label="Dealt mail" hidden></section>
-  <div id="list"></div>
-  </div>
+  <section id="history-view" hidden></section>
+  <span id="togBtn" hidden><span id="togText"></span></span><span id="togBtnPage" hidden><span id="togTextPage"></span></span>
 </main>
-<footer class="honest">
-  <dl class="honest-in">
-    <div><dt data-i18n="aboutT">About this board</dt>
-    <dd data-i18n="aboutD">In demo mode every email is fictional and every address ends in the reserved .example TLD; nothing is fetched and nothing is sent. Connected, this board reads private metadata and writes settings, approval selections and undo requests. Mail changes only in the runner after revalidation.</dd></div>
-    <div><dt data-i18n="nvT">Not verified here</dt>
-    <dd data-i18n="nvD">The scheduled classifier runs in your own repo (a template is in template/); the board cannot see whether it ran. Category quality depends on the model and on subject lines alone. The digest is capped by keep_items, so the board never shows more than that many emails.</dd></div>
-    <div><dt data-i18n="srcT">Source</dt>
-    <dd><a href="https://github.com/NickkkLian/Mail-Sorter">github.com/NickkkLian/Mail-Sorter</a> · MIT · <span data-i18n="by">built by Nick Lian</span></dd></div>
-  </dl>
-</footer>
+<dialog id="cleanup-sheet" class="review-sheet" aria-labelledby="review-title"><div id="cleanup-panel"></div></dialog>
 <div class="toast" id="toast" role="status"></div>
 
 <script>/* ---- appearance.js (inlined; source: design system theme kit) ---- */
@@ -1867,8 +587,8 @@ const I18N={
   setHint:{zh:'令牌只存在这个浏览器里（<code>localStorage</code>），只需要对<b>你的数据仓库</b>的 Contents 读写权限。',en:'The token is stored only in this browser (<code>localStorage</code>) and needs Contents read/write on <b>your data repo</b> — nothing else.'},
   saveConnect:{zh:'保存并连接',en:'Save & connect'},
   setupT:{zh:'还没配置 —— 三步开通（一次性，约 5 分钟）',en:'Not set up yet — three one-time steps (about 5 minutes)'},
-  setupB:{zh:'<li><b>1</b><span>Google 账号 → 安全 → 两步验证 → 应用专用密码 → 生成一个。</span></li><li><b>2</b><span>把 <code>template/</code> 拷进<b>你的数据仓库</b>，在 Settings → Secrets and variables → Actions 添加 <code>GMAIL_USER</code>、<code>GMAIL_APP_PASSWORD</code>、<code>ANTHROPIC_API_KEY</code>。</span></li><li><b>3</b><span>Actions → Mail Classify → Run workflow；想把现有收件箱一次整理完就填 backfill_days。之后它每天自己跑，这里点「刷新」即可。</span></li>',
-         en:'<li><b>1</b><span>Google Account → Security → 2-Step Verification → App passwords → create one.</span></li><li><b>2</b><span>Copy <code>template/</code> into <b>your private data repo</b> and add <code>GMAIL_USER</code>, <code>GMAIL_APP_PASSWORD</code> and <code>ANTHROPIC_API_KEY</code> under Settings → Secrets and variables → Actions.</span></li><li><b>3</b><span>Actions → Mail Classify → Run workflow; set backfill_days to sort the existing inbox in one pass. It then runs on its own — press Refresh here.</span></li>'},
+  setupB:{zh:'<li><b>1</b><span>Google 账号 → 安全 → 两步验证 → 应用专用密码 → 生成一个。</span></li><li><b>2</b><span>把 <code>template/</code> 拷进<b>你的数据仓库</b>，在 Settings → Secrets and variables → Actions 添加 <code>GMAIL_USER</code>、<code>GMAIL_APP_PASSWORD</code>、<code>ANTHROPIC_API_KEY</code>。</span></li><li><b>3</b><span>Actions → 运行邮件工作流；想把现有收件箱一次整理完就填 backfill_days。之后它每天自己跑，这里点「刷新」即可。</span></li>',
+         en:'<li><b>1</b><span>Google Account → Security → 2-Step Verification → App passwords → create one.</span></li><li><b>2</b><span>Copy <code>template/</code> into <b>your private data repo</b> and add <code>GMAIL_USER</code>, <code>GMAIL_APP_PASSWORD</code> and <code>ANTHROPIC_API_KEY</code> under Settings → Secrets and variables → Actions.</span></li><li><b>3</b><span>Actions → run the mail workflow; set backfill_days to sort the existing inbox in one pass. It then runs on its own — press Refresh here.</span></li>'},
   digestT:{zh:'摘要去了哪里',en:'Where the digest went'},
   trendT:{zh:'近 7 天',en:'Last 7 days'},
   trendHint:{zh:'柱＝摘要里每天的邮件数；琥珀色部分需要处理。',en:'Bars are emails per day in the digest; the amber part needs action.'},
@@ -1891,12 +611,13 @@ const Ls=k=>(I18N[k]||{zh:k,en:k})[lang];
 function applyStatic(){
   appSave.view.refresh();
   document.documentElement.lang=lang==='en'?'en':'zh-CN';
-  document.title=lang==='en'?'Headersort':'Headersort · 邮件分拣台';
+  document.title=lang==='en'?'Mail Sorter':'Mail Sorter · 邮件整理';
   document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent=Ls(el.dataset.i18n); });
   document.querySelectorAll('[data-i18n-html]').forEach(el=>{ el.innerHTML=Ls(el.dataset.i18nHtml); });
   document.querySelectorAll('[data-i18n-title]').forEach(el=>{ el.title=Ls(el.dataset.i18nTitle); });
   document.querySelectorAll('[data-i18n-aria]').forEach(el=>{ el.setAttribute('aria-label',Ls(el.dataset.i18nAria)); });
   document.querySelectorAll('[data-i18n-ph]').forEach(el=>{ el.placeholder=Ls(el.dataset.i18nPh); });
+  const refresh=document.getElementById('refresh');refresh.title=T('获取最新结果','Get the latest results');refresh.setAttribute('aria-label',refresh.title);
   const lb=document.getElementById('langBtn'); if(lb) lb.textContent=Ls('langBtn');
 }
 function toggleLang(){ lang=lang==='en'?'zh':'en'; try{localStorage.setItem(HubSettingsContract.preferenceKey("pha-lang"),lang);}catch(e){} applyStatic(); render(); }
@@ -1975,15 +696,16 @@ function connectionStatus(){
 // A file that is not there (404) means "not set up yet". Anything else — a refused token, no network, GitHub failing — is an
 // error the page shows with what to do (2026-09-16: both reads swallowed every error, so an expired token
 // showed the setup guide and the settings said "✓ Connected"). Data already on screen stays while the error shows.
-let LOADED=false, LOAD_ERROR=null;
+let LOADED=false, LOAD_ERROR=null, REFRESHING=false;
 async function loadAll(){return HubSettingsRuntime.track(async()=>{/* settings workflow */
   if(DEMO){ MAIL=DEMO_MAIL; CONF=DEMO_CONF; SHA_CONF=null; render(); return true; }
   if(!configured()){ render(); return false; }
+  REFRESHING=true;render();
   try{
     const [m,c]=await Promise.all([ghGet('mail/mail.json'),ghGet('mail/config.json')]);
     MAIL=m.data; CONF=c.data; SHA_CONF=c.sha; BASE_CONF=SafeMerge.snapshot(CONF); LOADED=true; LOAD_ERROR=null;
   }catch(e){ LOAD_ERROR=e.kind?e:{kind:'network',reason:T('连不上 GitHub（','Could not reach GitHub (')+(e.message||e)+')',fix:T('检查网络后重试。','Check the connection, then try again.')}; }
-  render();
+  REFRESHING=false;render();
   return !LOAD_ERROR;
 });}
 function loadErrorCard(){
@@ -2007,6 +729,7 @@ function loadErrorCard(){
      3. the label as it is — a category you add later keeps its own words rather than going blank.
    A mailbox sorted by an older generation of the classifier can carry keys this table does not know. The answer for
    that is label_en in your own config: it is yours to write, and it does not put your label names in a public file. */
+const CAT_ZH={people:'往来',finance:'钱款',official:'正式文件',travel:'出行',security:'账号',school:'学业',job:'求职',health:'健康',other:'未分组'};
 const CAT_EN={
   action:'To do', job:'Jobs', school:'School', security:'Accounts', newsletter:'Newsletters',
   people:'People', official:'Official', health:'Health', work:'Work', finance:'Money', life:'Life', travel:'Travel', logistics:'Shipping',
@@ -2015,7 +738,7 @@ function catLabel(key){
   const cats=(CONF&&CONF.categories)||[]; const c=cats.find(x=>x.key===key);
   const label=c?c.label:key;
   if(lang==='en') return (c&&c.label_en)||CAT_EN[key]||label;
-  return (c&&c.label_zh)||label;
+  return (c&&c.label_zh)||(!c||label===CAT_EN[key]?CAT_ZH[key]||label:label);
 }
 /* The reason under each row is not the mail and not the interface: it is a clause the classifier wrote into your
    digest, in whatever language its prompt asked for. English mode shows reason_en when the classifier wrote one; for
@@ -2023,6 +746,13 @@ function catLabel(key){
    at all — the category still says what the row is, so nothing goes blank. Chinese mode shows what was stored. */
 const CJK=/[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af\uf900-\ufaff]/;
 function reasonFor(i){
+  if(lang==='zh'&&i.reason_zh)return i.reason_zh;
+  if(lang==='zh'){
+    const labels={'Keep signal':'值得保留的邮件','Unsorted':'暂时无法判断文件夹','Model unavailable; left in place':'模型暂时不可用，已保留','Model not configured; left in place':'还没设置模型，已保留','Invalid model output; left in place':'模型结果不符合要求，已保留','Body unavailable; left in place':'暂时无法读取正文，已保留'};
+    if(labels[i.reason])return labels[i.reason];
+    const rule=String(i.reason||'').match(/^Cleanup rule (O[1-7])$/);
+    if(rule)return '符合「'+({'O1':'一次性验证码','O2':'物流通知','O3':'已结束活动','O4':'商家推广','O5':'订阅简报','O6':'社交和应用通知','O7':'普通登录提醒'}[rule[1]])+'」的清理规则';
+  }
   if(lang==='en') return i.reason_en || (i.reason && !CJK.test(i.reason) ? i.reason : '');
   return i.reason || i.reason_en || '';
 }
@@ -2057,7 +787,7 @@ function setFilter(c){ filter=c; syncURL(); render(); }
 // category keys come from the digest, so they never go into an inline handler: the chip carries the key in data-filter
 // (HTML-escaped) and this one listener reads it back as plain text
 document.getElementById('filter').addEventListener('click',e=>{ const b=e.target.closest('button[data-filter]'); if(b) setFilter(b.dataset.filter); });
-function showAction(){ setFilter('__action'); const first=document.querySelector('#list .mail a.subj'); if(first) first.focus(); }
+function showAction(){ globalThis.Mailroom?.setPlace('sorted');setFilter('__action'); const first=document.querySelector('#list .mail a.subj'); if(first) first.focus(); }
 function onSearch(v){ query=v.trim().toLowerCase(); syncURL(v); renderList(); }
 function clearFilters(){ mailboxFilter='all'; query=''; $('q').value=''; setFilter('all'); $('q').focus(); }
 // The page's Content-Security-Policy runs no inline event-handler attribute, so buttons name their action in data-act
@@ -2104,72 +834,15 @@ function restoreFocus(find){
   if(el&&find.caret&&el.setSelectionRange) try{ el.setSelectionRange(find.caret[0],find.caret[1]); }catch(e){ /* not a text field */ }
 }
 function render(){ const find=focusKey(document.activeElement); renderPage(); restoreFocus(find); document.dispatchEvent(new Event("headersort-data")); }
-// Keep the existing connection status beside classification below the phone header.
-const phoneStatuses=matchMedia('(max-width:767px)');
-function placeConnectionStatus(){
-  const pill=$('pill');
-  if(phoneStatuses.matches)document.querySelector('.page-switch').prepend(pill);
-  else document.querySelector('.topbar .brand').after(pill);
-}
-phoneStatuses.addEventListener('change',placeConnectionStatus);
-placeConnectionStatus();
 function renderPage(){
-  const on=CONF?CONF.enabled!==false:false;
-  const togLabel=!CONF?T('分类: —','Classify: —'):(on?T('分类: 开','Classify: on'):T('分类: 关','Classify: off'));
-  ['togBtn','togBtnPage'].forEach(id=>{ const b=$(id); b.setAttribute('aria-label',T('定时分类：','Scheduled classification: ')+togLabel); b.title=b.getAttribute('aria-label'); });
-  ['togText','togTextPage'].forEach(id=>{ $(id).textContent=togLabel; });
+  const on=CONF?.enabled!==false;
+  ['togText','togTextPage'].forEach(id=>$(id).textContent=on?'Sorting on':'Sorting off');
   $('connectCard').hidden=DEMO||configured();
   $('setupBox').hidden=!(configured()&&!MAIL&&!DEMO&&!LOAD_ERROR);
   loadErrorCard();
-  const pill=$('pill'); pill.classList.toggle('live',!DEMO&&LOADED&&!LOAD_ERROR); pill.firstChild.textContent=DEMO?'Demo':LOAD_ERROR?T('未加载','Not loaded'):LOADED?T('已连接','Connected'):configured()?T('加载中…','Loading…'):'Demo'; $('pillLong').textContent=DEMO?T(' · 虚构邮件',' · fictional mail'):(configured()?' · '+esc(cfg().owner)+'/'+esc(cfg().repo||'…'):T(' · 未连接',' · not connected')); pill.title=DEMO?T('全部虚构，不连接任何东西','All fictional; connects to nothing'):pill.textContent; pill.setAttribute('aria-label',pill.title);
-
-  const m=MAIL||{items:[]}; const items=m.items||[];
-  const now=Date.now(),dayMs=864e5;
-  const total=Number(m.total_classified||0), floor=!!m.total_is_floor, keep=Number(m.keep_items||(CONF&&CONF.keep_items)||500);
-  const today=items.filter(i=>now-new Date(i.date).getTime()<dayMs).length;
-  const week=items.filter(i=>now-new Date(i.date).getTime()<7*dayMs).length;
-  const action=items.filter(i=>i.action).length;
-  $('stats').innerHTML=items.length?`<div class="strip" role="group" aria-label="${T('摘要计数','Digest counts')}">
-    <div><div class="k">${T('24 小时','Last 24 h')}</div><div class="v">${today}</div></div>
-    <div><div class="k">${T('近 7 天','Last 7 days')}</div><div class="v">${week}</div></div>
-    <div><div class="k">${T('待处理','Needs action')}</div><div class="v" style="color:${action?'var(--warning)':'inherit'}">${action}</div></div>
-    <div title="${T('摘要只保留最近 '+keep+' 封（config.json 的 keep_items），不封顶 mail.json 会无限膨胀。','The digest keeps only the latest '+keep+' emails (keep_items in config.json) so mail.json cannot grow without bound.')}"><div class="k">${T('摘要窗口','In digest')}</div><div class="v">${items.length}<small> / ${keep}</small></div></div>
-    <div title="${total?T('分类脚本累计处理过的邮件数，不受摘要窗口封顶影响。'+(floor?'首次记账时早期数据已不可考，所以这是下限。':''),'Total emails the classifier has processed, unaffected by the digest cap.'+(floor?' Seeded from the window at first bookkeeping, so it is a lower bound.':'')):T('还没有累计数据——下一次定时任务跑完就有了。','No cumulative figure yet — appears after the next scheduled run.')}"><div class="k">${T('累计已分类','Classified')}</div><div class="v">${total?(floor?'≥':'')+total:'—'}</div></div></div>`:'';
-  // where the digest went: one segment per category (a sum strip: counts add up to the window)
-  const counts={}; items.forEach(i=>{ counts[i.category]=(counts[i.category]||0)+1; });
-  const cats=Object.keys(counts).sort((a,b)=>counts[b]-counts[a]);
-  $('digestPlate').hidden=!items.length; $('pageT').hidden=!!items.length;  // one h1 on the page: the plate's when it shows
-  // when the classifier last wrote the digest, in the browser's own time zone and language; the Action writes UTC, and the
-  // board before v3.1 showed that UTC string as if it were local
-  const eb=$('digestEyebrow'), ran=lastRun(m);
-  eb.replaceChildren(DEMO?T('摘要 · 虚构邮件','Digest · fictional mail'):T('摘要 · ','Digest · ')+cfg().owner+'/'+(cfg().repo||'…'));
-  if(ran){ const t=document.createElement('time'); t.dateTime=m.updated_at; t.textContent=ran; eb.append(T(' · 更新于 ',' · updated '),t); }
-  // the Action runs twice a day (template/.github/workflows/mail-sync.yml); more than 36 hours since the last write means runs have stopped or are failing
-  const idle=ran?(Date.now()-new Date(m.updated_at).getTime())/3600000:0;
-  if(idle>36){ const n=idle<72?Math.floor(idle):Math.floor(idle/24), w=document.createElement('span'); w.className='tag tag-warning';
-    w.textContent=idle<72?T('已 '+n+' 小时没有运行','No run for '+n+' hours'):T('已 '+n+' 天没有运行','No run for '+n+' days'); eb.append(w); }
-  if(items.length){ const seq=['--viz-seq-600','--viz-seq-500','--viz-seq-450','--viz-seq-400','--viz-seq-350','--viz-seq-300','--viz-seq-250','--viz-seq-200','--viz-seq-150'];
-    $('sumBar').innerHTML=cats.map((k,i)=>`<span style="width:${counts[k]/items.length*100}%;background:var(${seq[Math.min(i,seq.length-1)]})"></span>`).join('');
-    $('sumLegend').innerHTML=cats.map((k,i)=>`<span><i style="background:var(${seq[Math.min(i,seq.length-1)]})"></i>${esc(catLabel(k))} <b class="mono">${counts[k]}</b></span>`).join('');
-    $('sumEq').textContent=cats.map(k=>counts[k]).join(' + ')+' = '+items.length+' '+T('封在摘要里','in the digest')+' · '+action+' '+T('待处理','need action');
-    // the board's main next step: the mail marked as needing action (hidden when there is none)
-    const ab=$('actionBtn'); ab.hidden=!action; ab.textContent=T('只看待处理（'+action+'）','Show what needs action ('+action+')'); }
-  // 7-day trend
-  $('trendCard').hidden=!items.length;
-  if(items.length){ const days=[...Array(7)].map((_,i)=>{ const d=new Date(now-(6-i)*dayMs); d.setHours(0,0,0,0); return d; });
-    const per=days.map(d=>{ const a=d.getTime(), b=a+dayMs; const dayItems=items.filter(i=>{ const t=new Date(i.date).getTime(); return t>=a&&t<b; }); return {n:dayItems.length,act:dayItems.filter(i=>i.action).length,d}; });
-    const max=Math.max(1,...per.map(p=>p.n));
-    $('trend').innerHTML=per.map(p=>`<div title="${fmtDay(p.d)}: ${p.n} (${p.act} ${T('待处理','action')})"><i class="act" style="height:calc(${p.act/max*60} * var(--suite-px, 1px))${p.act?'':';display:none'}"></i><i style="height:calc(${Math.max(2,(p.n-p.act)/max*60)} * var(--suite-px, 1px))"></i></div>`).join('');
-    $('trend').setAttribute('aria-label',per.map(p=>`${fmtDay(p.d)}: ${p.n}`).join(', '));
-    $('trendX').innerHTML=per.map(p=>`<span>${fmtDay(p.d)}</span>`).join(''); }
-  $('filterRow').hidden=!items.length;
-  $('mailbox-filter-label').textContent=T('邮箱','Mailbox');
-  const boxes=[...new Set(items.map(i=>i.mailbox||'primary'))];
-  $('mailbox-filter').innerHTML='<option value="all">'+T('全部邮箱','All mailboxes')+'</option>'+boxes.map(key=>'<option value="'+esc(key)+'">'+esc(items.find(i=>(i.mailbox||'primary')===key)?.mailbox_address||(key==='secondary'?T('第二邮箱','Second mailbox'):T('主邮箱','Primary mailbox')))+'</option>').join('');
-  $('mailbox-filter').value=mailboxFilter;
-  const chip=(key,label,n)=>`<button type="button" aria-pressed="${filter===key?'true':'false'}" data-filter="${esc(key)}">${label}<span class="n">${n}</span></button>`;
-  $('filter').innerHTML=items.length?[chip('all',T('全部','All'),items.length),chip('__action',T('待处理','Action'),action)].concat(cats.map(k=>chip(k,esc(catLabel(k)),counts[k]))).join(''):'';
-  renderList();
+  const pill=$('pill');pill.hidden=!DEMO;
+  pill.firstChild.textContent=T('演示','Demo');$('pillLong').textContent=T(' · 虚构邮件',' · fictional mail');
+  if(globalThis.Mailroom)Mailroom.render();
 }
 // the digest stores senders as "Name <address>" (template classify.mjs); both parts are shown, as on the board before v3.1
 const senderAddress=f=>{ const m=String(f==null?'':f).match(/<([^>]*)>/); return m?m[1]:String(f==null?'':f).trim(); };
@@ -2177,64 +850,62 @@ const senderName=f=>{ const n=String(f==null?'':f).replace(/<[^>]*>/,'').trim();
 const lastRun=m=>{ const d=new Date(m&&m.updated_at); if(!m||!m.updated_at||isNaN(d)) return null;
   return new Intl.DateTimeFormat(lang==='en'?'en-US':'zh-CN',lang==='en'?{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}:{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(d); };
 let shownDealtItems=[];
-function renderList(){
-  shownDealtItems=[];
-  const m=MAIL||{items:[]}; let items=m.items||[];
-  if(!(m.items||[]).length){ document.dispatchEvent(new Event('headersort-list')); $('list').innerHTML=DEMO||configured()?`<div class="empty"><h3>${T('摘要还是空的','The digest is empty')}</h3><p>${lastRun(m)?T('上次运行（'+lastRun(m)+'）没有新邮件可加。','Last run '+lastRun(m)+' found nothing to add.'):T('定时任务跑完第一次后这里会出现邮件。','Emails appear here after the first scheduled run.')}</p><button class="btn btn-sm" data-act="loadAll">${T('刷新','Refresh')}</button></div>`:''; return; }
-  if(mailboxFilter!=='all') items=items.filter(i=>(i.mailbox||'primary')===mailboxFilter);
-  if(filter==='__action') items=items.filter(i=>i.action); else if(filter!=='all') items=items.filter(i=>i.category===filter);
-  if(query) items=items.filter(i=>(i.subject+' '+i.from).toLowerCase().includes(query));
-  if(!items.length){ document.dispatchEvent(new Event('headersort-list')); $('list').innerHTML=`<div class="empty"><h3>${T('没有匹配的邮件','No mail matches')}</h3><p>${T('换个类别或清空搜索。','Pick another category or clear the search.')}</p><button class="btn btn-sm" data-act="clearFilters">${T('清除筛选','Clear filters')}</button></div>`; return; }
-  shownDealtItems=items.slice(0,150);
-  $('list').innerHTML='<div class="list">'+shownDealtItems.map(i=>{
-    const mailHome=i.mailbox_address?'https://mail.google.com/mail/?authuser='+encodeURIComponent(i.mailbox_address):'https://mail.google.com/mail/u/0/';
-    const gurl=i.msgid?`${mailHome}#search/rfc822msgid:${encodeURIComponent(i.msgid)}`:mailHome;
-    const d=new Date(i.date); const when=isNaN(d)?'':`${fmtDay(d)} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-    return `<div class="mail">${i.action?`<span class="flag" role="img" aria-label="${T('需要处理','Action needed')}" title="${T('需要处理','Action needed')}">${BOLT}</span>`:'<span class="flag"></span>'}
-      <a class="subj" href="${gurl}" target="_blank" rel="noopener">${esc(subjectFor(i.subject))}</a>
-      <span class="when">${when}</span>
-      <div class="meta"><span class="chip mailbox-badge">${esc(i.mailbox_address||(i.mailbox==='secondary'?T('第二邮箱','Second mailbox'):T('主邮箱','Primary mailbox')))}</span><span class="cat">${esc(catLabel(i.category))}</span><span class="chip">from <b>${esc(senderName(i.from))}</b>${senderName(i.from)!==senderAddress(i.from)?' '+esc(senderAddress(i.from)):''}</span>${reasonFor(i)?`<span class="reason">${esc(reasonFor(i))}</span>`:''}${/^\d+$/.test(i.gmailId)?`<button type="button" class="btn btn-sm" data-dealt-id="${esc(mailKey(i))}">${T('已处理','Dealt')}</button>`:''}</div></div>`;
-  }).join('')+'</div>'+(items.length>150?`<p class="hint" style="margin-top:calc(8 * var(--suite-px, 1px))">${T('只显示前 150 封。','Showing the first 150.')}</p>`:'');
-  document.dispatchEvent(new Event('headersort-list'));
-}
+function renderList(){if(globalThis.Mailroom)Mailroom.renderSorted();}
 
-/* the action flag: a line bolt drawn like the top bar's icons (24-unit box, 2 px stroke, round joins); the span around it
-   carries the name (role=img + aria-label), so a screen reader says "Action needed" instead of reading an emoji */
-const BOLT='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/></svg>';
-
-/* ============ ?demo=1 — 60 fictional emails over the last 7 days, generated in code; every address ends in .example ============ */
+/* Fictional mail for the complete local demo. */
 function makeDemo(){
-  const now=new Date(); now.setHours(9,15,0,0);
-  const T7=[['statements@bank.example','Your monthly statement is ready','finance',false,'recurring statement'],['billing@utility.example','Invoice 88213 due in 5 days','finance',true,'due date in the subject'],['noreply@tax-office.example','Action required: confirm your tax residency','finance',true,'hard deadline'],
-   ['pm@studio.example','Design review — Thursday 14:00','work',true,'meeting invite awaiting a reply'],['ci@build.example','Build #4471 failed on main','work',true,'failing build'],['hr@corp.example','Q3 objectives: draft due Friday','work',true,'deadline'],['calendar@corp.example','Updated invitation: sprint planning','work',false,'calendar update'],
-   ['landlord@rent.example','Re: apartment viewing on Saturday','life',true,'question waiting on you'],['clinic@dentist.example','Reminder: appointment tomorrow 9:30','life',false,'reminder, no reply needed'],['library@campus.example','Overdue: book due 3 days ago','life',true,'already past due'],
-   ['noreply@air.example','Your flight is now boarding at gate C48','travel',false,'time-sensitive, no action'],['stay@hotel.example','Booking confirmed: 2 nights','travel',false,'confirmation'],
-   ['ship@parcel.example','Your package has shipped — tracking 1Z9X','logistics',false,'tracking number'],['delivery@courier.example','Out for delivery today 2–4pm','logistics',false,'delivery window'],['returns@shop.example','Return label for order 5512','logistics',false,'label attached'],
-   ['security@account.example','Security alert: new sign-in from Chrome on macOS','account',false,'informational alert'],['noreply@id.example','Your verification code is 482913','account',false,'one-time code'],['admin@cloud.example','Your storage is 90% full','account',false,'usage warning'],
-   ['deals@shop.example','70% off everything — 48 hours only','promo',false,'marketing blast'],['news@brand.example','New arrivals you will love','promo',false,'newsletter'],['offers@airline.example','Flash sale: fares from 89','promo',false,'promotion'],
-   ['digest@papers.example','Weekly digest: 12 new papers in your feed','reading',false,'newsletter'],['newsletter@blog.example','Issue #142: on writing less','reading',false,'newsletter'],['editor@magazine.example','This week\'s long reads','reading',false,'newsletter']];
-  const items=[]; for(let i=0;i<60;i++){ const t=T7[i%T7.length]; const d=new Date(now.getTime()-Math.floor(i/9)*864e5-(i%9)*3600e3*1.3); items.push({gmailId:String(7000+Math.floor(i/2)),mailbox:i%2?'secondary':'primary',mailbox_address:i%2?'second@mail.example':'main@mail.example',subject:t[1]+(i>=T7.length?' ('+(Math.floor(i/T7.length)+1)+')':''),from:t[0],date:d.toISOString(),category:t[2],action:t[3]&&i<40,reason:t[4],msgid:'<demo-'+i+'@mail.example>'}); }
-  return {updated_at:now.toISOString(),keep_items:300,total_classified:1240,total_is_floor:true,items};
+  const now=new Date();now.setUTCHours(15,2,0,0);
+  if(now.getTime()>Date.now())now.setUTCDate(now.getUTCDate()-1);
+  const folders=['people','finance','official','travel','security','school','job','health','other'];
+  const examples=[
+    ['billing@utility.example','Invoice 88213 due Friday','finance','Due date in the subject','周五到期，需要付款'],
+    ['landlord@rent.example','Re: Saturday repairs','people','A question waiting for your answer','房东在等你答复'],
+    ['notices@tax-office.example','Confirm your tax residency by Nov 12','official','A deadline to confirm your details','税务资料需在截止日前确认'],
+    ['ci@build.example','Build #4471 failed on main','job','The latest build needs a fix','最新构建失败，需要修复'],
+    ['library@campus.example','Overdue book','school','The return date has passed','借书已过归还日期']
+  ];
+  const subjects=['Your monthly statement is ready','Booking confirmed for next month','Your account details','Course registration confirmed','Application received','Appointment reminder','An update to your request','Your travel itinerary','Receipt for your records'];
+  const items=Array.from({length:300},(_,i)=>{
+    const sample=examples[i],box=i===0||i===2||i===4||i>4&&i%2===0?'primary':'secondary';
+    return {gmailId:String(7000+i),threadId:String(17000+i),mailbox:box,mailbox_address:box==='primary'?'me@inbox.example':'shop@inbox.example',
+      subject:sample?.[1]||subjects[i%subjects.length],from:sample?.[0]||'updates'+i+'@service.example',date:new Date(now-i*7200000).toISOString(),category:sample?.[2]||folders[i%folders.length],
+      action:i<5,reason:sample?.[3]||'Kept for your records',reason_zh:sample?.[4]||'留存备查',reason_en:sample?.[3]||'Kept for your records',unread:i<225,primary:true,msgid:'<mail-'+i+'@inbox.example>'};
+  });
+  const inbox_history=['primary','secondary'].flatMap(mailbox=>Array.from({length:14},(_,i)=>({at:new Date(now-(13-i)*86400000).toISOString(),mailbox,inbox_unread_primary:(mailbox==='primary'?[612,612,612,490,490,360,360,241,241,180,180,132,108,94]:[288,288,288,260,260,224,224,199,199,175,175,159,145,131])[i],inbox_unread_all:mailbox==='primary'?150:220})));
+  return {updated_at:now.toISOString(),keep_items:300,total_classified:1240,total_is_floor:true,items,inbox_history,
+    sort_schedule_utc:['15:00','22:00'],inbox_count_verified:true,mailboxes:{primary:{mailbox_address:'me@inbox.example',updated_at:now.toISOString()},secondary:{mailbox_address:'shop@inbox.example',updated_at:now.toISOString()}}};
 }
-const DEMO=(()=>{ try{ return new URLSearchParams(location.search).get('demo')==='1'; }catch(e){ return false; } })();
+const DEMO=(()=>{try{return new URLSearchParams(location.search).get('demo')==='1';}catch{return false;}})();
 const DEMO_MAIL=DEMO?makeDemo():null;
-const DEMO_CONF={enabled:true, keep_items:300, categories:[
-  {key:"work",label:"Work"},{key:"finance",label:"Finance"},{key:"life",label:"Life"},
-  {key:"travel",label:"Travel"},{key:"logistics",label:"Shipping"},{key:"account",label:"Accounts"},
-  {key:"promo",label:"Promotions"},{key:"reading",label:"Reading"}]};
+const DEMO_CONF={enabled:true,keep_items:300,mark_dealt_read:true,second_mailbox_enabled:true,sort_schedule_utc:['15:00','22:00'],categories:[
+  {key:'people',label:'People',label_zh:'往来'},{key:'finance',label:'Money',label_zh:'钱款'},{key:'official',label:'Official',label_zh:'正式文件'},
+  {key:'travel',label:'Travel',label_zh:'出行'},{key:'security',label:'Accounts',label_zh:'账号'},{key:'school',label:'School',label_zh:'学业'},
+  {key:'job',label:'Jobs',label_zh:'求职'},{key:'health',label:'Health',label_zh:'健康'},{key:'other',label:'Unsorted',label_zh:'未分组'}]};
 
 /* ============ theme ============ */
 // Canonical Settings owns appearance and connection controls.
 
 /* ============ start ============ */
 document.querySelector('.skip').addEventListener('click',e=>{ e.preventDefault(); firstHeading().focus(); });   // no #main in the address
+async function localDemoWrite(path,write){
+  const key=appSave.key(path),revision=appSave.pending(key,()=>localDemoWrite(path,write)),token=appSave.start(key,revision);
+  try{const result=await write();appSave.succeed(token);document.dispatchEvent(new Event("headersort-data"));return result;}catch(error){appSave.fail(token,error);throw error;}
+}
 globalThis.HeadersortBoard={
   demo:DEMO, available:()=>DEMO||Boolean(CONF&&configured()&&!LOAD_ERROR),
   getConfig:()=>CONF,
+  getMail:()=>MAIL,
+  localWrite:localDemoWrite,
+  viewState:()=>({filter,query,mailboxFilter}),
+  setFilter,clearFilters,catLabel,reasonFor,subjectFor,senderName,senderAddress,
+  setShownItems:items=>{shownDealtItems=items;},
+  showSettings:()=>SuiteSettings.open('app'),
+  reload:loadAll,
+  loading:()=>REFRESHING||Boolean(configured()&&!LOADED&&!DEMO),
   get:(path,fresh)=>ghGet(path,fresh),
-  put:async(path,data,sha,message)=>{const key=appSave.key(path),revision=appSave.pending(key,async()=>{const fresh=await ghGet(path,true);if(!SafeMerge.same(fresh.data,data)&&fresh.sha!==sha)throw new HubSettingsContract.SettingsError('conflict');return HeadersortBoard.put(path,data,fresh.sha,message);});const token=appSave.start(key,revision);try{return await HubSettingsRuntime.track(async()=>{const r=await ghPut(path,data,sha,message);if(!r.ok)throw Error('HTTP '+r.status);const result=await r.json();appSave.succeed(token);return result;});}catch(error){appSave.fail(token,error);throw error;}},
+  put:async(path,data,sha,message)=>{const key=appSave.key(path),revision=appSave.pending(key,async()=>{const fresh=await ghGet(path,true);if(!SafeMerge.same(fresh.data,data)&&fresh.sha!==sha)throw new HubSettingsContract.SettingsError('conflict');return HeadersortBoard.put(path,data,fresh.sha,message);});const token=appSave.start(key,revision);try{return await HubSettingsRuntime.track(async()=>{const r=await ghPut(path,data,sha,message);if(!r.ok)throw Error('HTTP '+r.status);const result=await r.json();appSave.succeed(token);document.dispatchEvent(new Event("headersort-data"));return result;});}catch(error){appSave.fail(token,error);throw error;}},
   isDirty:()=>mailCleanupDirty,markDirty:value=>{mailCleanupDirty=Boolean(value);appSave.draft('cleanup-form',mailCleanupDirty);},
-  saveConfig:async(value,baseline=CONF)=>HubSettingsRuntime.track(async()=>{return HubSettingsRuntime.track(async()=>{/* settings workflow */const before=CONF;CONF=SafeMerge.formChanges(baseline,value,CONF);try{await saveConf("mail: update cleanup settings");}catch{CONF=SafeMerge.rebase(value,before,CONF);throw Error("Save unavailable");}});}),
+  saveConfig:async(value,baseline=CONF)=>HubSettingsRuntime.track(async()=>{if(DEMO)return localDemoWrite('mail/config.json',()=>{CONF=value;render();});return HubSettingsRuntime.track(async()=>{/* settings workflow */const before=CONF;CONF=SafeMerge.formChanges(baseline,value,CONF);try{await saveConf("mail: update cleanup settings");}catch{CONF=SafeMerge.rebase(value,before,CONF);throw Error("Save unavailable");}});}),
   subscribe:fn=>document.addEventListener("headersort-data",fn),
   shownItems:()=>shownDealtItems,
   language:()=>lang
@@ -2243,13 +914,12 @@ applyStatic();
 loadAll();
 </script>
 <script src="assets/settings-standard/backup.js"></script>
-<script src="assets/settings-standard/entry.js" data-settings-row="header.topbar" data-settings-overlays="dialog[open],.overlay.open,.modal-overlay.open,.suite-panel[open],.suite-confirm[open]" data-settings-secondary="#refresh,.topbar>a.gh"></script>
+<script src="assets/settings-standard/entry.js" data-settings-row="header.topbar" data-settings-overlays="dialog[open],.overlay.open,.modal-overlay.open,.suite-panel[open],.suite-confirm[open]"></script>
 <script src="assets/settings-standard/adapter-helpers.js"></script>
 <script src="assets/settings-standard/field-group.js"></script>
 <script src="assets/settings-adapter.js"></script>
 <script src="assets/save-status-bindings.js"></script>
 <script src="assets/settings-standard/panel.js"></script>
-<script type="module" src="board/cleanup.mjs"></script>
-<script type="module" src="board/dealt.mjs"></script>
+<script type="module" src="board/mailroom.mjs"></script>
 </body>
 </html>

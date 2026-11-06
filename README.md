@@ -1,4 +1,4 @@
-# Headersort
+# Mail Sorter
 
 Sort mail worth keeping, review outdated mail, archive with undo.
 
@@ -33,6 +33,14 @@ Rules cover old one-time codes, shipping notices, past events, promotions, newsl
 Body reading is optional. When enabled, bounded text/calendar parts can be read and a short redacted excerpt sent to the configured model for undecided mail. Quoted history and common identifiers are stripped; bodies and provider error payloads are never persisted. Redaction cannot guarantee removal of every personal detail. See the settings before opting in.
 
 ## Offline checks
+
+The board opens on Today, with one unread meter per account, a cleanup decision and mail that needs you. Sorted holds search, folders and filtered bulk Done. History records cleanup and Done requests with Undo. The fictional demo at `?demo=1` includes a local sort control.
+
+Set `sort_schedule_utc` in the private mail configuration to UTC clock times, for example `["15:00","22:00"]`. The board computes the next local time and explains that scheduled runs may start late. A missing value shows “Next sort time unavailable”.
+
+Each completed mail cycle can save unread conversation counts in Primary and across all Inbox tabs. Until a real comparison confirms the count, the meter shows “unread in the sorted list”. After checking Gmail, a mailbox counter in the digest can carry `inbox_count_verified: true`. History keeps 60 readings, and the chart groups them into days.
+
+Protect sender changes the safety policy. Approval waits until a scheduled sort prepares a fresh list. The demo follows this boundary too. Archive keeps mail in All Mail, where Undo can put it back. Gmail deletes Trash for good after 30 days, so Trash Undo works only until then.
 
 Node 22+. No dependency installation, credentials, local server or network is needed:
 

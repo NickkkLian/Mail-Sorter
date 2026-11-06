@@ -1,13 +1,14 @@
 import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {settings} from './settings.mjs';
+import {policyDocument,RULE_PRECEDENCE} from './policy-document.mjs';
 export const RULES=JSON.parse(readFileSync(new URL('../rules.json',import.meta.url),'utf8'));
 // Supervisor decision: specific eligible rules precede bulk/Promotions fallback.
-export const RULE_PRECEDENCE=Object.freeze(['O1','O2','O3','O7','O6','O5','O4']);
+export {RULE_PRECEDENCE};
 const definitions=Object.fromEntries(RULES.map(r=>[r.id,r]));
 export const DAY=86400000;
 export const fingerprint=x=>createHash('sha256').update(JSON.stringify(x)).digest('hex');
-export const policyHash=c=>fingerprint({settings:settings(c),rules:RULES,precedence:RULE_PRECEDENCE,accountSecurity:2,tunedNotices:1});
+export const policyHash=c=>fingerprint(policyDocument(c,RULES,RULE_PRECEDENCE));
 export const address=s=>{const m=String(s||'').match(/<([^<>]+)>/);return (m?m[1]:String(s||'')).trim().toLowerCase();};
 // Verified legacy keep-worthy categories from the live sorter's configuration; never protect bulk/junk labels wholesale.
 export const LEGACY_KEEP_LABELS=['AI/重要待办','AI/求职招聘','AI/财务账单','AI/学校学术','AI/账号安全'];

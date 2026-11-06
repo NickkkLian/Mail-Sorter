@@ -4,7 +4,7 @@ import {fileURLToPath} from 'node:url';
 import {spawnSync} from 'node:child_process';
 import {Script} from 'node:vm';
 const root=fileURLToPath(new URL('../',import.meta.url));
-function run(args){const r=spawnSync(process.execPath,args,{cwd:root,stdio:'inherit',env:{PATH:process.env.PATH}});if(r.status!==0)process.exit(r.status||1);}
+function run(args){const r=spawnSync(process.execPath,args,{cwd:root,stdio:'inherit',env:{PATH:process.env.PATH,...(process.env.TMPDIR?{TMPDIR:process.env.TMPDIR}:{})}});if(r.status!==0)process.exit(r.status||1);}
 const tests=fs.readdirSync(path.join(root,'test')).filter(x=>x.endsWith('.test.mjs')).sort().map(x=>'test/'+x);
 run(['--import','./scripts/offline-guard.mjs','--test','--test-reporter=dot',...tests]);
 console.log('OFFLINE TESTS PASS');

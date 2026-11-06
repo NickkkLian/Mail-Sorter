@@ -1,0 +1,12 @@
+{
+  "family": "Schibsted Grotesk",
+  "source": "Google Fonts",
+  "css": "https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;600;700&display=swap",
+  "license": "OFL.txt",
+  "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/schibstedgrotesk/OFL.txt",
+  "files": {
+    "schibsted-grotesk-400.woff2": "4c8b93f431d462c696e12b9d6a033feb3394d36e66e781357c496b95d8a75e05",
+    "schibsted-grotesk-600.woff2": "4c8b93f431d462c696e12b9d6a033feb3394d36e66e781357c496b95d8a75e05",
+    "schibsted-grotesk-700.woff2": "4c8b93f431d462c696e12b9d6a033feb3394d36e66e781357c496b95d8a75e05"
+  }
+}

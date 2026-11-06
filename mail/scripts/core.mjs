@@ -101,7 +101,7 @@ export async function applyApproval({config,state,approval,mailbox,persist,now=n
   const stopped=()=>signal?.aborted||clock()>=deadline;
   if(stopped())return {applied:0,skipped:signal?.aborted?'cancelled':'budget'};
   const fresh=!run;
-  run||={id:randomUUID(),proposal_id:p.id,at:now.toISOString(),entries:[]};
+  run||={id:randomUUID(),proposal_id:p.id,approval_id:approval.id,approval_reviewed_at:approval.reviewed_at,at:now.toISOString(),entries:[]};
   if(fresh)state.journal.runs.push(run);
   if(!run.approved_items){run.approved_items=structuredClone(p.items.filter(x=>approval.selected.includes(x.gmailId)));run.policy=p.policy;run.selected_count=approval.selected.length;run.skipped_ids=[];}
   run.status='in_progress';
@@ -234,7 +234,12 @@ export async function runCycle({config,state,mailbox,persist,approval=null,undoR
     if(phase==='sort')return {sorted:!sortingFailed&&!signal.aborted,skipped:sortingFailed?'sorting incomplete':signal.aborted?'budget':undefined};
   }
   if(state.runtime.afterAuto){state.proposal=state.runtime.afterAuto;delete state.runtime.afterAuto;await persist(state);}
-  for(const req of undoRequests)await undoRun({state,runId:req.run_id||state.journal.runs.find(r=>r.dealt_request_id===req.dealt_request_id)?.id,mailbox,persist,now,signal});
+  const withdrawn=request=>request.proposal_id&&(request.proposal_ids||[request.proposal_id]).includes(state.proposal?.id)&&(request.approval_id?request.approval_id===approval?.id:request.reviewed_at===approval?.reviewed_at);
+  for(const req of undoRequests){
+    const runs=req.proposal_id?state.journal.runs.filter(run=>(req.proposal_ids||[req.proposal_id]).includes(run.proposal_id)&&(req.approval_id&&run.approval_id?run.approval_id===req.approval_id:!run.approval_reviewed_at||run.approval_reviewed_at===req.reviewed_at)):[{id:req.run_id||state.journal.runs.find(r=>r.dealt_request_id===req.dealt_request_id)?.id}];
+    for(const run of runs)await undoRun({state,runId:run.id,mailbox,persist,now,signal});
+  }
+  if(undoRequests.some(withdrawn))approval=null;
   if(signal?.aborted)return {skipped:clock()>=deadline?'budget':'cancelled'}; // cancelled during Undo: do not start the approval
   await applyDealt({config:c,state,requests:dealtRequests.filter(r=>!undoRequests.some(u=>u.dealt_request_id===r.id)),mailbox,persist,now,signal});
   if(signal?.aborted)return {skipped:clock()>=deadline?'budget':'cancelled'};

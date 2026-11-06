@@ -1,25 +1,33 @@
 import {mailKey,mailboxOf,proposalConsumed} from '../mail/scripts/mailbox-key.mjs';
 import {settings} from '../mail/scripts/settings.mjs';
+import {browserPolicyHash} from './browser-policy.mjs';
 export const RULE_NAMES={O1:'One-time codes',O2:'Shipping notices',O3:'Past events',O4:'Promotions',O5:'Newsletters',O6:'Social and app notices',O7:'Routine security alerts'};
 const PATHS={proposal:'mail/cleanup-proposal.json',journal:'mail/cleanup-log.json',approval:'mail/cleanup-approval.json',undo:'mail/cleanup-undo.json'};
 export class ReviewController {
-  constructor(io){this.io=io;this.selected=new Set();this.data={proposal:null,journal:{runs:[]},approval:null,undo:{requests:[]}};this.shas={};}
-  async load(){const loaded=await Promise.all(Object.entries(PATHS).map(async([k,p])=>[k,await this.io.get(p,true)]));for(const[k,r]of loaded){this.data[k]=r.data||({journal:{runs:[]},undo:{requests:[]}}[k]??null);this.shas[k]=r.sha;}const p=this.data.proposal;if(this.selectionRevision!==p?.revision){this.selected=new Set((p?.items||[]).map(mailKey));this.selectionRevision=p?.revision;}return this.data;}
+  constructor(io){this.io=io;this.selected=new Set();this.data={proposal:null,journal:{runs:[]},approval:null,undo:{requests:[]}};this.shas={};this.policyChanged=false;this.protectedRevision=null;}
+  async load(){const loaded=await Promise.all(Object.entries(PATHS).map(async([k,p])=>[k,await this.io.get(p,true)]));for(const[k,r]of loaded){this.data[k]=r.data||({journal:{runs:[]},undo:{requests:[]}}[k]??null);this.shas[k]=r.sha;}const p=this.data.proposal;if(this.selectionRevision!==p?.revision){this.selected=new Set((p?.items||[]).map(mailKey));this.selectionRevision=p?.revision;}this.policyChanged=Boolean(p&&this.protectedRevision===p.revision);if(p?.policy&&this.io.getConfig){try{this.policyChanged=p.policy!==await browserPolicyHash(this.io.getConfig());}catch{this.policyChanged=true;}}return this.data;}
   setItem(id,on){if(on)this.selected.add(id);else this.selected.delete(id);}
   setRule(rule,on){for(const x of this.data.proposal?.items||[])if(x.rule===rule)this.setItem(mailKey(x),on);}
-  get queued(){return this.data.approval?.proposal_id===this.data.proposal?.id&&this.data.approval?.revision===this.data.proposal?.revision;}
+  get queued(){return this.data.approval?.proposal_id===this.data.proposal?.id&&this.data.approval?.revision===this.data.proposal?.revision&&!this.data.undo.requests.some(request=>request.proposal_id===this.data.proposal?.id&&(request.approval_id?request.approval_id===this.data.approval?.id:request.reviewed_at===this.data.approval?.reviewed_at));}
   get consumed(){return proposalConsumed(this.data.proposal,this.data.journal);}
-  async approve(){
-    const p=this.data.proposal;if(!p||this.queued||this.consumed)throw Error('Refresh the review list.');
+  async approve({append=false,selected=this.selected}={}){
+    const p=this.data.proposal;if(this.policyChanged)throw Error('Safety settings changed. Wait for a fresh list.');if(!p||this.queued&&!append||this.consumed)throw Error('Refresh the review list.');
     const latest=await this.io.get(PATHS.proposal,true);if(latest.data?.id!==p.id||latest.data?.revision!==p.revision)throw Error('The review list changed. Refresh before approving.');
-    const data={proposal_id:p.id,revision:p.revision,selected:p.items.filter(x=>this.selected.has(mailKey(x))).map(mailKey),reviewed_at:new Date().toISOString()};
-    await this.io.put(PATHS.approval,data,this.shas.approval,'mail: approve reviewed selection');this.data.approval=data;
+    const chosen=new Set([...(append&&this.queued?this.data.approval.selected:[]),...selected]);
+    const data={id:globalThis.crypto.randomUUID(),proposal_id:p.id,revision:p.revision,selected:p.items.filter(x=>chosen.has(mailKey(x))).map(mailKey),reviewed_at:new Date().toISOString()};
+    await this.io.put(PATHS.approval,data,this.shas.approval,'mail: approve reviewed selection');this.data.approval=data;return {approval:data,proposal:p};
   }
   async undo(runId){
     const latest=await this.io.get(PATHS.undo,true),data=latest.data||{requests:[]};if(!data.requests.some(x=>x.run_id===runId))data.requests.push({run_id:runId,requested_at:new Date().toISOString()});
     await this.io.put(PATHS.undo,data,latest.sha,'mail: request undo');this.data.undo=data;
   }
-  async protect(sender){const config=settings(this.io.getConfig()),address=String(sender).match(/<([^>]+)>/)?.[1]||String(sender);if(!address.includes('@')||/[\r\n]/.test(address))throw Error('Invalid sender');if(!config.protected.senders.includes(address.toLowerCase()))config.protected.senders.push(address.toLowerCase());await this.io.saveConfig(config);}
+  async undoApproval(record={approval:this.data.approval,proposal:this.data.proposal}){
+    const {approval,proposal}=record;if(!approval||!proposal)return;
+    const latest=await this.io.get(PATHS.undo,true),data=latest.data||{requests:[]};
+    if(!data.requests.some(request=>request.proposal_id===proposal.id&&(request.approval_id?request.approval_id===approval.id:request.reviewed_at===approval.reviewed_at)))data.requests.push({proposal_id:proposal.id,proposal_ids:[proposal.id,...Object.values(proposal.scopes||{}).map(scope=>scope.id)],approval_id:approval.id,reviewed_at:approval.reviewed_at,requested_at:new Date().toISOString()});
+    await this.io.put(PATHS.undo,data,latest.sha,'mail: undo cleanup approval');this.data.undo=data;
+  }
+  async protect(sender){const config=settings(this.io.getConfig()),address=String(sender).match(/<([^>]+)>/)?.[1]||String(sender);if(!address.includes('@')||/[\r\n]/.test(address))throw Error('Invalid sender');if(!config.protected.senders.includes(address.toLowerCase()))config.protected.senders.push(address.toLowerCase());await this.io.saveConfig(config);this.protectedRevision=this.data.proposal?.revision;this.policyChanged=true;}
 }
 export function undoStatus(run,requests,now=Date.now()){
   const entries=run.entries||[];

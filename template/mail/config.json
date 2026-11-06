@@ -103,5 +103,9 @@
       "clean_days": 28
     }
   },
-  "mark_dealt_read": true
+  "mark_dealt_read": true,
+  "sort_schedule_utc": [
+    "15:00",
+    "22:00"
+  ]
 }

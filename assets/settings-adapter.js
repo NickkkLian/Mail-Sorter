@@ -4,7 +4,7 @@
   const gear=document.getElementById('nl-settings-button');let classifierDirty=false,dealtReadDirty=false,secondMailboxDirty=false;
   const adapter=window.settingsAdapter={
     ...kit,resetDescription:{en:' and reset the palette and single-key shortcuts',zh:'并恢复配色与单键快捷键'},app:'Mail-Sorter',appSection:{en:"Your mail",zh:"你的邮件"},demo:DEMO,connectionSlot:'mail_connection',
-    routing:'mail/mail.json digest; mail/config.json classifier settings; mail/dealt-queue.json dealt requests; mail/cleanup-* review, approval and undo files.',
+    routing:'Mail results, sorting settings, Done requests, cleanup choices and Undo records stay in your private repository.',
     language:()=>lang,setLanguage(value){if(value!==lang){lang=value;applyStatic();render();}H.gear(gear,T('设置','Settings'));},
     connection:()=>({...mailConnection}),unsaved:()=>mailCleanupDirty||classifierDirty||dealtReadDirty||secondMailboxDirty,
     settingsDirty:()=>kit.settingsDirty()||classifierDirty||dealtReadDirty||secondMailboxDirty,
@@ -12,24 +12,24 @@
     adopt(next){if(R.sameConnection(mailConnection,next))return;mailConnection={...next};MAIL=null;CONF=null;SHA_CONF=null;BASE_CONF=null;LOADED=false;LOAD_ERROR=null;render();},
     async reload(){if(DEMO)return;if(!C.complete(mailConnection))throw new C.SettingsError('required');if(!await loadAll())throw new C.SettingsError('storage');},
     refreshAI(){},
-    aiNotice:{en:'AI classification runs in your data repository’s scheduled backend. Its Anthropic and Gmail credentials belong in repository Actions secrets. This browser stores no AI key and cannot test or replace those credentials.',zh:'AI 分类在数据仓库的定时后台运行。Anthropic 与 Gmail 凭据由仓库 Actions Secrets 管理；此浏览器不保存 AI 密钥，也不能测试或替换后台凭据。'},
+    aiNotice:{en:'Mail sorting runs on a schedule in your data repository. Its Anthropic and Gmail credentials belong in repository Actions secrets. This browser stores no AI key and cannot test or replace those credentials.',zh:'AI 分类在数据仓库的定时后台运行。Anthropic 与 Gmail 凭据由仓库 Actions Secrets 管理；此浏览器不保存 AI 密钥，也不能测试或替换后台凭据。'},
     dataMode:'repository',
-    backupHelp:{en:'Mail, classifier configuration, cleanup review, approval and undo history are managed in the private data repository. This digest is not a complete mailbox backup. Existing review and Undo controls stay below the digest; there is no browser whole-repository restore. Reset only changes this app’s appearance and shortcut preferences.',zh:'邮件、分类配置、清理审核、批准与撤销记录由私有数据仓库管理。摘要不是完整邮箱备份。原审核与撤销控件保留在摘要下方；浏览器没有整仓恢复功能。重置仅更改此应用的外观与快捷键偏好。'},
+    backupHelp:{en:'Mail, sorting settings, cleanup choices and Undo records stay in your private data repository. This digest is not a complete mailbox backup. Review cleanup on Today and find Undo in History. Reset only changes this app’s appearance and shortcut preferences.',zh:'邮件、分类配置、清理审核、批准与撤销记录由私有数据仓库管理。摘要不是完整邮箱备份。在「今天」确认清理，到「记录」撤销。重置仅更改此应用的外观与快捷键偏好。'},
     appControls(container,settings){
-      let intro=container.querySelector('p');if(!intro){intro=document.createElement('p');container.append(intro);}intro.textContent=T('保存定时分类开关可开启或关闭自动分类；后台模型、Gmail 凭据、清理规则与审核流程保持各自管理。','Save the scheduled classification switch to turn automatic sorting on or off. Backend models and credentials, cleanup rules and review keep their existing controls.');
+      let intro=container.querySelector('p');if(!intro){intro=document.createElement('p');container.append(intro);}intro.textContent=T('保存开关即可开启或关闭定时整理，下方可设置清理规则和保护名单。','Save the sorting switch to turn scheduled sorting on or off. Cleanup rules and the protection list are below.');
       let group=container.querySelector('#suite-classifier');if(!group){group=document.createElement('div');group.id='suite-classifier';container.append(group);}
       if(!group.firstChild){
         const label=document.createElement('label'),input=document.createElement('input'),save=document.createElement('button'),status=document.createElement('p'),review=document.createElement('button'),discard=document.createElement('button');
         input.type='checkbox';input.id='suite-classifier-enabled';label.htmlFor=input.id;save.id='suite-classifier-save';status.id='suite-classifier-status';status.setAttribute('role','status');review.id='suite-mail-review';discard.id='suite-mail-discard';group.append(label,input,save,status,review,discard);
         input.onchange=()=>{input.dataset.dirty='true';classifierDirty=true;SuiteSettings.refresh();};
         save.onclick=async()=>{if(DEMO||R.pending||mailCleanupDirty||!CONF){status.textContent=T('请先完成操作并保存或取消清理设置。','Finish pending work and save or discard cleanup settings first.');return;}const before=CONF.enabled;try{await R.track(async()=>{if(before!==input._base)throw new C.SettingsError('conflict');CONF={...CONF,enabled:input.checked};await saveConf('mail: update scheduled classifier');render();});delete input.dataset.dirty;classifierDirty=false;status.textContent=T('已保存','Saved');}catch{CONF={...CONF,enabled:before};render();status.textContent=T('没有确认保存；请刷新后检查。','Save not confirmed; reload and review.');}SuiteSettings.refresh();};
-        review.onclick=async()=>{await settings.close();if(!document.querySelector('#suite-settings').open){document.getElementById('cleanup-panel')?.scrollIntoView();document.querySelector('#cleanup-panel h2')?.focus();}};
+        review.onclick=async()=>{await settings.close();if(!document.querySelector('#suite-settings').open)globalThis.Mailroom?.openSheet(review);};
         discard.onclick=async()=>{if(R.pending)return;if(await settings.confirm('Discard only the unsaved cleanup settings form and reload its saved values?','仅放弃尚未保存的清理设置表单，并重新加载已保存值？','Discard','放弃'))await HeadersortBoard.discardCleanupDraft?.();};
       }
       const input=group.querySelector('input'),buttons=group.querySelectorAll('button');
-      group.querySelector('label').textContent=T('定时自动分类','Scheduled classification');
+      group.querySelector('label').textContent=T('定时整理','Scheduled sorting');
       if(!input.dataset.dirty){input.checked=CONF?.enabled!==false;input._base=CONF?.enabled;}
-      input.disabled=DEMO||!CONF;buttons[0].textContent=T('保存分类开关','Save classifier switch');buttons[0].disabled=DEMO||!CONF||!classifierDirty||Boolean(R.pending);buttons[1].textContent=T('打开清理审核与撤销','Open cleanup review and Undo');buttons[2].textContent=T('放弃本机清理设置草稿','Discard local cleanup settings draft');buttons[2].disabled=!mailCleanupDirty;
+      input.disabled=DEMO||!CONF;buttons[0].textContent=T('保存整理开关','Save sorting switch');buttons[0].disabled=DEMO||!CONF||!classifierDirty||Boolean(R.pending);buttons[1].textContent=T('打开清理审核与撤销','Open cleanup review and Undo');buttons[2].textContent=T('放弃本机清理设置草稿','Discard local cleanup settings draft');buttons[2].disabled=!mailCleanupDirty;
       let dealt=container.querySelector('#suite-dealt-settings');if(!dealt){
         dealt=document.createElement('div');dealt.id='suite-dealt-settings';
         const label=document.createElement('label'),input=document.createElement('input'),help=document.createElement('p'),save=document.createElement('button'),status=document.createElement('p');
@@ -41,8 +41,8 @@
         };
       }
       const dealtInput=dealt.querySelector('input'),dealtSave=dealt.querySelector('button');
-      dealt.querySelector('label').textContent=T('将已处理和已清理的邮件标为已读','Mark dealt and cleaned mail as read');
-      dealt.querySelector('.hint').textContent=T('默认开启，下次自动检查时生效。已处理邮件添加类别标签并留在收件箱；已批准清理的邮件按规则归档或移入垃圾箱。','On by default. Applies at the next automatic check. Dealt mail gets a category label and stays in Inbox; approved cleanups archive or move mail to Trash according to the rule.');
+      dealt.querySelector('label').textContent=T('将处理完和已清理的邮件标为已读','Mark done and cleaned mail as read');
+      dealt.querySelector('.hint').textContent=T('默认开启，下次整理时生效。处理完的邮件添加文件夹标签并留在收件箱；已确认清理的邮件按规则归档或移入垃圾箱。','On by default. Applies at the next sort. Done adds a folder label and keeps mail in Inbox. Approved cleanup archives or moves mail to Trash according to each rule.');
       if(!dealtInput.dataset.dirty){dealtInput.checked=CONF?.mark_dealt_read!==false;dealtInput._base=dealtInput.checked;}
       dealtInput.disabled=!CONF;dealtSave.textContent=T('保存邮件已读设置','Save read setting');dealtSave.disabled=!CONF||!dealtReadDirty||Boolean(R.pending);
       let second=container.querySelector('#suite-second-settings');if(!second){
@@ -57,9 +57,11 @@
       }
       const secondInput=second.querySelector('input'),secondSave=second.querySelector('button');
       second.querySelector('label').textContent=T('启用第二邮箱','Enable second mailbox');
-      second.querySelector('.hint').textContent=T('默认关闭。请在数据仓库的 Actions secrets 中添加第二邮箱地址与应用密码。关闭会暂停该邮箱的同步、处理和撤销。','Off by default. Add the second mailbox’s address and app password to the data repository’s Actions secrets. Turning off pauses this mailbox’s sync, dealt actions and Undo.');
+      second.querySelector('.hint').textContent=T('默认关闭。请在数据仓库的 Actions secrets 中添加第二邮箱地址与应用密码。关闭会暂停该邮箱的同步、处理和撤销。','Off by default. Add the second mailbox’s address and app password to the data repository’s Actions secrets. Turning off pauses sorting, Done requests and Undo for this mailbox.');
       if(!secondInput.dataset.dirty){secondInput.checked=CONF?.second_mailbox_enabled===true;secondInput._base=secondInput.checked;}
       secondInput.disabled=!CONF;secondSave.textContent=T('保存第二邮箱设置','Save second mailbox setting');secondSave.disabled=!CONF||!secondMailboxDirty||Boolean(R.pending);
+      HeadersortBoard.renderSettings?.(container);
+      let heading=container.querySelector('.shortcuts-heading');if(!heading){heading=document.createElement('h2');heading.className='shortcuts-heading';container.append(heading);}heading.textContent=T('快捷键和外观','Shortcuts and appearance');
       let palette=container.querySelector('#suite-palette');if(!palette){const label=document.createElement('label');label.htmlFor='suite-palette';palette=document.createElement('select');palette.id='suite-palette';container.append(label,palette);palette.onchange=()=>{try{R.write(adapter.app,{palette:palette.value});kit.setPalette(palette.value);SuiteSettings.refresh();}catch{SuiteHeaderEntry.announce(settingsAdapter.language()==='zh'?'无法保存配色，请重试。':'Could not save the palette. Try again.');}};}palette.previousElementSibling.textContent=T('配色','Palette');palette.replaceChildren(...kit.palette.values.map(value=>{const option=document.createElement('option');option.value=value;option.textContent=T(kit.palette.labels[value].zh,kit.palette.labels[value].en);return option;}));palette.value=R.read(adapter.app).palette??kit.palette.legacy();kit.shortcuts(container);
     },
     install(settings){gear.onclick=()=>settings.open();H.gear(gear,T('设置','Settings'));},
