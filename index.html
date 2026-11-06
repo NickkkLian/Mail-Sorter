@@ -29,7 +29,7 @@
 <body>
 <a class="skip" href="#main" data-i18n="skip">Skip to content</a>
 <header class="topbar">
-  <a class="brand" href="./" aria-label="Mail Sorter"><img class="app-logo" src="assets/app-logo/logo.svg" width="24" height="24" alt=""><b>Mail Sorter</b></a>
+  <div class="brand" aria-label="Mail Sorter"><img class="app-logo" src="assets/app-logo/logo.svg" width="24" height="24" alt=""><b>Mail Sorter</b></div>
   <nav class="places" aria-label="Places" id="places">
     <button type="button" data-place="today" aria-current="page">Today</button>
     <button type="button" data-place="sorted">Sorted</button>
@@ -56,9 +56,8 @@
     <h1 class="view-title" id="sorted-title">Sorted mail</h1>
     <div id="filterRow" class="filter-toolbar">
       <input type="search" id="q" placeholder="Search subject or sender…" aria-label="Search" data-i18n-ph="searchPh">
-      <label for="mailbox-filter"><span class="sr-only" id="mailbox-filter-label">Mailbox</span><select id="mailbox-filter"><option value="all">All mailboxes</option></select></label>
-      <button class="btn text-button" data-act="clearFilters" id="clear-filters">Clear filters</button>
-      <div class="filters" id="filter" role="group" aria-label="Folders"></div>
+      <details id="filter-menu" class="filter-menu"><summary id="filter-menu-label">Filters</summary><div class="filter-menu-body"><label for="mailbox-filter"><span class="sr-only" id="mailbox-filter-label">Mailbox</span><select id="mailbox-filter"><option value="all">All mailboxes</option></select></label>
+      <div class="filters" id="filter" role="group" aria-label="Folders"></div><button class="btn text-button" data-act="clearFilters" id="clear-filters">Clear filters</button><button class="btn text-button" data-command="mail-details" id="mail-details-toggle">Show mail details</button></div></details>
     </div>
     <div class="sorted-layout"><div id="list"></div><aside id="sorted-summary"></aside></div>
   </section>

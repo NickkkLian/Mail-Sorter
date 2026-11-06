@@ -24,6 +24,7 @@ try{
   await page.waitForFunction(()=>window.Mailroom?.review.data.proposal);
   if(await page.evaluate(()=>settingsAdapter.language())!==language)await page.locator('#suite-language-toggle').click();
   const initial=Number(await page.locator('#needs-count').innerText());
+  await page.locator('.need-entry > summary').first().click();
   await page.locator('.need-entry [data-command=done]').first().click();
   await page.waitForFunction(n=>Number(document.querySelector('#needs-count').textContent)===n-1,initial);
   await page.locator('#toast button').waitFor({state:'visible'});
@@ -32,6 +33,7 @@ try{
   await page.locator('#toast button').click();
   await page.waitForFunction(n=>Number(document.querySelector('#needs-count').textContent)===n,initial);
   await page.locator('[data-place=sorted]').click();
+  await page.locator('#filter-menu > summary').click();
   await page.locator('[data-filter=__action]').click();
   await page.locator('[data-command=bulk]').click();
   await page.waitForFunction(()=>HeadersortBoard.shownItems().every(item=>Mailroom.dealt.status((item.mailbox==='secondary'?'secondary:':'')+item.gmailId)==='queued'));
@@ -62,6 +64,7 @@ try{
   return route.fulfill(current?{json:{sha:current.sha,encoding:'base64',content:Buffer.from(JSON.stringify(current.data)).toString('base64')}}:{status:404,json:{message:'Synthetic missing file'}});
  });
  await page.goto(origin+'/?place=sorted');await page.locator('[data-dealt-id="101"]:enabled').waitFor();
+ await page.locator('#filter-menu > summary').click();
  await page.locator('#mailbox-filter').selectOption('primary');await page.locator('#q').fill('statement');await page.locator('[data-command=bulk]').click();await page.waitForFunction(()=>Mailroom.dealt.requests.some(request=>request.items.length===1));
  assert.deepEqual(files.get('mail/dealt-queue.json').data.requests[0].items,[{gmailId:'101',category:'finance'}]);
  await page.locator('[data-place=history]').click();await page.locator('[data-command=undo-request]').first().click();await page.locator('[data-place=sorted]').click();await page.waitForFunction(()=>!document.querySelector('[data-dealt-id="101"]').disabled);

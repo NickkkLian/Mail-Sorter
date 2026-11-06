@@ -14,7 +14,7 @@ const globe='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12"
 const runner=bridge.demo?createDemoRunner(bridge,bridge.getMail()):null;
 const io=runner?.io||bridge,review=new ReviewController(io),dealt=new DealtController(io);
 let loaded=false,busy=false,loading=null,error='',showAll=false,historyLimit=30,historyMailbox='all',expanded=new Set(),opener=null,openerKey=null,closingTimer=null;
-let optimisticApproval=null,lastUndo=null,toastTimer=null,goPrefix=false,showDone=false;
+let optimisticApproval=null,lastUndo=null,toastTimer=null,goPrefix=false,showDone=false,showMailDetails=false;
 const optimisticDone=new Set(),oldMeters=new Map(),meterTimers=new Map(),meterChanges=new Map();
 const t=(en,zh)=>bridge.language()==='zh'?zh:en;
 const locale=()=>bridge.language()==='zh'?'zh-CN':'en-US';
@@ -23,7 +23,7 @@ const formatDay=value=>Number.isFinite(new Date(value).getTime())?new Intl.DateT
 const next=()=>nextSort(bridge.getConfig()?.sort_schedule_utc||bridge.getMail()?.sort_schedule_utc);
 const sortTime=()=>next()?formatTime(next()):t('the next sort','下次整理');
 const atSort=()=>next()?t('at the '+formatTime(next())+' sort','在 '+formatTime(next())+' 整理时'):t('at the next sort','下次整理时');
-const freshListCopy=()=>next()?t('Your safety settings changed. The next sort, about '+sortTime()+', prepares a fresh list. Approve after that.','保护设置已更新。下次整理（约 '+sortTime()+'）会重新列清单，之后才能确认清理。'):t('Your safety settings changed. The next sort prepares a fresh list. Its time is unavailable. Approve after that.','保护设置已更新。下次整理会重新列清单，目前还没有计划时间。新清单出来后才能确认清理。');
+const freshListCopy=()=>next()?t('The next sort, about '+sortTime()+', prepares a fresh list. Approve then.','下次约 '+sortTime()+' 整理时重列清单，之后才能确认。'):t('The next sort prepares a fresh list. Its time is unavailable. Approve then.','下次整理会重新列清单，时间暂不可用。新清单出来后才能确认。');
 let place=(()=>{const params=new URLSearchParams(location.search),requested=params.get('place');return ['today','sorted','history'].includes(requested)?requested:params.has('filter')||params.has('q')||params.has('mailbox')?'sorted':'today';})();
 const requestStatus=id=>optimisticDone.has(id)?'queued':dealt.status(id);
 const effectiveReview=()=>optimisticApproval?{queued:true,consumed:false,data:{...review.data,approval:{...review.data.approval,selected:[...optimisticApproval]}}}:review;
@@ -91,7 +91,7 @@ async function mark(items){
   }
   for(const item of items)optimisticDone.add(mailKey(item));
   const label=bridge.catLabel(items[0].category),read=bridge.getConfig()?.mark_dealt_read!==false;
-  const message=items.length===1?t(`Marked done. ${atSort()} it ${read?'becomes read and ':''}gets its ${label} label. It stays in your inbox.`,`已标记处理完。${atSort()}会${read?'标为已读、':''}加上「${label}」标签，邮件仍留在收件箱。`):t(`${items.length} marked done. Folder labels${read?' and read status':''} change ${atSort()}. They stay in your inbox.`,`已标记 ${items.length} 封处理完。${atSort()}会添加文件夹标签${read?'并标为已读':''}，邮件仍留在收件箱。`);
+  const message=items.length===1?t(`Done about ${sortTime()}; it stays in your inbox.`,`约 ${sortTime()} 生效，邮件仍留在收件箱。`):t(`${items.length} done about ${sortTime()}; they stay in your inbox.`,`${items.length} 封约 ${sortTime()} 生效，仍留在收件箱。`);
   render();animateEntries(before);
   const ok=await perform(()=>dealt.mark(items),{paint:false});
   if(ok){const request=dealt.requests.findLast(request=>items.some(item=>request.items.some(chosen=>mailKey(chosen)===mailKey(item))));announce(message,()=>undoRequest(request));}
@@ -135,8 +135,8 @@ function renderMeter(mail,mailbox){
   const delta=earliest?t(`${Math.abs(change)} ${change<0?'more':'fewer'} since ${formatDay(earliest.at)}`,`比 ${formatDay(earliest.at)}${change<0?'多':'少'}了 ${Math.abs(change)}`):t('A trend appears after two counts','记录两次后显示变化');
   const projection=drop&&data.value!==null?`<span class="projection">${esc(t(`about ${Math.max(0,data.value-drop)} after ${sortTime()}`,`${sortTime()} 整理后约剩 ${Math.max(0,data.value-drop)}`))}</span>`:'';
   return `<article class="meter${bridge.loading()?' updating':''}" data-meter="${mailbox}" tabindex="0" aria-label="${esc(data.address||mailbox)}">
-    <div class="meter-number-block"><p class="meter-address">${esc(data.address||t('Mailbox','邮箱'))}</p><div class="meter-value" data-previous="${esc(prior??value)}">${old}<span>${esc(value)}</span></div><p class="meter-label" title="${esc(data.available?t('Same as the number beside Inbox in Gmail','与 Gmail 收件箱旁的未读数相同'):t('The current Inbox count is unavailable. This number covers the sorted list.','暂时没有本次整理的收件箱未读数，这里只统计已整理列表。'))}">${esc(data.available?t('unread in Inbox','收件箱未读'):t('unread in the sorted list','已整理列表里的未读'))}</p></div>
-    <div class="meter-trend">${stepLine(data.history)}<p>${esc(delta)}</p><p class="meter-last">${esc(data.at?t('Last sort '+formatTime(data.at),'上次整理 '+formatTime(data.at)):t('No sort recorded','还没有整理记录'))}</p>${projection}</div>
+    <div class="meter-number-block"><p class="meter-address">${esc(data.address||t('Mailbox','邮箱'))}</p><div class="meter-value" data-previous="${esc(prior??value)}">${old}<span>${esc(value)}</span></div><span class="meter-label sr-only">${esc(data.available?t('unread in Inbox','收件箱未读'):t('unread in the sorted list','已整理列表里的未读'))}</span></div>
+    <div class="meter-trend" title="${esc(delta)}">${stepLine(data.history)}${projection}</div>
   </article>`;
 }
 
@@ -148,10 +148,22 @@ function impactText(items,selected){
 }
 
 function decisionTitle(items){
-  const address=items[0]?.mailbox_address||mailboxLabel(mailboxOf(items[0]||{})),promotions=items.filter(item=>item.rule==='O4').length>items.length*.7;
-  return t(`Clean up ${items.length} ${promotions?'shop':'old'} emails in ${address}`,`清理 ${address} 里的 ${items.length} 封${promotions?'商家推广':'过期'}邮件`);
+  const promotions=items.filter(item=>item.rule==='O4').length>items.length*.7,trash=items.every(item=>item.action==='trash'),archive=items.every(item=>item.action!=='trash');
+  return t(`${trash?'Trash':archive?'Archive':'Clean up'} ${items.length} ${promotions?'shop':'old'} emails`,`${trash?'移入垃圾箱':archive?'归档':'清理'} ${items.length} 封${promotions?'推广':'过期'}邮件`);
 }
 function mailboxLabel(key){return meterData(bridge.getMail()||{items:[]},key,{demo:bridge.demo}).address||t('Mailbox','邮箱');}
+const disclosureIcon='<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7.5"/><path d="M10 9v5M10 6h.01"/></svg>';
+function safetyInfo(items,selected,key){
+  return `<details class="safety-info" data-disclosure="${key}"><summary aria-label="${esc(t('How this is safe','清理安全说明'))}">${disclosureIcon}${esc(t('Safety','安全说明'))}</summary><div class="disclosure-body"><p class="safety">${esc(safetyCopy(items,bridge.language()))}</p><p>${esc(impactText(items,selected))}</p>${button(t('How it works','整理过程'),'how')}${keptSafe()}${sortDetails(bridge.getMail()||{},Object.keys(bridge.getMail()?.mailboxes||{primary:{}}))}</div></details>`;
+}
+function conciseImpact(items,selected){
+  const impact=selectedImpact(items,selected);
+  return impact.primary===null?t('Inbox impact unknown','未读变化未知'):t(`about ${impact.primary} fewer unread`,`未读约少 ${impact.primary}`);
+}
+function sortDetails(mail,boxes){
+  const at=mail.updated_at;
+  return `<details class="sort-details"><summary>${esc(at?t('Last sort '+formatTime(at),'上次整理 '+formatTime(at)):t('No sort recorded','还没有整理记录'))}<span class="phone-next-sort">${esc(next()?t('Next: about '+sortTime(),'下次约 '+sortTime()):t('Next sort time unavailable','下次时间暂不可用'))}</span>${disclosureIcon}</summary><div class="disclosure-body"><p>${esc(t('Scheduled times are approximate. GitHub can start a sort hours later.','计划时间仅供参考，GitHub 有时会晚几小时才开始整理。'))}</p>${boxes.map(key=>{const data=meterData(mail,key,{demo:bridge.demo}),first=data.history[0];return `<p><strong>${esc(data.address)}</strong><br>${esc(data.available?t('Same unread Primary-conversation count as Gmail Inbox.','与 Gmail 收件箱相同的主要标签页未读会话数。'):t('The Inbox count is unavailable. Only unread mail in the sorted list is counted.','暂时没有收件箱统计，只计算已整理列表里的未读邮件。'))}${first?'<br>'+esc(t(`${first.inbox_unread_primary-data.value} fewer since ${formatDay(first.at)}`,`比 ${formatDay(first.at)} 少 ${first.inbox_unread_primary-data.value}`)):''}</p>`;}).join('')}<div class="actions"><button type="button" class="btn" data-act="loadAll">${esc(t('Get the latest results','获取最新结果'))}</button><a class="btn" href="${esc(runLogURL())}" target="_blank" rel="noopener">${esc(t('Open the run log','打开运行记录'))}</a></div></div></details>`;
+}
 
 function renderDecisions(){
   if(!loaded)return `<p class="decision-line">${esc(error||t('Getting the latest cleanup list…','正在获取最新清理清单…'))}</p>`;
@@ -159,13 +171,12 @@ function renderDecisions(){
   if(review.policyChanged){const mailbox=mailboxOf(proposal?.items?.[0]||{});return `<div class="decision-line pending">${clock}<span>${esc(freshListCopy())}</span><button type="button" class="btn" disabled>${esc(t('Waiting for a fresh list','等待新清单'))}</button>${button(t('Review status','查看清单状态'),'review',`data-focus="review-${mailbox}" data-mailbox="${mailbox}"`)}${button(t('Get the latest list','获取最新清单'),'reload-review')}</div>`;}
   if(!proposal||!proposal.items.length||review.consumed)return `<p class="decision-line">${clock}${esc(t(`Nothing waiting for your yes. The next list comes with ${sortTime()}.`,`没有等你确认的。下次清单会在${sortTime()}整理时准备。`))}</p>`;
   return [...new Set(proposal.items.map(mailboxOf))].map(mailbox=>{
-    const items=proposal.items.filter(item=>mailboxOf(item)===mailbox),groups=groupSenders(items),selected=new Set(items.map(mailKey));
+    const items=proposal.items.filter(item=>mailboxOf(item)===mailbox),selected=new Set(items.map(mailKey));
     const approved=optimisticApproval||new Set(review.queued?review.data.approval.selected:[]),approvedCount=items.filter(item=>approved.has(mailKey(item))).length;
     if(approvedCount)return `<div class="decision-line pending">${clock}<span>${esc(t(`Approved ${approvedCount} in ${mailboxLabel(mailbox)}. Changes ${atSort()}.`,`已确认 ${mailboxLabel(mailbox)} 中的 ${approvedCount} 封，${atSort()}清理。`))}</span>${button(t('Undo approval','撤销确认'),'undo-approval',busy?'disabled':'')}</div>`;
     return `<section class="decision" data-decision-mailbox="${mailbox}"><h2>${esc(decisionTitle(items))}</h2>
-      <div class="sender-chips">${groups.slice(0,9).map(group=>`<span class="sender-chip"><span>${esc(group.name)}</span><b>${group.items.length}</b></span>`).join('')}${groups.length>9?`<button type="button" class="more-senders" data-command="review" data-mailbox="${mailbox}">${esc(t(`+${groups.length-9} more senders`,`另有 ${groups.length-9} 位发件人`))}</button>`:''}</div>
-      <p class="impact">${esc(impactText(items,selected))}</p><p class="safety">${esc(safetyCopy(items,bridge.language()))}</p>
-      <div class="actions"><button type="button" class="btn primary" data-command="approve-mailbox" data-mailbox="${mailbox}" ${noWrite(mailbox)?'disabled':''}>${esc(t(`Approve all ${items.length}`,`全部 ${items.length} 封，确认清理`))}</button><button type="button" class="btn" data-command="review" data-mailbox="${mailbox}" data-focus="review-${mailbox}">${esc(t('Review the list','查看清单'))}</button></div>
+      <p class="decision-context">${esc(mailboxLabel(mailbox))} · ${esc(conciseImpact(items,selected))}</p>
+      <div class="decision-controls"><div class="actions"><button type="button" class="btn primary" data-command="approve-mailbox" data-mailbox="${mailbox}" ${noWrite(mailbox)?'disabled':''}>${esc(t(`Approve ${items.length}`,`确认 ${items.length} 封`))}</button><button type="button" class="btn" data-command="review" data-mailbox="${mailbox}" data-focus="review-${mailbox}" aria-label="${esc(t('Review the list and safety details','查看清单和安全说明'))}">${esc(t('Review','查看清单'))}</button></div></div>
       ${bridge.getConfig()?.enabled===false?`<p class="error-text">${esc(t('Sorting is off. Turn it on in Settings to approve.','整理已关闭，请在设置中开启后再确认。'))}</p>`:''}</section>`;
   }).join('');
 }
@@ -174,9 +185,7 @@ function gmailLink(item){const home=item.mailbox_address?'https://mail.google.co
 function ageText(date){const days=Math.max(0,Math.floor((Date.now()-Date.parse(date))/86400000));return days?t(`${days} d`,`${days} 天`):t('Today','今天');}
 function renderNeed(item){
   const id=mailKey(item),address=item.mailbox_address||mailboxLabel(mailboxOf(item));
-  return `<article class="need-entry" data-id="${esc(id)}"><div class="need-top"><strong>${esc(senderName(item.from))}</strong><span class="mailbox-dot ${mailboxOf(item)==='secondary'?'secondary':''}" role="img" aria-label="${esc(address)}" title="${esc(address)}"></span><span class="age">${esc(ageText(item.date))}</span></div>
-    <h2>${esc(bridge.subjectFor(item.subject))}</h2>${bridge.reasonFor(item)?`<p class="why">${esc(t('Why · ','原因 · ')+bridge.reasonFor(item))}</p>`:''}
-    <div class="actions"><a class="btn text-button gmail-link" href="${esc(gmailLink(item))}" target="_blank" rel="noopener" data-demo-gmail="${bridge.demo}" data-focus="open-${esc(id)}">${esc(t('Open in Gmail','在 Gmail 打开'))}</a><button type="button" class="btn text-button" data-command="done" data-id="${esc(id)}" data-dealt-id="${esc(id)}" data-focus="done-${esc(id)}" ${noWrite(mailboxOf(item))||!/^\d+$/.test(item.gmailId)?'disabled':''}>${esc(t('Done','处理完'))}</button></div></article>`;
+  return `<details class="need-entry" data-id="${esc(id)}"><summary data-focus="need-${esc(id)}"><h2>${esc(bridge.subjectFor(item.subject))}</h2><svg class="entry-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg><span class="need-top"><span>${esc(senderName(item.from))}</span><span class="mailbox-dot ${mailboxOf(item)==='secondary'?'secondary':''}" role="img" aria-label="${esc(address)}" title="${esc(address)}"></span></span></summary><div class="need-actions"><p class="entry-details">${esc(formatDay(item.date)+' · '+bridge.catLabel(item.category)+(bridge.reasonFor(item)?' · '+bridge.reasonFor(item):''))}</p><div class="actions"><a class="btn text-button gmail-link" href="${esc(gmailLink(item))}" target="_blank" rel="noopener" data-demo-gmail="${bridge.demo}" data-focus="open-${esc(id)}">${esc(t('Open in Gmail','在 Gmail 打开'))}</a><button type="button" class="btn text-button" data-command="done" data-id="${esc(id)}" data-dealt-id="${esc(id)}" data-focus="done-${esc(id)}" ${noWrite(mailboxOf(item))||!/^\d+$/.test(item.gmailId)?'disabled':''}>${esc(t('Done','处理完'))}</button></div></div></details>`;
 }
 
 function postmark(at){
@@ -196,19 +205,16 @@ function runSummary(run){
   const parts=[run.sorted_count?t(`Sorted ${run.sorted_count}`,`整理 ${run.sorted_count} 封`):'',archive?t(`archived ${archive}`,`归档 ${archive} 封`):'',trash?t(`moved ${trash} to Trash`,`${trash} 封移入垃圾箱`):'',read?t(`marked ${read} done`,`${read} 封已处理`):''].filter(Boolean);
   return parts.join(' · ')||t('Checked · nothing to change','已检查 · 无需改动');
 }
-function renderLedgerRow(row){
+function renderLedgerRow(row,compact=false){
   if(row.type==='request'){
-    const undone=dealt.undone(row),text=undone?t('Cancelled','已取消'):t(`You marked ${row.items.length} done · applies ${atSort()}`,`你标记了 ${row.items.length} 封处理完 · ${atSort()}生效`);
-    return `<article class="ledger-row" data-request="${esc(row.id)}">${postmark(row.at)}<div class="ledger-copy"><strong>${esc(formatDay(row.at))}</strong><p>${esc(text)}</p>${!undone?button(t('Undo','撤销'),'undo-request',`data-id="${esc(row.id)}" ${noWrite()?'disabled':''}`):''}</div></article>`;
+    const undone=dealt.undone(row),text=undone?t('Cancelled','已取消'):t(`${row.items.length} marked done`,`${row.items.length} 封处理完`);
+    return `<article class="ledger-row" data-request="${esc(row.id)}">${postmark(row.at)}<div class="ledger-copy"><strong>${esc(text)}</strong><p>${esc(undone?formatDay(row.at):t('Applies about '+sortTime(),'约 '+sortTime()+' 生效'))}</p>${!undone?button(t('Undo','撤销'),'undo-request',`data-id="${esc(row.id)}" ${noWrite()?'disabled':''}`):''}</div></article>`;
   }
   const state=undoStatus(row,review.data.undo.requests),pending=state==='Undo queued'||row.dealt_request_id&&review.data.undo.requests.some(request=>request.dealt_request_id===row.dealt_request_id),restored=state==='Restored',expired=state==='Trash undo expired';
   const uncertain=(row.entries||[]).filter(entry=>['intent','uncertain','retry'].includes(entry.status)||['retry','missing'].includes(entry.undo_status)).length;
   const disabled=noWrite(row.mailbox)||pending||restored||expired||!row.entries?.length;
-  return `<article class="ledger-row${Date.parse(row.at)<lastVisit?' older':''}" data-run="${esc(row.id)}">${postmark(row.at)}<div class="ledger-copy"><strong>${esc(formatDay(row.at))} · ${esc(row.mailbox_address||mailboxLabel(row.mailbox||'primary'))}</strong><p>${esc(runSummary(row))}</p>
-    ${row.skipped_count?`<p class="status-word">${esc(t(`${row.skipped_count} skipped · no longer matched`,`${row.skipped_count} 封已不符合条件，没动`))}</p>`:''}
-    ${uncertain?`<p class="status-word">${esc(t(`${uncertain} changes not confirmed. Undo can put them back. Check Gmail if unsure.`,`${uncertain} 封的改动尚未确认，仍可用撤销恢复。不确定时请到 Gmail 核对。`))}</p>`:''}
-    ${row.entries?.some(entry=>entry.action==='trash')?`<p class="status-word">${esc(t('Trash can be undone for 30 days, until Gmail deletes it for good.','垃圾箱里的邮件可在 30 天内撤销，此后 Gmail 会彻底删除。'))}</p>`:''}
-    ${row.entries?.length?button(restored?t('Put back','已放回'):expired?t('30 days passed','已过 30 天'):pending?t(`Undo saved · applies ${atSort()}`,`已保存撤销 · ${atSort()}生效`):t('Undo','撤销'),'undo-run',`data-id="${esc(row.id)}" ${disabled?'disabled':''}`):''}</div></article>`;
+  const summary=runSummary(row).split(' · ').filter(text=>!/^Sorted|^整理/.test(text)).join(' · ')||t('Checked','已检查');
+  return `<article class="ledger-row${Date.parse(row.at)<lastVisit?' older':''}" data-run="${esc(row.id)}">${postmark(row.at)}<div class="ledger-copy"><strong title="${esc(runSummary(row))}">${esc(summary)}</strong><p class="ledger-secondary">${esc(uncertain?t('Change not confirmed · check details','改动尚未确认，请查看详情'):row.mailbox_address||mailboxLabel(row.mailbox||'primary'))}</p><div class="ledger-actions">${row.entries?.length?button(restored?t('Put back','已放回'):expired?t('30 days passed','已过 30 天'):pending?t('Undo saved','撤销已保存'):t('Undo','撤销'),'undo-run',`data-id="${esc(row.id)}" ${disabled?'disabled':''}`):''}<details class="run-details"><summary>${esc(t('Details','详情'))}</summary><div class="disclosure-body"><p>${esc(formatDay(row.at)+' · '+formatTime(row.at))}</p><p>${esc(runSummary(row))}</p>${row.skipped_count?`<p>${esc(t(`${row.skipped_count} skipped · no longer matched`,`${row.skipped_count} 封已不符合条件，没动`))}</p>`:''}${uncertain?`<p>${esc(t(`${uncertain} changes not confirmed. Undo can put them back. Check Gmail if unsure.`,`${uncertain} 封的改动尚未确认，仍可撤销恢复，不确定时请到 Gmail 核对。`))}</p>`:''}${row.entries?.some(entry=>entry.action==='trash')?`<p>${esc(t('Trash can be undone for 30 days, until Gmail deletes it for good.','垃圾箱邮件可在 30 天内撤销，此后 Gmail 会彻底删除。'))}</p>`:''}${pending?`<p>${esc(t('Puts mail back about '+sortTime(),'约 '+sortTime()+' 放回邮件'))}</p>`:''}</div></details></div></div></article>`;
 }
 let lastVisit=0;
 try{const key=HubSettingsContract.preferenceKey('mail-last-visit');lastVisit=Number(localStorage.getItem(key)||0);localStorage.setItem(key,String(Date.now()));}catch{}
@@ -228,17 +234,17 @@ function renderToday(){
   const staleMailbox=boxes.find(mailbox=>{const at=meterData(mail,mailbox,{demo:bridge.demo}).at;return at&&(Date.now()-Date.parse(at))/3600000>36;});
   const at=staleMailbox?meterData(mail,staleMailbox,{demo:bridge.demo}).at:mail.updated_at,late=Boolean(staleMailbox);
   const notices=[error?`<div class="notice error" role="alert">${esc(error)} ${button(t('Refresh the list','刷新清单'),'reload-review')}</div>`:'',config?.enabled===false?`<div class="notice">${esc(t('Sorting is off. Turn it on to apply your choices.','整理已关闭，开启后才会执行你的选择。'))} ${button(t('Turn on','开启'),'settings')}</div>`:'',late?`<div class="notice error">${esc(t(`No sort since ${formatDay(at)} ${formatTime(at)} (${Math.floor((Date.now()-Date.parse(at))/3600000)} hours). Sorting may be off or failing.`,`从 ${formatDay(at)} ${formatTime(at)} 起没有整理过，已 ${Math.floor((Date.now()-Date.parse(at))/3600000)} 小时，可能被关掉了或出了错。`))} <a class="btn" href="${esc(runLogURL())}" target="_blank" rel="noopener">${esc(t('Open the run log','打开运行记录'))}</a></div>`:''].join('');
-  $('today-view').innerHTML=notices+`<div class="today-grid"><div class="main-report"><div class="meters">${boxes.map(mailbox=>renderMeter(mail,mailbox)).join('')}</div>
+  const allVerified=boxes.every(key=>meterData(mail,key,{demo:bridge.demo}).available),mixed=boxes.some(key=>meterData(mail,key,{demo:bridge.demo}).available)&&!allVerified;
+  const visibleNeeds=matchMedia('(max-width:899px)').matches?1:2;
+  $('today-view').innerHTML=notices+`<div class="today-grid"><div class="main-report"><section class="inbox-report${mixed?' mixed-counts':''}"><h2 class="inbox-heading">${esc(allVerified?t('Unread in Inbox','收件箱未读'):mixed?t('Unread mail','未读邮件'):t('Unread in the sorted list','已整理列表里的未读'))}</h2><div class="meters">${boxes.map(mailbox=>renderMeter(mail,mailbox)).join('')}</div><p class="sort-status" title="${esc(t('GitHub may start scheduled sorts hours late. Review the list for safety and schedule details.','GitHub 可能晚几小时才整理。查看清单可了解安全和计划详情。'))}">${esc(mail.updated_at?t('Last sort '+formatTime(mail.updated_at),'上次整理 '+formatTime(mail.updated_at)):t('No sort recorded','还没有整理记录'))}<span class="phone-next-sort"> · ${esc(next()?t('Next: about '+sortTime(),'下次约 '+sortTime()):t('Next sort time unavailable','下次时间暂不可用'))}</span></p></section>
     ${bridge.loading()?`<p class="last-sort">${esc(t('Updating…','更新中…'))}</p>`:''}
     ${renderDecisions()}
     <section class="needs" aria-labelledby="needs-title"><div class="section-heading"><h1 id="needs-title">${esc(t('Needs you','需要你处理'))}</h1><span class="count" id="needs-count">${needs.length}</span></div>
-    <div class="need-grid">${(showAll?needs:needs.slice(0,8)).map(renderNeed).join('')}</div>
+    <div class="need-grid">${(showAll?needs:needs.slice(0,visibleNeeds)).map(renderNeed).join('')}</div>
     ${!needs.length?`<div class="quiet-line">${postmark(new Date())}<p>${esc(t(`Nothing needs you. Next sort ${sortTime()}.`,`没有需要你处理的。下次整理 ${sortTime()}。`))}</p></div>`:''}
-    ${needs.length>8?button(showAll?t('Show fewer','收起'):t(`Show all ${needs.length}`,`查看全部 ${needs.length} 封`),'show-all'):''}
+    ${needs.length>visibleNeeds?button(showAll?t('Show fewer','收起'):t(`Show all ${needs.length}`,`查看全部 ${needs.length} 封`),'show-all','data-show-needs'):''}
     ${done.length?`<div class="done-tray"><span>${esc(t(`${done.length} done · applies ${atSort()}`,`${done.length} 封处理完 · ${atSort()}生效`))}</span>${button(showDone?t('Hide','收起'):t('Show','查看'),'show-done')}</div>${showDone?done.map(item=>`<p class="done-tray">${esc(item.subject)} · ${esc(t(requestStatus(mailKey(item))==='queued'?'Waiting for the next sort':'Applied',requestStatus(mailKey(item))==='queued'?'等待下次整理':'已生效'))}</p>`).join(''):''}`:''}</section></div>
-    <aside class="ledger-side"><h2>${esc(t('Since you last looked','你上次查看之后'))}</h2><div class="ledger">${ledgerRows().slice(0,3).map(renderLedgerRow).join('')||`<p>${esc(t('The first sort will leave a record here.','第一次整理后，这里会留下记录。'))}</p>`}</div>${keptSafe()}<div class="ledger-links">${button(t('How it works','整理过程'),'how')}${button(t('All history','全部记录'),'history')}</div>
-    ${bridge.demo?`<button type="button" class="btn demo-sort" data-command="simulate" ${busy?'disabled':''}>${clock}${esc(t('Run the 3 p.m. sort now','现在模拟 15:00 整理'))}</button>`:''}
-    <p class="meter-note">${esc(t('Scheduled times are approximate. GitHub can start a sort hours later.','计划时间仅供参考，GitHub 有时会晚几小时才开始整理。'))}</p></aside></div>`;
+    <aside class="ledger-side${review.queued||review.policyChanged||dealt.requests.some(request=>!dealt.undone(request))||review.data.undo.requests.length?' has-work':''}"><div class="latest-change"><h2>${esc(t('Latest change','最近改动'))}</h2><div class="ledger">${ledgerRows().slice(0,1).map(row=>renderLedgerRow(row,true)).join('')||`<p>${esc(t('No changes yet','还没有改动'))}</p>`}</div></div>${bridge.demo?`<button type="button" class="btn demo-sort" data-command="simulate" ${busy?'disabled':''}>${clock}${esc(t('Run next sort','模拟下次整理'))}</button>`:''}</aside></div>`;
   for(const value of document.querySelectorAll('.meter-value'))if(value.dataset.previous!==value.lastElementChild?.textContent&&!matchMedia('(prefers-reduced-motion: reduce)').matches){
     value.querySelector('.meter-old')?.animate([{opacity:1,transform:'translateY(0)'},{opacity:0,transform:'translateY(-.5rem)'}],{duration:240,easing:'cubic-bezier(.23,1,.32,1)'});
     value.lastElementChild?.animate([{opacity:0,transform:'translateY(.5rem)'},{opacity:1,transform:'translateY(0)'}],{duration:240,easing:'cubic-bezier(.23,1,.32,1)'});
@@ -252,6 +258,10 @@ function renderSorted(){
   for(const item of all)counts[item.category]=(counts[item.category]||0)+1;
   $('sorted-title').textContent=t('Sorted mail','已整理邮件');$('clear-filters').textContent=t('Clear filters','清除筛选');$('q').placeholder=t('Search subject or sender…','搜索主题或发件人…');$('q').setAttribute('aria-label',t('Search mail','搜索邮件'));
   $('mailbox-filter-label').textContent=t('Mailbox','邮箱');
+  const activeFilters=Number(state.filter!=='all')+Number(state.mailboxFilter!=='all');
+  $('filter-menu-label').textContent=t('Filters','筛选')+(activeFilters?' · '+activeFilters:'');
+  $('mail-details-toggle').textContent=showMailDetails?t('Hide mail details','收起邮件详情'):t('Show mail details','显示邮件详情');
+  $('mail-details-toggle').setAttribute('aria-pressed',String(showMailDetails));
   const boxes=[...new Set(all.map(mailboxOf))];
   $('mailbox-filter').innerHTML=`<option value="all">${esc(t('All mailboxes','全部邮箱'))}</option>`+boxes.map(key=>`<option value="${esc(key)}">${esc(mailboxLabel(key))}</option>`).join('');$('mailbox-filter').value=state.mailboxFilter;
   const chip=(key,label,count)=>`<button type="button" data-filter="${esc(key)}" aria-pressed="${state.filter===key}" data-focus="filter-${esc(key)}">${esc(label)}<span class="n">${count}</span></button>`;
@@ -262,7 +272,7 @@ function renderSorted(){
   const shown=items.slice(0,150);bridge.setShownItems(shown);
   $('list').innerHTML=shown.length?`<div class="mail-list">${shown.map(item=>{
     const id=mailKey(item),status=requestStatus(id);
-    return `<article class="mail" data-id="${esc(id)}"><span class="sender" title="${esc(item.from)}">${esc(senderName(item.from))}</span><a class="subj" href="${esc(gmailLink(item))}" target="_blank" rel="noopener" data-demo-gmail="${bridge.demo}" data-focus="sorted-open-${esc(id)}">${esc(bridge.subjectFor(item.subject))}</a><time class="when" datetime="${esc(item.date)}">${esc(formatDay(item.date))}</time><span class="cat">${esc(bridge.catLabel(item.category))}</span><span class="mailbox-dot ${mailboxOf(item)==='secondary'?'secondary':''}" role="img" aria-label="${esc(item.mailbox_address||mailboxLabel(mailboxOf(item)))}" title="${esc(item.mailbox_address||mailboxLabel(mailboxOf(item)))}"></span><button type="button" class="btn text-button" data-command="done" data-dealt-id="${esc(id)}" data-id="${esc(id)}" data-focus="sorted-done-${esc(id)}" ${noWrite(mailboxOf(item))||status||!/^\d+$/.test(item.gmailId)?'disabled':''}>${esc(status==='queued'?t('Done · waiting','已处理 · 待生效'):status==='uncertain'?t('Check History','查看记录'):status?t('Done','已处理'):t('Done','处理完'))}</button>${bridge.reasonFor(item)?`<span class="reason">${esc(bridge.reasonFor(item))}</span>`:''}</article>`;
+    return `<article class="mail" data-id="${esc(id)}"><div class="mail-copy"><a class="subj" href="${esc(gmailLink(item))}" target="_blank" rel="noopener" data-demo-gmail="${bridge.demo}" data-focus="sorted-open-${esc(id)}" title="${esc(bridge.subjectFor(item.subject))}">${esc(bridge.subjectFor(item.subject))}</a><span class="sender" tabindex="0" title="${esc(item.from+' · '+formatDay(item.date)+' · '+bridge.catLabel(item.category)+(bridge.reasonFor(item)?' · '+bridge.reasonFor(item):''))}">${esc(senderName(item.from))}</span></div><span class="cat sr-only">${esc(bridge.catLabel(item.category))}</span><span class="mailbox-dot ${mailboxOf(item)==='secondary'?'secondary':''}" role="img" aria-label="${esc(item.mailbox_address||mailboxLabel(mailboxOf(item)))}" title="${esc(item.mailbox_address||mailboxLabel(mailboxOf(item)))}"></span><button type="button" class="btn text-button" data-command="done" data-dealt-id="${esc(id)}" data-id="${esc(id)}" data-focus="sorted-done-${esc(id)}" ${noWrite(mailboxOf(item))||status||!/^\d+$/.test(item.gmailId)?'disabled':''}>${esc(status==='queued'?t('Waiting','待生效'):status==='uncertain'?t('Check History','查看记录'):status?t('Done','已处理'):t('Done','处理完'))}</button>${showMailDetails?`<p class="entry-details">${esc(formatDay(item.date)+' · '+bridge.catLabel(item.category)+(bridge.reasonFor(item)?' · '+bridge.reasonFor(item):''))}</p>`:''}</article>`;
   }).join('')}</div>${items.length>150?`<p class="meter-note">${esc(t(`Showing the first 150 of ${items.length}. Narrow the search for more.`,`共 ${items.length} 封，先显示 150 封。可缩小筛选范围查找。`))}</p>`:''}`:`<div class="empty"><h2>${esc(t('No mail matches','没有匹配的邮件'))}</h2>${button(t('Clear filters','清除筛选'),'clear')}</div>`;
   const days=Array.from({length:7},(_,i)=>{const date=new Date(Date.now()-(6-i)*86400000);return {date,count:all.filter(item=>new Date(item.date).toDateString()===date.toDateString()).length};}),max=Math.max(1,...days.map(day=>day.count));
   const filtered=state.filter!=='all'||state.mailboxFilter!=='all'||state.query;
@@ -288,13 +298,13 @@ function howItWorks(){
     ['',t('Undo puts mail back · Trash: within 30 days','撤销可放回邮件 · 垃圾箱须在 30 天内'),'ledger']
   ];
   const arrow='<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 10h14m-5-5 5 5-5 5"/></svg>';
-  return `<details class="how-it-works" id="how-it-works" ${bridge.demo?'open':''}><summary>${esc(t('How it works','整理过程'))}</summary><div class="pipeline">${steps.map(([count,label,link],i)=>`<a href="#${link==='ledger'?'history-ledger':link}" data-pipeline="${link}"><span>${count!==''?`<b>${count}</b>`:''}${esc(label)}</span>${i<steps.length-1?arrow:''}</a>`).join('')}</div><ul class="how-facts"><li><a href="https://github.com/NickkkLian/Mail-Sorter/blob/main/mail/scripts/core.mjs#L90" target="_blank" rel="noopener">${esc(t('A model can suggest a folder or veto a cleanup. It can never approve one.','模型可以建议文件夹或否决清理，不能替你确认清理。'))}</a></li><li><a href="https://github.com/NickkkLian/Mail-Sorter/blob/main/mail/scripts/imap.mjs#L1" target="_blank" rel="noopener">${esc(t('The app has no permanent-delete operation. Gmail permanently deletes Trash after 30 days.','应用没有彻底删除操作。Gmail 会在 30 天后彻底删除垃圾箱邮件。'))}</a></li><li><a href="https://github.com/NickkkLian/Mail-Sorter/blob/main/mail/scripts/core.mjs#L19" target="_blank" rel="noopener">${esc(t('Automatic cleanup needs at least 28 clean review days and your opt-in for each rule.','每条规则都需你主动开启，并积累至少 28 个无否决确认日，才能自动清理。'))}</a></li><li><a href="https://github.com/NickkkLian/Mail-Sorter#offline-checks" target="_blank" rel="noopener">${esc(t('How this is tested · offline checks and deliberate failures','如何测试 · 离线检查与故障测试'))}</a></li></ul></details>`;
+  return `<details class="how-it-works" id="how-it-works"><summary>${esc(t('How it works','整理过程'))}</summary><div class="pipeline">${steps.map(([count,label,link],i)=>`<a href="#${link==='ledger'?'history-ledger':link}" data-pipeline="${link}"><span>${count!==''?`<b>${count}</b>`:''}${esc(label)}</span>${i<steps.length-1?arrow:''}</a>`).join('')}</div><ul class="how-facts"><li><a href="https://github.com/NickkkLian/Mail-Sorter/blob/main/mail/scripts/core.mjs#L90" target="_blank" rel="noopener">${esc(t('A model can suggest a folder or veto a cleanup. It can never approve one.','模型可以建议文件夹或否决清理，不能替你确认清理。'))}</a></li><li><a href="https://github.com/NickkkLian/Mail-Sorter/blob/main/mail/scripts/imap.mjs#L1" target="_blank" rel="noopener">${esc(t('The app has no permanent-delete operation. Gmail permanently deletes Trash after 30 days.','应用没有彻底删除操作。Gmail 会在 30 天后彻底删除垃圾箱邮件。'))}</a></li><li><a href="https://github.com/NickkkLian/Mail-Sorter/blob/main/mail/scripts/core.mjs#L19" target="_blank" rel="noopener">${esc(t('Automatic cleanup needs at least 28 clean review days and your opt-in for each rule.','每条规则都需你主动开启，并积累至少 28 个无否决确认日，才能自动清理。'))}</a></li><li><a href="https://github.com/NickkkLian/Mail-Sorter#offline-checks" target="_blank" rel="noopener">${esc(t('How this is tested · offline checks and deliberate failures','如何测试 · 离线检查与故障测试'))}</a></li></ul></details>`;
 }
 
 function renderHistory(){
   const rows=ledgerRows().filter(row=>historyMailbox==='all'||row.mailbox===historyMailbox||row.type==='request'&&row.items.some(item=>mailboxOf(item)===historyMailbox));
   const opened=$('how-it-works')?.open;
-  $('history-view').innerHTML=howItWorks()+`<div class="history-toolbar"><h1>${esc(t('History','整理记录'))}</h1><label><span class="sr-only">${esc(t('Mailbox','邮箱'))}</span><select id="history-mailbox"><option value="all">${esc(t('All mailboxes','全部邮箱'))}</option>${['primary','secondary'].filter(key=>(bridge.getMail()?.items||[]).some(item=>mailboxOf(item)===key)).map(key=>`<option value="${key}">${esc(mailboxLabel(key))}</option>`).join('')}</select></label>${review.data.proposal?.items.length?button(t('Review the current list','查看当前清单'),'review','data-focus="review-history"'):''}</div><div id="history-ledger" class="ledger history-ledger">${rows.slice(0,historyLimit).map(renderLedgerRow).join('')||`<p>${esc(t('Your first sort will appear here.','第一次整理后，记录会出现在这里。'))}</p>`}</div>${rows.length>historyLimit?button(t('Older','更早的记录'),'older'):''}`;
+    $('history-view').innerHTML=howItWorks()+`<details class="history-safety"><summary>${esc(t('Kept safe','已保护'))}</summary>${keptSafe()}</details><div class="history-toolbar"><h1>${esc(t('History','整理记录'))}</h1><label><span class="sr-only">${esc(t('Mailbox','邮箱'))}</span><select id="history-mailbox"><option value="all">${esc(t('All mailboxes','全部邮箱'))}</option>${['primary','secondary'].filter(key=>(bridge.getMail()?.items||[]).some(item=>mailboxOf(item)===key)).map(key=>`<option value="${key}">${esc(mailboxLabel(key))}</option>`).join('')}</select></label>${review.data.proposal?.items.length?button(t('Review the current list','查看当前清单'),'review','data-focus="review-history"'):''}</div><div id="history-ledger" class="ledger history-ledger">${rows.slice(0,historyLimit).map(row=>renderLedgerRow(row)).join('')||`<p>${esc(t('Your first sort will appear here.','第一次整理后，记录会出现在这里。'))}</p>`}</div>${rows.length>historyLimit?button(t('Older','更早的记录'),'older'):''}`;
   $('history-mailbox').value=historyMailbox;if(opened!==undefined)$('how-it-works').open=opened;
 }
 
@@ -306,7 +316,8 @@ function render(){
     $('places').setAttribute('aria-label',t('Places','页面'));
     $('next-sort').textContent=next()?t('Next sort: about '+formatTime(next()),'下次整理：约 '+formatTime(next())):t('Next sort time unavailable','暂时无法获取下次整理时间');
     $('next-sort').title=t('GitHub can start scheduled runs hours later.','GitHub 有时会晚几小时才开始。');
-    document.querySelector('.topbar .gh').hidden=!bridge.demo;
+    document.querySelector('.topbar .gh').hidden=true;
+    $('refresh').hidden=true;
     document.querySelector('.topbar .gh').setAttribute('aria-label',t('Source','源码'));
     document.querySelector('.topbar .gh').title=t('Source','源码');
     if(place==='today')renderToday();
@@ -330,12 +341,12 @@ function renderSheet(){
   preserveFocus(()=>{
     const items=sheetItems(),proposal=review.data.proposal,groups=groupSenders(items,{byRule:true}),state=!loaded?'loading':!proposal?'none':review.policyChanged?'policy':review.consumed?'consumed':review.queued?'approved':!items.length?'empty':'waiting';
     const messages={policy:freshListCopy(),loading:t('Getting the latest list…','正在获取最新清单…'),none:t(`No list yet. The next sort prepares one, about ${sortTime()}.`,`还没有清单。下次整理时会准备，计划约 ${sortTime()}。`),consumed:t('This list was carried out. See History for the result and Undo.','这份清单已经执行，可到记录查看结果或撤销。'),approved:t(`Approved. Waiting for ${sortTime()}.`,`已确认，等待 ${sortTime()} 整理。`),empty:t('The last sort found nothing old to clean up.','上次整理没有找到需要清理的过期邮件。')};
-    $('cleanup-panel').innerHTML=`<header class="review-head"><div class="review-title-row"><h2 id="review-title">${esc(items.length?decisionTitle(items):t('Cleanup review','查看清理清单'))}</h2><button type="button" class="btn btn-icon" data-command="close-sheet" aria-label="${esc(t('Close review','关闭清单'))}" data-focus="close-sheet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div><p class="impact review-impact">${esc(impactText(items,review.selected))}</p></header>
-      <div class="review-body"><p class="safety">${esc(safetyCopy(items,bridge.language()))}</p><p class="review-status" role="status">${esc(error)}</p>${state==='waiting'?Object.entries(Object.groupBy(groups,group=>group.rule)).map(([rule,ruleGroups])=>`<fieldset class="review-rule"><legend><label class="check-label"><input type="checkbox" data-rule="${rule}" data-focus="rule-${rule}" ${busy?'disabled':''}>${esc(ruleName(rule,bridge.language()))} · ${ruleGroups.reduce((sum,group)=>sum+group.items.length,0)}</label></legend>${ruleGroups.map(group=>{
+    $('cleanup-panel').innerHTML=`<header class="review-head"><div class="review-title-row"><h2 id="review-title">${esc(items.length?decisionTitle(items):t('Cleanup review','查看清理清单'))}</h2><button type="button" class="btn btn-icon" data-command="close-sheet" aria-label="${esc(t('Close review','关闭清单'))}" data-focus="close-sheet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div><p class="review-impact">${esc(items[0]?.mailbox_address||t('All mailboxes','全部邮箱'))} · ${esc(conciseImpact(items,review.selected))}</p></header>
+      <div class="review-body">${safetyInfo(items,review.selected,'sheet')}<p class="review-status" role="status">${esc(error)}</p>${state==='waiting'?Object.entries(Object.groupBy(groups,group=>group.rule)).map(([rule,ruleGroups])=>`<fieldset class="review-rule"><legend><label class="check-label"><input type="checkbox" data-rule="${rule}" data-focus="rule-${rule}" ${busy?'disabled':''}>${esc(ruleName(rule,bridge.language()))} · ${ruleGroups.reduce((sum,group)=>sum+group.items.length,0)}</label></legend>${ruleGroups.map(group=>{
         const n=group.items.filter(item=>review.selected.has(mailKey(item))).length,open=expanded.has(group.key);
-        return `<div class="sender-group" data-group="${esc(group.key)}"><div class="sender-row"><input type="checkbox" class="sender-select" data-sender="${esc(group.key)}" data-focus="sender-${esc(group.key)}" aria-label="${esc(t('Select mail from ','选择来自 ')+group.name)}" ${busy?'disabled':''}><button type="button" class="sender-expand" data-command="expand-sender" data-id="${esc(group.key)}" data-focus="expand-${esc(group.key)}" aria-expanded="${open}"><strong>${esc(group.name)}</strong> <span class="${n!==group.items.length?'selected-count':''}">${n} ${t('of','/')} ${group.items.length}</span><small>${esc(group.items.slice(0,2).map(item=>item.subject).join(' · '))}</small></button></div>${n<group.items.length?`<button type="button" class="btn text-button protect-sender" data-command="protect" data-id="${esc(group.key)}" title="${esc(t('Never propose mail from '+group.name+' again','以后不再提议清理 '+group.name+' 的邮件'))}" ${busy?'disabled':''}>${esc(t('Protect this sender','保护这位发件人'))}</button>`:''}${open?group.items.map(item=>`<div class="review-item"><input type="checkbox" id="review-${esc(mailKey(item))}" data-item="${esc(mailKey(item))}" data-focus="item-${esc(mailKey(item))}" ${review.selected.has(mailKey(item))?'checked':''}><label for="review-${esc(mailKey(item))}">${esc(item.subject)}</label><small>${esc(formatDay(item.date))} · ${esc(typeof item.primary!=='boolean'?t('Tab unknown','标签页未知'):item.primary?t('Primary','主要'):t('Other tab','其他标签页'))} · ${esc(typeof item.unread!=='boolean'?t('Read status unknown','已读状态未知'):item.unread?t('Unread','未读'):t('Read','已读'))}</small></div>`).join(''):''}</div>`;
+        return `<div class="sender-group" data-group="${esc(group.key)}"><div class="sender-row"><input type="checkbox" class="sender-select" data-sender="${esc(group.key)}" data-focus="sender-${esc(group.key)}" aria-label="${esc(t('Select mail from ','选择来自 ')+group.name)}" ${busy?'disabled':''}><button type="button" class="sender-expand" data-command="expand-sender" data-id="${esc(group.key)}" data-focus="expand-${esc(group.key)}" aria-expanded="${open}"><strong>${esc(group.name)}</strong> <span class="${n!==group.items.length?'selected-count':''}">${n} ${t('of','/')} ${group.items.length}</span></button></div>${n<group.items.length?`<button type="button" class="btn text-button protect-sender" data-command="protect" data-id="${esc(group.key)}" title="${esc(t('Never propose mail from '+group.name+' again','以后不再提议清理 '+group.name+' 的邮件'))}" ${busy?'disabled':''}>${esc(t('Protect this sender','保护这位发件人'))}</button>`:''}${open?group.items.map(item=>`<div class="review-item"><input type="checkbox" id="review-${esc(mailKey(item))}" data-item="${esc(mailKey(item))}" data-focus="item-${esc(mailKey(item))}" ${review.selected.has(mailKey(item))?'checked':''}><label for="review-${esc(mailKey(item))}">${esc(item.subject)}</label><small>${esc(formatDay(item.date))} · ${esc(typeof item.primary!=='boolean'?t('Tab unknown','标签页未知'):item.primary?t('Primary','主要'):t('Other tab','其他标签页'))} · ${esc(typeof item.unread!=='boolean'?t('Read status unknown','已读状态未知'):item.unread?t('Unread','未读'):t('Read','已读'))}</small></div>`).join(''):''}</div>`;
       }).join('')}</fieldset>`).join(''):`<p class="quiet-line">${esc(messages[state]||'')}</p>`}</div>
-      <footer class="review-footer"><p class="impact review-impact">${esc(impactText(items,review.selected))}</p><div class="actions">${state==='waiting'?`<button type="button" class="btn primary" data-command="approve" data-focus="sheet-approve" ${noWrite()||!items.some(item=>review.selected.has(mailKey(item)))?'disabled':''}>${esc(t(`Approve ${items.filter(item=>review.selected.has(mailKey(item))).length} of ${items.length}`,`${items.length} 封中选了 ${items.filter(item=>review.selected.has(mailKey(item))).length} 封，确认清理`))}</button>`:''}${button(t('Refresh the list','刷新清单'),'reload-review')}${button(t('Change cleanup rules','修改清理规则'),'cleanup-settings')}</div>${bridge.getConfig()?.enabled===false?`<p class="review-status">${esc(t('Sorting is off. Turn it on in Settings before approving.','整理已关闭，请在设置中开启后再确认。'))}</p>`:''}</footer>`;
+      <footer class="review-footer"><div class="actions">${state==='waiting'?`<button type="button" class="btn primary" data-command="approve" data-focus="sheet-approve" ${noWrite()||!items.some(item=>review.selected.has(mailKey(item)))?'disabled':''}>${esc(t(`Approve ${items.filter(item=>review.selected.has(mailKey(item))).length} of ${items.length}`,`${items.length} 封中选了 ${items.filter(item=>review.selected.has(mailKey(item))).length} 封，确认清理`))}</button>`:''}${button(t('Refresh the list','刷新清单'),'reload-review')}${button(t('Change cleanup rules','修改清理规则'),'cleanup-settings')}</div>${bridge.getConfig()?.enabled===false?`<p class="review-status">${esc(t('Sorting is off. Turn it on in Settings before approving.','整理已关闭，请在设置中开启后再确认。'))}</p>`:''}</footer>`;
     if(state==='policy'){
       for(const impact of $('cleanup-panel').querySelectorAll('.review-impact'))impact.textContent=t('Waiting for a fresh list','等待新清单');
       const approve=document.createElement('button');approve.type='button';approve.className='btn primary';approve.disabled=true;approve.textContent=t('Approve after the fresh list arrives','新清单出来后才能确认');
@@ -349,7 +360,7 @@ function renderSheet(){
 document.addEventListener('click',async event=>{
   const tab=event.target.closest('[data-place]');if(tab){setPlace(tab.dataset.place);return;}
   const fakeMail=event.target.closest('[data-demo-gmail=true]');if(fakeMail){event.preventDefault();announce(t('This email is fictional. In your connected mailbox, it opens directly in Gmail.','这是虚构邮件。连接你自己的邮箱后，会直接在 Gmail 打开。'));return;}
-  const pipeline=event.target.closest('[data-pipeline]');if(pipeline){event.preventDefault();if(pipeline.dataset.pipeline==='sorted')setPlace('sorted');else if(pipeline.dataset.pipeline==='review')openSheet(pipeline);else if(pipeline.dataset.pipeline==='safe'){setPlace('today');document.querySelector('.safe-summary')?.scrollIntoView({block:'center'});}else $('history-ledger')?.scrollIntoView();return;}
+  const pipeline=event.target.closest('[data-pipeline]');if(pipeline){event.preventDefault();if(pipeline.dataset.pipeline==='sorted')setPlace('sorted');else if(pipeline.dataset.pipeline==='review')openSheet(pipeline);else if(pipeline.dataset.pipeline==='safe'){setPlace('history');document.querySelector('.history-safety').open=true;document.querySelector('.history-safety')?.scrollIntoView({block:'center'});}else $('history-ledger')?.scrollIntoView();return;}
   const control=event.target.closest('[data-command]');if(!control||control.disabled)return;
   const command=control.dataset.command,id=control.dataset.id;
   if(command==='done')return mark((bridge.getMail()?.items||[]).filter(item=>mailKey(item)===id));
@@ -357,8 +368,9 @@ document.addEventListener('click',async event=>{
   if(command==='show-all'){showAll=!showAll;render();}
   if(command==='show-done'){showDone=!showDone;render();}
   if(command==='clear')bridge.clearFilters();
+  if(command==='mail-details'){showMailDetails=!showMailDetails;renderSorted();}
   if(command==='history')setPlace('history');
-  if(command==='how'){setPlace('history');$('how-it-works').open=true;$('how-it-works').scrollIntoView();}
+  if(command==='how'){if($('cleanup-sheet').open)closeSheet();setPlace('history');$('how-it-works').open=true;$('how-it-works').scrollIntoView();}
   if(command==='older'){historyLimit+=30;renderHistory();}
   if(command==='settings')bridge.showSettings();
   if(command==='review')openSheet(control,control.dataset.mailbox||'all');
@@ -397,7 +409,7 @@ $('cleanup-sheet').addEventListener('keydown',event=>{
   if(['ArrowDown','ArrowUp'].includes(event.key)&&rows.length){event.preventDefault();rows[(index+(event.key==='ArrowDown'?1:-1)+rows.length)%rows.length].focus();}
   if(event.key===' '&&event.target.matches('.sender-expand')){event.preventDefault();row.querySelector('[data-sender]').click();}
   if(event.key==='Tab'){
-    const controls=[...$('cleanup-sheet').querySelectorAll('button,a[href],input,select,textarea,[tabindex="0"]')].filter(node=>!node.disabled&&node.checkVisibility()),first=controls[0],last=controls.at(-1);
+    const controls=[...$('cleanup-sheet').querySelectorAll('button,a[href],input,select,textarea,summary,[tabindex="0"]')].filter(node=>!node.disabled&&node.checkVisibility()),first=controls[0],last=controls.at(-1);
     if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
   }
 });
@@ -411,7 +423,7 @@ document.addEventListener('keydown',event=>{
   if(key==='z'&&lastUndo){event.preventDefault();lastUndo();return;}
   if(key==='?'){event.preventDefault();announce(t('j / k · move through mail. o / Enter · open Gmail. e · done. z · undo. / · search. g then t / s / h · Today / Sorted / History.','j / k 移动，o 或回车在 Gmail 打开，e 处理完，z 撤销，/ 搜索，g 后按 t / s / h 切换今天、已整理、记录。'));return;}
   const entries=[...document.querySelectorAll(place==='today'?'.need-entry':place==='sorted'?'.mail':'.no-shortcuts')],current=document.activeElement.closest('.need-entry,.mail'),index=entries.indexOf(current);
-  if((key==='j'||key==='k')&&entries.length){event.preventDefault();const target=entries[(index+(key==='j'?1:-1)+entries.length)%entries.length];target.querySelector('a')?.focus();}
+  if((key==='j'||key==='k')&&entries.length){event.preventDefault();const target=entries[(index+(key==='j'?1:-1)+entries.length)%entries.length];target.querySelector('summary,a')?.focus();}
   if(key==='o'&&current){event.preventDefault();current.querySelector('a')?.click();}
   if(key==='e'&&current){event.preventDefault();current.querySelector('[data-command=done]')?.click();}
 });
@@ -420,4 +432,5 @@ installMailSettings(bridge);
 globalThis.Mailroom={render,renderSorted,setPlace,openSheet,closeSheet,review,dealt,runner,load};
 const languageIcon=()=>{const node=$('suite-language-toggle');if(node&&!node.querySelector('svg'))node.innerHTML=globe;};
 new MutationObserver(languageIcon).observe(document.querySelector('header.topbar'),{subtree:true,childList:true});languageIcon();
+matchMedia('(max-width:899px)').addEventListener('change',()=>render());
 bridge.subscribe(load);render();if(bridge.demo){await runner.ready;await bridge.localWrite('demo-initial-state',()=>{});}await load();

@@ -19,6 +19,35 @@
   font-style:normal;
   font-display:swap
 }
+/* This font's tnum feature also widens punctuation. Restrict it to digits so
+counts stay aligned while prose, addresses and times retain normal spacing. */
+@font-face {
+  font-family:"Schibsted Numbers";
+  src:url('../assets/fonts/schibsted-grotesk-400.woff2') format('woff2');
+  font-weight:400;
+  font-style:normal;
+  font-display:swap;
+  font-feature-settings:"tnum" 1;
+  unicode-range:U+0030-0039
+}
+@font-face {
+  font-family:"Schibsted Numbers";
+  src:url('../assets/fonts/schibsted-grotesk-600.woff2') format('woff2');
+  font-weight:600;
+  font-style:normal;
+  font-display:swap;
+  font-feature-settings:"tnum" 1;
+  unicode-range:U+0030-0039
+}
+@font-face {
+  font-family:"Schibsted Numbers";
+  src:url('../assets/fonts/schibsted-grotesk-700.woff2') format('woff2');
+  font-weight:700;
+  font-style:normal;
+  font-display:swap;
+  font-feature-settings:"tnum" 1;
+  unicode-range:U+0030-0039
+}
 :root {
   --bg:#e8eae7;
   --surface:#fff;
@@ -44,7 +73,7 @@
   --accent-tint-text:var(--text);
   --on-band:var(--text);
   --band:var(--bg);
-  --font-sans:"Schibsted Grotesk","PingFang SC","Noto Sans SC",sans-serif;
+  --font-sans:"Schibsted Numbers","Schibsted Grotesk","PingFang SC","Noto Sans SC",sans-serif;
   --font-display:var(--font-sans);
   --font-mono:var(--font-sans);
   --text-xs:.75rem;
@@ -127,7 +156,7 @@ body {
   background:var(--bg);
   color:var(--text);
   font:400 .875rem/1.5 var(--font-sans);
-  font-variant-numeric:tabular-nums
+  font-variant-numeric:normal
 }
 [hidden] {
   display:none!important
@@ -1687,5 +1716,379 @@ header.topbar .brand img {
   main {
     max-width:29.75rem;
     margin-inline:auto
+  }
+}
+/* Keep the report's decisions visible;
+explanations open only when requested. */
+.topbar #refresh,.topbar .gh {
+  display:none!important
+}
+.today-grid {
+  gap:2rem
+}
+.inbox-heading {
+  margin-bottom:.75rem
+}
+.meter {
+  padding:1rem;
+  gap:1rem
+}
+.mixed-counts .meter-label {
+  position:static;
+  width:auto;
+  height:auto;
+  clip:auto;
+  overflow:visible;
+  white-space:normal
+}
+.sort-details {
+  margin-top:.75rem;
+  font-size:.8125rem;
+  color:var(--muted)
+}
+.sort-details>summary {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:.5rem;
+  cursor:pointer;
+  width:fit-content
+}
+summary::-webkit-details-marker {
+  display:none
+}
+.sort-details summary svg,.safety-info summary svg {
+  width:1rem;
+  height:1rem;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.5
+}
+.phone-next-sort {
+  display:none
+}
+.disclosure-body {
+  margin-top:.75rem;
+  max-width:38rem;
+  padding:.875rem 1rem;
+  background:var(--surface-2);
+  border-radius:.375rem;
+  font-size:.8125rem;
+  line-height:1.5;
+  color:var(--text)
+}
+.disclosure-body .safety {
+  margin-top:0
+}
+.disclosure-body .actions {
+  margin-top:.75rem
+}
+.decision {
+  margin-top:2rem;
+  padding:1rem;
+  width:fit-content;
+  max-width:100%
+}
+.decision h2 {
+  margin-bottom:.25rem
+}
+.decision-context {
+  color:var(--muted);
+  font-size:.8125rem
+}
+.decision-controls {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:.5rem;
+  margin-top:1rem
+}
+.decision-controls>.actions {
+  margin:0;
+  display:flex;
+  flex-wrap:wrap;
+  gap:.5rem
+}
+.safety-info {
+  min-width:0;
+  font-size:.8125rem
+}
+.safety-info>summary {
+  display:inline-flex;
+  align-items:center;
+  gap:.375rem;
+  min-height:2.5rem;
+  padding:.25rem .5rem;
+  cursor:pointer;
+  color:var(--muted);
+  list-style:none
+}
+.safety-info[open] {
+  flex-basis:100%
+}
+.needs {
+  margin-top:2rem
+}
+.need-grid {
+  gap:1rem
+}
+.need-entry {
+  display:block;
+  padding:.75rem 1rem
+}
+.need-entry>summary {
+  display:grid;
+  grid-template-columns:minmax(0,max-content) auto;
+  gap:.375rem .5rem;
+  align-items:center;
+  cursor:pointer;
+  list-style:none
+}
+.need-entry>summary .need-top {
+  grid-column:1/-1
+}
+.entry-chevron {
+  width:1rem;
+  height:1rem;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.5;
+  justify-self:start
+}
+.need-entry[open] .entry-chevron {
+  transform:rotate(90deg)
+}
+.need-actions {
+  margin-top:1rem
+}
+.need-actions .entry-details {
+  color:var(--muted);
+  font-size:.8125rem
+}
+.need-actions .actions {
+  margin-top:.5rem
+}
+[data-show-needs] {
+  margin-top:.75rem;
+  min-height:2.5rem
+}
+.sort-status {
+  color:var(--muted);
+  font-size:.8125rem;
+  margin-top:.75rem
+}
+.need-copy {
+  display:contents
+}
+.need-entry h2 {
+  grid-column:auto;
+  margin:0;
+  min-width:0;
+  display:-webkit-box;
+  -webkit-line-clamp:1;
+  -webkit-box-orient:vertical;
+  overflow:hidden
+}
+.need-entry h2 a,.mail .subj {
+  display:-webkit-box;
+  -webkit-line-clamp:1;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+  overflow-wrap:anywhere;
+  font-weight:600;
+  text-decoration:none
+}
+.need-entry h2 a:hover,.mail .subj:hover {
+  text-decoration:underline
+}
+.need-top {
+  min-width:0;
+  color:var(--muted)
+}
+.need-top>span:first-child {
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap
+}
+.need-entry>.btn {
+  justify-self:start;
+  font-weight:400
+}
+.ledger-actions {
+  display:flex;
+  flex-wrap:wrap;
+  gap:.5rem;
+  align-items:center
+}
+.ledger-secondary {
+  color:var(--muted)
+}
+.run-details>summary {
+  font-size:.8125rem;
+  padding:.25rem;
+  cursor:pointer;
+  list-style:none
+}
+.run-details[open] {
+  flex-basis:100%
+}
+.run-details .disclosure-body {
+  margin-top:.25rem
+}
+.history-safety {
+  margin:1rem 0
+}
+.history-safety summary {
+  cursor:pointer;
+  font-weight:600
+}
+.filter-menu {
+  max-width:34rem;
+  min-width:0;
+  align-self:start
+}
+.filter-menu>summary {
+  min-height:2.5rem;
+  padding:.5rem 1rem;
+  background:var(--surface);
+  border:1px solid var(--border-input);
+  border-radius:.375rem;
+  cursor:pointer
+}
+.filter-menu-body {
+  margin-top:.5rem;
+  padding:1rem;
+  background:var(--surface);
+  border-radius:.625rem
+}
+.mail {
+  flex-wrap:nowrap;
+  gap:.75rem;
+  padding:.75rem;
+  width:fit-content;
+  max-width:100%
+}
+.mail-copy {
+  min-width:0;
+  max-width:34rem
+}
+.mail .sender {
+  display:block;
+  font-weight:400;
+  color:var(--muted);
+  margin-top:.125rem;
+  max-width:none;
+  display:-webkit-box;
+  -webkit-line-clamp:1;
+  -webkit-box-orient:vertical;
+  overflow:hidden
+}
+.mail .subj {
+  max-width:none;
+  white-space:normal
+}
+.mail .entry-details {
+  flex-basis:100%;
+  font-size:.8125rem;
+  color:var(--muted)
+}
+.mail:has(.entry-details) {
+  flex-wrap:wrap
+}
+.review-head .review-impact {
+  margin-top:.5rem;
+  font-size:.8125rem;
+  color:var(--muted)
+}
+.review-footer .actions {
+  margin-top:0
+}
+.sender-row {
+  min-height:3rem
+}
+.sender-expand {
+  min-height:3rem
+}
+.sender-expand strong {
+  font-size:.875rem
+}
+.review-body>.safety-info {
+  margin-bottom:1rem
+}
+@media(max-width:899px) {
+  .latest-change,.ledger-side:not(.has-work) .demo-sort {
+    display:none
+  }
+  .ledger-side:not(.has-work) {
+    display:none
+  }
+  .topbar:has(#app-save-status) {
+    grid-template-columns:minmax(0,1fr) auto;
+    grid-template-areas:'brand controls' 'save save' 'places places'
+  }
+  .today-grid {
+    gap:2rem
+  }
+  .meters {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:.75rem
+  }
+  .meter {
+    display:flex;
+    flex-direction:column;
+    align-items:start;
+    gap:.5rem;
+    padding:.75rem
+  }
+  .meter-number-block {
+    display:flex;
+    flex-direction:column;
+    align-items:start;
+    gap:.25rem
+  }
+  .meter-address {
+    white-space:normal;
+    overflow-wrap:anywhere
+  }
+  .meter-trend {
+    width:100%
+  }
+  .step-line {
+    max-width:8rem;
+    height:1.5rem
+  }
+  .phone-next-sort {
+    display:inline
+  }
+  .sort-details>summary {
+    font-size:.75rem
+  }
+  .sort-status {
+    font-size:.75rem
+  }
+  .decision {
+    margin-top:2rem
+  }
+  .decision .actions {
+    display:flex
+  }
+  .decision .actions .btn {
+    width:auto;
+    min-height:2.75rem
+  }
+  .safety-info>summary {
+    min-height:2.75rem
+  }
+  .need-entry>.btn {
+    min-height:2.75rem
+  }
+  .needs {
+    margin-top:2rem
+  }
+  .filter-menu {
+    width:100%
+  }
+  .mail-copy {
+    max-width:calc(100% - 4.5rem)
   }
 }
