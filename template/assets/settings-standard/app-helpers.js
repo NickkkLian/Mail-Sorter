@@ -49,7 +49,7 @@ window.SuiteAppSettings=(()=>{
    get sourceLoaded(){return o.loaded();},snapshot:o.snapshot,
    unsaved:()=>o.unsaved(),canConnectDrafts:candidate=>!!(candidate&&sameTarget(o.connection(),candidate)&&C.complete({...candidate,token:candidate.token||o.connection().token}))||!o.loaded()&&o.allowFirst===true&&(firstAdoption||!knownSource&&!C.complete(o.connection()))&&!o.hasDraft?.(),
    adopt(next){if(same(o.connection(),next))return;if(sameTarget(o.connection(),next)&&C.complete(next)){Object.assign(o.connection(),next);backup=null;return;}const disconnected=!C.complete(next),first=!knownSource&&!o.loaded()&&!C.complete(o.connection());o.adopt(next,disconnected,first);firstAdoption=first;if(!first&&C.complete(next))knownSource=true;backup=null;pause(!(disconnected&&o.offline));},
-   reload,refreshAI(){},applyAI(){},resetDescription:o.resetDescription,resetPreferences(){o.reset?.();},
+   reload,refreshAI(){},applyAI(){},resetDescription:o.resetDescription,resetLabel:o.resetLabel,resetPreferences(){o.reset?.();},
    backupHelp:{en:o.scope.en,zh:o.scope.zh},
    canBackup:()=>C.complete(o.connection())||o.offline===true,canImport:()=>C.complete(o.connection())||o.offline===true,
    backup:async()=>{if(!A.canBackup())throw new C.SettingsError('required');return C.complete(o.connection())?(await remoteBackup()).backup():(await local()).backup();},

@@ -11,7 +11,7 @@ window.SuiteSettingsHelpers={
       palette:{values,legacy:legacyPalette,labels:{plaster:{en:'Water lilies',zh:'睡莲'},paper:{en:'Morning light',zh:'晨光'},ink:{en:'Dusk',zh:'暮色'}}},
       setTheme(theme){const d=document.documentElement;d.dataset.scheme=theme;d.style.colorScheme=theme==='system'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):theme;queueMicrotask(()=>{for(const meta of document.querySelectorAll('meta[name="theme-color"]'))meta.content=getComputedStyle(d).getPropertyValue('--bg').trim();});},
       setPalette(value){document.documentElement.dataset.theme=value||legacyPalette();},
-      resetDescription:{en:', palette override and single-key shortcut override',zh:'、配色独立设置与单键快捷键独立设置'},
+      resetDescription:{en:', palette override and single-key shortcut override',zh:'、配色独立设置与单键快捷键独立设置'},resetLabel:{en:'Reset palette and single-key shortcuts',zh:'恢复配色与单键快捷键'},
       resetPreferences(){R.write(app,{palette:undefined,shortcuts:undefined});shortcuts.discard();},
       settingsDirty:()=>shortcuts.dirty(),discardSettings(){shortcuts.discard();},
       shortcuts(container){let target=container.querySelector('#suite-shortcuts');if(!target){target=document.createElement('div');target.id='suite-shortcuts';container.append(target);}shortcuts.mount(target);shortcuts.refresh();},

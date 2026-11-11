@@ -14,7 +14,7 @@
     refreshAI(){},
     aiNotice:{en:'Mail sorting runs on a schedule in your data repository. Its Anthropic and Gmail credentials belong in repository Actions secrets. This browser stores no AI key and cannot test or replace those credentials.',zh:'AI 分类在数据仓库的定时后台运行。Anthropic 与 Gmail 凭据由仓库 Actions Secrets 管理；此浏览器不保存 AI 密钥，也不能测试或替换后台凭据。'},
     dataMode:'repository',
-    backupHelp:{en:'Mail, sorting settings, cleanup choices and Undo records stay in your private data repository. This digest is not a complete mailbox backup. Review cleanup on Today and find Undo in History. Reset only changes this app’s appearance and shortcut preferences.',zh:'邮件、分类配置、清理审核、批准与撤销记录由私有数据仓库管理。摘要不是完整邮箱备份。在「今天」确认清理，到「记录」撤销。重置仅更改此应用的外观与快捷键偏好。'},
+    backupHelp:{en:'Mail, sorting settings, cleanup choices and Undo records stay in your private data repository. This digest is not a complete mailbox backup. Review cleanup on Today and find Undo in History. Reset only changes this app’s palette and single-key shortcuts.',zh:'邮件、分类配置、清理审核、批准与撤销记录由私有数据仓库管理。摘要不是完整邮箱备份。在「今天」确认清理，到「记录」撤销。重置仅恢复此应用的配色与单键快捷键。'},
     appControls(container,settings){
       let intro=container.querySelector('p');if(!intro){intro=document.createElement('p');container.append(intro);}intro.textContent=T('保存开关即可开启或关闭定时整理，下方可设置清理规则和保护名单。','Save the sorting switch to turn scheduled sorting on or off. Cleanup rules and the protection list are below.');
       let group=container.querySelector('#suite-classifier');if(!group){group=document.createElement('div');group.id='suite-classifier';container.append(group);}

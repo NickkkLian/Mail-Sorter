@@ -81,15 +81,17 @@
         if(C.rawRead(localStorage,HubSettingsContract.preferenceKey("pha-lang"))!==next)throw new C.SettingsError('readback');
         delete unsavedPreferences.lang;
       }else{
-        const theme=C.resolveAppTheme(prefs,C.preferencesRead(localStorage).theme);
-        const dark=theme==='dark'||theme==='system'&&matchMedia('(prefers-color-scheme: dark)').matches;
-        Object.assign(unsavedPreferences,{themeMode:'app',theme:dark?'light':'dark'});
+        const hub=C.preferencesRead(localStorage).theme,theme=C.resolveAppTheme(prefs,hub);
+        const isDark=value=>value==='dark'||value==='system'&&matchMedia('(prefers-color-scheme: dark)').matches;
+        // Theme choices live only in this header control: a tap that lands on the hub's own look follows the hub again.
+        const next=isDark(theme)?'light':'dark',followsHub=isDark(hub)===(next==='dark');
+        Object.assign(unsavedPreferences,followsHub?{themeMode:'hub',theme:'system'}:{themeMode:'app',theme:next});
         prefs={...prefs,...unsavedPreferences};setPreview();
         R.write(A.app,{themeMode:prefs.themeMode,theme:prefs.theme});
         delete unsavedPreferences.themeMode;delete unsavedPreferences.theme;
       }
       readPreferences();setPreview();
-      window.SuiteHeaderEntry?.announce(kind==='language'?tr('Language: English','语言：中文'):tr('Theme: ','主题：')+(document.documentElement.dataset.settingsScheme==='dark'?tr('dark','深色'):tr('light','浅色')));
+      window.SuiteHeaderEntry?.announce(kind==='language'?tr('Language: English','语言：中文'):tr('Theme: ','主题：')+(document.documentElement.dataset.settingsScheme==='dark'?tr('dark','深色'):tr('light','浅色'))+(kind==='theme'&&prefs.themeMode==='hub'?tr(' (same as the hub)','（与 Hub 一致）'):''));
     }catch(error){feedback.appearance=error.code||'storage';window.SuiteHeaderEntry?.announce(message(feedback.appearance));}
   }
   function syncAIDraft(){
@@ -138,7 +140,7 @@
       <label for="suite-ai-model">${tr('Model','模型')}</label><select id="suite-ai-model" ${cap.fixedModel?'disabled':''}>${(cap.fixedModel?[cap.fixedModel]:['claude-opus-5-5','claude-sonnet-5-5','claude-haiku-5-5']).map(m=>`<option value="${m}">${m}</option>`).join('')}</select><p>${cap.fixedModel?tr('Managed by this app; provider availability has not been tested.','由此应用指定；尚未测试提供方可用性。'):tr('Existing model choices; provider availability has not been tested.','保留现有模型选项；尚未测试提供方可用性。')}</p>${portalURL?`<a href="${esc(portalURL)}">${tr('Manage this app’s key in portal','在门户管理此应用的密钥')}</a>`:''}
       <div id="suite-ai-extra"></div>${actions(button('suite-ai-save','Save','保存')+button('suite-ai-cancel','Cancel','取消')+button('suite-ai-remove','Remove key','移除密钥'))}${keyConflict?actions(button('suite-ai-review','Review saved value / keep editing','检查已保存的值 / 继续编辑')+button('suite-ai-reload','Reload saved value','重新加载已保存的值')):''}${status('ai')}<p>${tr('Older pages may keep an old key. Reopen them; close their Settings without saving first.','旧页面可能保留旧密钥。请重新打开；先关闭旧页面的设置且不要保存。')}</p></section>`:''}
 ${cap&&!A.demo?'</details>':''}</section>
-      <section id="suite-section-reset">${button('suite-reset',A.resetLabel?.en||(C.hosted?(A.resetDescription?'Use the hub’s theme and reset app choices':'Use the hub’s theme again'):'Use the system theme again'),A.resetLabel?.zh||(C.hosted?(A.resetDescription?'使用 Hub 主题并恢复应用选项':'重新使用 Hub 主题'):'重新跟随系统主题'))}</section></div>`;
+      ${A.resetLabel||appearanceInvalid?`<section id="suite-section-reset">${A.resetLabel?button('suite-reset',A.resetLabel.en,A.resetLabel.zh):''}</section>`:''}</div>`;
     const on=(id,fn)=>{const el=$(id);if(el)el.onclick=fn;};
     const template=document.createElement('template');template.innerHTML=markup;reconcile(dialog,template.content);
     for(const id of openDetails)$('#'+id)?.setAttribute('open','');
@@ -159,7 +161,7 @@ ${cap&&!A.demo?'</details>':''}</section>
     on('#suite-export',()=>action('data',async()=>{const value=await R.track(()=>A.backup());const blob=new Blob([JSON.stringify(value,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=A.app+'-private-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}));
     on('#suite-import-backup',()=>$('#suite-import-file').click());$('#suite-import-file').onchange=e=>action('data',async()=>{const file=e.target.files[0];e.target.value='';if(!file)return false;if(file.size>150*1024*1024)throw new C.SettingsError('invalid');staged=await A.stage(JSON.parse(await file.text()));feedback.data='reviewed';});
     onIf('#suite-import-cancel',()=>{staged=null;render();});onIf('#suite-restore',()=>action('data',async()=>{ensureSafe('restore');const prompt=A.restorePrompt?.(staged)||{en:'Replace the reviewed private data files in the connected repository? No file is written if you cancel. Multi-file writes can stop partway; completed files will be listed.',zh:'替换连接仓库中已检查的私有数据文件？取消则不会写入。多文件写入可能中途停止；会列出已完成的文件。'};if(!await ask(prompt.en,prompt.zh,'Restore','恢复'))return false;ensureSafe('restore');R.beginRestore();try{await R.track(()=>A.restore(staged),true);staged=null;}finally{R.endRestore();}}));
-    on('#suite-reset',()=>action('data',async()=>{if(!await ask(C.hosted?`Use the hub’s theme again${A.resetDescription?.en||''}? Your language, keys, connections and data stay as they are.`:`Use the system theme again${A.resetDescription?.en||''}? Your language, keys, connection and data stay as they are.`,C.hosted?`重新使用 Hub 主题${A.resetDescription?.zh||''}？语言、密钥、连接和数据均保留。`:`重新跟随系统主题${A.resetDescription?.zh||''}？语言、密钥、连接和数据均保留。`,C.hosted?'Use hub theme':'Use system theme',C.hosted?'使用 Hub 主题':'跟随系统主题'))return false;R.write(A.app,{themeMode:C.hosted?'hub':'app',theme:'system'});delete unsavedPreferences.themeMode;delete unsavedPreferences.theme;A.resetPreferences();readPreferences();setPreview();}));
+    on('#suite-reset',()=>action('data',async()=>{if(!await ask(`${A.resetLabel.en}? Your theme, language, keys, connections and data stay as they are.`,`${A.resetLabel.zh}？主题、语言、密钥、连接和数据均保留。`,'Reset','重置'))return false;A.resetPreferences();readPreferences();setPreview();}));
     A.dataControls?.($('#suite-data-extra'),window.SuiteSettings);A.appControls($('#suite-app-controls'),window.SuiteSettings);
     $('.suite-panel-body').scrollTop=scroll;
     if(focusId){const next=$('#'+focusId);next?.focus({preventScroll:true});if(next&&typeof selection[0]==='number'&&next.setSelectionRange)try{next.setSelectionRange(...selection);}catch{}}
@@ -167,7 +169,7 @@ ${cap&&!A.demo?'</details>':''}</section>
     if(busy)dialog.querySelectorAll('button').forEach(b=>{if(b.id!=='suite-close')b.disabled=true;});
     if(A.demo&&!A.localOnly){$('#connection').querySelectorAll('input,select,button').forEach(el=>el.disabled=true);$('#suite-connection-summary').textContent=tr('Demo: no repository is connected.','演示：没有连接仓库。');}
     if(connectionInvalid&&!A.localOnly)$('#connection').querySelectorAll('input,select,button').forEach(el=>el.disabled=true);
-    if(appearanceInvalid){$('#suite-reset').disabled=true;const note=document.createElement('p');note.setAttribute('role','alert');note.textContent=message(feedback.appearance||'invalid');$('#suite-section-reset').append(note);}
+    if(appearanceInvalid){const resetButton=$('#suite-reset');if(resetButton)resetButton.disabled=true;const note=document.createElement('p');note.setAttribute('role','alert');note.textContent=message(feedback.appearance||'invalid');$('#suite-section-reset').append(note);}
     if(keyInvalid&&$('#ai'))$('#ai').querySelectorAll('input,select,button').forEach(el=>{if(el.id!=='suite-ai-cancel')el.disabled=true;});
     for(const [id,invalid,slots]of [['connection',connectionInvalid,[A.connectionSlot,C.CONNECTION]],['ai',keyInvalid,[cap?.storage]]])if(invalid){const details=document.createElement('details'),summary=document.createElement('summary'),code=document.createElement('code');summary.textContent=tr('Diagnostic (no credentials)','诊断（不含凭据）');code.textContent=JSON.stringify({app:A.app,slots,problem:'invalid-or-blocked',overwritten:false});details.append(summary,code);$('#'+id).append(details);}
   }
@@ -248,7 +250,7 @@ ${cap&&!A.demo?'</details>':''}</section>
   dialog.oncancel=e=>{e.preventDefault();close();};
   dialog.addEventListener('keydown',e=>{
     if(e.key!=='Tab'||e.altKey||e.ctrlKey||e.metaKey)return;
-    const items=[...dialog.querySelectorAll('button,input,select,textarea,a[href],summary,[tabindex]')].filter(el=>!el.disabled&&el.tabIndex>=0&&el.getClientRects().length);
+    const items=[...dialog.querySelectorAll('button,input,select,textarea,a[href],summary,[tabindex]')].filter(el=>!el.disabled&&el.tabIndex>=0&&el.getClientRects().length&&el.checkVisibility());
     const first=items[0],last=items.at(-1);
     if(!first){e.preventDefault();$('#suite-settings-title').focus();return;}
     if(e.shiftKey&&(document.activeElement===first||document.activeElement===$('#suite-settings-title'))){e.preventDefault();last.focus();}

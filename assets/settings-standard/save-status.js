@@ -46,7 +46,7 @@
   function describe(s,language='en') {
     const zh=language==='zh', time=s.lastSavedAt?`${String(s.lastSavedAt.getHours()).padStart(2,'0')}:${String(s.lastSavedAt.getMinutes()).padStart(2,'0')}`:'';
     const saved=time?(zh?'已保存 ':'Saved ')+time:'';
-    let text=s.state==='saving'?(zh?'正在保存…':'Saving…'):s.state==='error'?(zh?'未保存：':'Not saved: ')+reasons[zh?'zh':'en'][s.reason||'unknown']:s.state==='draft'?(zh?'未保存：请完成编辑':'Not saved: finish editing'):s.state==='saved'?saved:s.state==='ready'?(zh?'没有待保存更改':'No changes to save'):(s.state==='offline'?(zh?'离线':'Offline'):(zh?'仅在本机':'Local only'))+' · '+(s.durable?(zh?'更改已保存在此设备':'changes kept on this device'):(zh?'更改仅在此页面':'changes only in this page'));
+    let text=s.state==='saving'?(zh?'正在保存…':'Saving…'):s.state==='error'?(zh?'未保存：':'Not saved: ')+reasons[zh?'zh':'en'][s.reason||'unknown']:s.state==='draft'?(zh?'未保存：请完成编辑':'Not saved: finish editing'):s.state==='saved'?saved:s.state==='ready'?(zh?'没有未保存的更改':'No changes to save'):(s.state==='offline'?(zh?'离线':'Offline'):(zh?'仅在本机':'Local only'))+' · '+(s.durable?(zh?'更改已保存在此设备':'changes kept on this device'):(zh?'更改仅在此页面':'changes only in this page'));
     if(saved&&s.state!=='saved')text+=' · '+saved;
     return text;
   }
