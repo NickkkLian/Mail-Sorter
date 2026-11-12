@@ -1,10 +1,26 @@
-# Mail Sorter
+# Headersort
 
-Sort mail worth keeping, review outdated mail, archive with undo.
+**Sort mail worth keeping, review outdated mail, archive with undo.**
 
-[Open the fictional demo](https://nickkklian.github.io/Mail-Sorter/?demo=1). The digest board now includes a cleanup review grouped by rule. Untick an item or rule, protect a sender, then approve the selection. Approval and Undo queue work for the next scheduled runner; the board never connects to Gmail.
+Headersort sorts your Gmail into eight categories plus Unsorted, twice a day, and proposes a cleanup of outdated
+mail: old one-time codes, shipping notices, past events, promotions, newsletters. You review it grouped by rule,
+untick anything or protect a sender, then approve; Undo puts archived mail back. It runs as a scheduled GitHub Action
+in your own private repository, and the review page (the *board*) reads that repository, never Gmail itself.
 
-Rules propose; a model can choose a keep category or veto cleanup. A model cannot authorize cleanup. Public settings start disabled, bodies off, all Inbox tabs, daily reviews, archive only and approval every run. No permanent-delete operation exists. Optional Trash and automatic rules are available only through explicit settings; Trash is removed by Gmail after 30 days, and automatic eligibility requires at least 28 clean reviewed days.
+**[Open the fictional demo](https://nickkklian.github.io/Mail-Sorter/?demo=1)**
+
+## What it does
+
+Words used below: the *board* is the review page; the *digest* is the list of sorted mail it shows; a *wake* is one
+scheduled run of the GitHub Action.
+
+The board opens on Today, with one unread meter per account, a cleanup decision and mail that needs you. Sorted holds search, folders and filtered bulk Done. History records cleanup and Done requests with Undo. The fictional demo at `?demo=1` includes a local sort control.
+
+Rules cover old one-time codes, shipping notices, past events, promotions, newsletters, app/social notices and routine resolved security notices. Uncertain or overlapping evidence stays. Eight keep categories plus Unsorted use stable keys; Needs reply is a separate flag. The digest is capped independently of the retention scan.
+
+Each completed mail cycle can save unread conversation counts in Primary and across all Inbox tabs. Until a real comparison confirms the count, the meter shows “unread in the sorted list”. After checking Gmail, a mailbox counter in the digest can carry `inbox_count_verified: true`. History keeps 60 readings, and the chart groups them into days.
+
+Protect sender changes the safety policy. Approval waits until a scheduled sort prepares a fresh list. The demo follows this boundary too. Archive keeps mail in All Mail, where Undo can put it back. Gmail deletes Trash for good after 30 days, so Trash Undo works only until then.
 
 ## Install in a private repository
 
@@ -16,31 +32,33 @@ Rules propose; a model can choose a keep category or veto cleanup. A model canno
 
 The public board has empty connection defaults. It uses the existing GitHub Contents client and conflict-aware config editor. Tokens stay in browser localStorage. Review text is rendered as text, and script sources/inline hashes are restricted by CSP. Deploy board modules and the matching index/CSP together.
 
-Each digest message with a stable Gmail ID has a **Dealt** button. **Mark all shown as dealt** queues only the current filtered page (at most 150 messages). On the next enabled `mail-sync` wake, the runner adds the configured category label, including Unsorted, and marks the message read by default. It keeps the message in Inbox. Settings → App-specific → **Mark dealt mail as read** can turn off the read change; explicitly Save the switch. The setting in force when the runner executes is used. Scheduled wakes are 15:00 and 22:00 UTC and can be delayed.
+Each digest message with a stable Gmail ID has a **Dealt** button. **Mark all shown as dealt** queues only the current filtered page (at most 150 messages). On the next enabled `mail-sync` wake, the scheduled job adds the configured category label, including Unsorted, and marks the message read by default. It keeps the message in Inbox. Settings → App-specific → **Mark dealt mail as read** can turn off the read change; explicitly Save the switch. The setting in force when the scheduled job runs is used. Scheduled wakes are 15:00 and 22:00 UTC and can be delayed.
 
 Dealt history has Undo for every queued action. Undo before execution cancels that request; Undo after execution queues restoration on the next enabled wake. Only a previously unread message changed by Dealt becomes unread again, and only a category label added by Dealt is removed. Existing labels and read state are preserved. Interrupted operations are quarantined, never automatically replayed, and can be undone. Dealt consumption records remain in the journal so an old queued request cannot replay when cleanup history is pruned. Normal classifier scans do not re-add labels removed by dealt Undo. A stale category, missing stable ID, missing message, unknown read/label state or a message outside Inbox is skipped safely; history reports skipped counts.
 
-## What stays private
+Set `sort_schedule_utc` in the private mail configuration to UTC clock times, for example `["15:00","22:00"]`. The board computes the next local time and explains that scheduled runs may start late. A missing value shows “Next sort time unavailable”.
 
-`mail/config.json`, `mail/mail.json`, `runtime.json`, `cleanup-proposal.json`, `cleanup-log.json`, `cleanup-approval.json`, `cleanup-undo.json` and `dealt-queue.json` belong in the private repository. Only empty state and example settings ship in the template. Never add a real digest, sample pool or reviewed test set here. Existing installations can leave `dealt-queue.json` absent until the first Dealt action creates it; preserve it thereafter.
+## Second Gmail mailbox
+
+The scheduled job supports an optional second Gmail account with separate cursors and mailbox-scoped cleanup, Dealt and Undo. The board shows address badges and a mailbox filter. [Setup and behavior](docs/second-mailbox.md).
+
+## Safety settings
+
+Approval and Undo queue work for the next scheduled run; the board never connects to Gmail.
+
+Rules propose; a model can choose a keep category or veto cleanup. A model cannot authorize cleanup. Public settings start disabled, bodies off, all Inbox tabs, daily reviews, archive only and approval every run. No permanent-delete operation exists. Optional Trash and automatic rules are available only through explicit settings; Trash is removed by Gmail after 30 days, and automatic eligibility requires at least 28 clean reviewed days.
 
 At first cut-over, protective senders are seeded once from existing keep-category digest metadata. Every run also indexes Sent correspondents/threads. Protected senders/domains, keep labels, stars, written-to correspondents and participated threads veto cleanup; incomplete safety metadata leaves mail in place. No old Gmail labels are renamed or removed.
 
 Cleanup attaches `AI/Cleaned/O1` through `O7` and archives only selected messages that still match on a fresh read. Archive undo restores Inbox and missing original custom labels without altering read state. Its queued status is explicit. The two scheduled wakes also process approvals/undo even when no new daily review is due. For immediate processing, manually dispatch the workflow. No workflow-dispatch permission is needed by the browser.
 
-Rules cover old one-time codes, shipping notices, past events, promotions, newsletters, app/social notices and routine resolved security notices. Uncertain or overlapping evidence stays. Eight keep categories plus Unsorted use stable keys; Needs reply is a separate flag. The digest is capped independently of the retention scan.
+## What stays private
+
+`mail/config.json`, `mail/mail.json`, `runtime.json`, `cleanup-proposal.json`, `cleanup-log.json`, `cleanup-approval.json`, `cleanup-undo.json` and `dealt-queue.json` belong in the private repository. Only empty state and example settings ship in the template. Never add a real digest, sample pool or reviewed test set here. Existing installations can leave `dealt-queue.json` absent until the first Dealt action creates it; preserve it thereafter.
 
 Body reading is optional. When enabled, bounded text/calendar parts can be read and a short redacted excerpt sent to the configured model for undecided mail. Quoted history and common identifiers are stripped; bodies and provider error payloads are never persisted. Redaction cannot guarantee removal of every personal detail. See the settings before opting in.
 
 ## Offline checks
-
-The board opens on Today, with one unread meter per account, a cleanup decision and mail that needs you. Sorted holds search, folders and filtered bulk Done. History records cleanup and Done requests with Undo. The fictional demo at `?demo=1` includes a local sort control.
-
-Set `sort_schedule_utc` in the private mail configuration to UTC clock times, for example `["15:00","22:00"]`. The board computes the next local time and explains that scheduled runs may start late. A missing value shows “Next sort time unavailable”.
-
-Each completed mail cycle can save unread conversation counts in Primary and across all Inbox tabs. Until a real comparison confirms the count, the meter shows “unread in the sorted list”. After checking Gmail, a mailbox counter in the digest can carry `inbox_count_verified: true`. History keeps 60 readings, and the chart groups them into days.
-
-Protect sender changes the safety policy. Approval waits until a scheduled sort prepares a fresh list. The demo follows this boundary too. Archive keeps mail in All Mail, where Undo can put it back. Gmail deletes Trash for good after 30 days, so Trash Undo works only until then.
 
 Node 22+. No dependency installation, credentials, local server or network is needed:
 
@@ -71,7 +89,3 @@ The historical 40-message cached label evaluation is retained as `node eval/scor
 The board retains its digest counts, trend, filters, Gmail links and appearance controls. New review controls are English. Fake IMAP and injected providers verify code paths offline; live Gmail folder semantics, deployed browser rendering and real model quality require operational verification. GitHub schedules can be delayed. The preserved twice-daily schedule means approval/undo may wait until the next wake.
 
 MIT — see [LICENSE](LICENSE).
-
-## Second Gmail mailbox
-
-The scheduled runner supports an optional second Gmail account with separate cursors and mailbox-scoped cleanup, Dealt and Undo. The board shows address badges and a mailbox filter. [Setup and behavior](docs/second-mailbox.md).
