@@ -2,14 +2,14 @@
 <html lang="en" data-suite-scale="fluid">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-9Q4lbDxmkKa0OiSEdhM3shTqoTB8RwPSia5TbLdwrmM=' 'sha256-/46Bqio80s2CmyDlRf/EpQl8JTXxfme0gW3U/eVA6y4=' 'sha256-uKLn+07MjxhcIYWzsJSfMU9i3GeIROdOdN2XEKzaJRY='; connect-src https://api.github.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-9Q4lbDxmkKa0OiSEdhM3shTqoTB8RwPSia5TbLdwrmM=' 'sha256-/46Bqio80s2CmyDlRf/EpQl8JTXxfme0gW3U/eVA6y4=' 'sha256-LEi8RQ8nHbZPR5XdgjAbydoPwWMV3m6LpOhS0VrGGys='; connect-src https://api.github.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'">
 <script src="assets/settings-standard/core.js"></script>
 <script>/* appearance boot — runs before any stylesheet so the stored palette and light/dark apply on the first paint */(function(){try{var d=document.documentElement,L=window.localStorage,t=L.getItem(HubSettingsContract.preferenceKey("nl-theme")),s=L.getItem(HubSettingsContract.preferenceKey("nl-scheme"));if(s===null){var o=L.getItem(HubSettingsContract.preferenceKey("theme"))||L.getItem(HubSettingsContract.preferenceKey("qm-theme"));if(o==='dark'||o==='light')s=o;}if(t==='paper'||t==='ink')d.setAttribute('data-theme',t);if(s==='dark'||s==='light')d.setAttribute('data-scheme',s);}catch(e){}})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="Sort what matters. Review outdated mail before cleanup. Headersort: a scheduled Action writes a capped digest to your private repo; this board reads it.">
 <meta name="theme-color" content="#e8eae7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#141518" media="(prefers-color-scheme: dark)">
-<title>Mail Sorter</title>
+<title>Headersort</title>
 <link rel="icon" href="assets/app-logo/logo.svg" type="image/svg+xml">
 <link rel="icon" href="assets/app-logo/32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="assets/app-logo/128.png" sizes="128x128">
@@ -29,7 +29,7 @@
 <body>
 <a class="skip" href="#main" data-i18n="skip">Skip to content</a>
 <header class="topbar">
-  <div class="brand" aria-label="Mail Sorter"><img class="app-logo" src="assets/app-logo/logo.svg" width="24" height="24" alt=""><b>Mail Sorter</b></div>
+  <div class="brand" aria-label="Headersort"><img class="app-logo" src="assets/app-logo/logo.svg" width="24" height="24" alt=""><b>Headersort</b></div>
   <nav class="places" aria-label="Places" id="places">
     <button type="button" data-place="today" aria-current="page">Today</button>
     <button type="button" data-place="sorted">Sorted</button>
@@ -42,7 +42,7 @@
   <button type="button" class="btn btn-icon" id="nl-settings-button" aria-haspopup="dialog" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 3-1 3-3 1-2 3 2 2v3l3 2 1 4h6l1-4 3-2v-3l2-2-2-3-3-1-1-3Z"/><circle cx="12" cy="12" r="3"/></svg></button>
 </header>
 <main id="main" tabindex="-1">
-  <h1 class="sr-only" id="pageT">Mail Sorter</h1>
+  <h1 class="sr-only" id="pageT">Headersort</h1>
   <section class="setup card" id="connectCard" hidden>
     <h1 data-i18n="setT">Connect your private data repo</h1>
     <p data-i18n="connHint">Connect your private GitHub repo to see your results.</p>
@@ -609,7 +609,7 @@ const Ls=k=>(I18N[k]||{zh:k,en:k})[lang];
 function applyStatic(){
   appSave.view.refresh();
   document.documentElement.lang=lang==='en'?'en':'zh-CN';
-  document.title=lang==='en'?'Mail Sorter':'Mail Sorter · 邮件整理';
+  document.title=lang==='en'?'Headersort':'Headersort · 邮件整理';
   document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent=Ls(el.dataset.i18n); });
   document.querySelectorAll('[data-i18n-html]').forEach(el=>{ el.innerHTML=Ls(el.dataset.i18nHtml); });
   document.querySelectorAll('[data-i18n-title]').forEach(el=>{ el.title=Ls(el.dataset.i18nTitle); });

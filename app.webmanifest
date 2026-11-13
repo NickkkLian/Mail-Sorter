@@ -1,5 +1,5 @@
 {
-  "name": "Mail Sorter",
+  "name": "Headersort",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -17,7 +17,7 @@
       "purpose": "any"
     }
   ],
-  "short_name": "Mail Sorter",
+  "short_name": "Headersort",
   "theme_color": "#e8eae7",
   "background_color": "#e8eae7"
 }

@@ -7,14 +7,14 @@ Actions repository secrets**, never in this public app or a configuration file.
 
 1. Sign into the second Google account. Enable 2-Step Verification, open
    [App passwords](https://myaccount.google.com/apppasswords), and create an app
-   password named “Mail Sorter”. Google documents prerequisites and unavailable
+   password named “Headersort”. Google documents prerequisites and unavailable
    account types in [App password help](https://support.google.com/accounts/answer/185833).
 2. In the data repository, open **Settings → Secrets and variables → Actions →
    New repository secret**. Add `GMAIL2_USER` with the second email address and
    `GMAIL2_APP_PASSWORD` with its new app password (remove display spaces).
    [GitHub's instructions](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets)
    describe this screen. Keep existing primary/model secrets.
-3. In Mail Sorter, open **Settings → App-specific → Enable second mailbox**,
+3. In Headersort, open **Settings → App-specific → Enable second mailbox**,
    turn it on, and press **Save second mailbox setting**. Keep scheduled
    classification enabled. The next enabled mail-sync wake reads both accounts.
 
