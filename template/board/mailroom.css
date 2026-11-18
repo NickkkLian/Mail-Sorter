@@ -364,7 +364,7 @@ button,a.btn {
 .topbar [data-settings-slot] {
   display:flex;
   align-items:center;
-  gap:.25rem;
+  gap:.5rem;
   flex:none;
   position:static
 }
@@ -1316,7 +1316,7 @@ select {
   }
   .topbar [data-settings-slot] {
     grid-area:controls;
-    gap:0;
+    gap:.5rem;
     width:auto;
     flex-basis:auto
   }
