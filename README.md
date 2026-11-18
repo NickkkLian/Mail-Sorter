@@ -11,7 +11,7 @@ in your own private repository, and the review page (the *board*) reads that rep
 
 ## What it does
 
-Words used below: the *board* is the review page; the *digest* is the list of sorted mail it shows; a *wake* is one
+Words used below: the *digest* is the list of sorted mail the board shows; a *wake* is one
 scheduled run of the GitHub Action.
 
 The board opens on Today, with one unread meter per account, a cleanup decision and mail that needs you. Sorted holds search, folders and filtered bulk Done. History records cleanup and Done requests with Undo. The fictional demo at `?demo=1` includes a local sort control.
