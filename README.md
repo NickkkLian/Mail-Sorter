@@ -86,6 +86,6 @@ The historical 40-message cached label evaluation is retained as `node eval/scor
 
 `mail/scripts/` and `board/` are the canonical implementation. The template contains byte-identical runtime, rules and board files; `verify-shared.mjs` rejects drift. Config and state are examples, not personal settings. `template/check.mjs` is the repository compatibility entry point.
 
-The board retains its digest counts, trend, filters, Gmail links and appearance controls. New review controls are English. Fake IMAP and injected providers verify code paths offline; live Gmail folder semantics, deployed browser rendering and real model quality require operational verification. GitHub schedules can be delayed. The preserved twice-daily schedule means approval/undo may wait until the next wake.
+Fake IMAP and injected providers verify code paths offline; live Gmail folder semantics, deployed browser rendering and real model quality require operational verification. GitHub schedules can be delayed. The preserved twice-daily schedule means approval/undo may wait until the next wake.
 
 MIT — see [LICENSE](LICENSE).

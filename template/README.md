@@ -2,7 +2,7 @@
 
 Sort mail worth keeping, review outdated mail, archive with undo.
 
-[Open the fictional demo](https://nickkklian.github.io/Mail-Sorter/?demo=1). The digest board now includes a cleanup review grouped by rule. Untick an item or rule, protect a sender, then approve the selection. Approval and Undo queue work for the next scheduled runner; the board never connects to Gmail.
+[Open the fictional demo](https://nickkklian.github.io/Mail-Sorter/?demo=1). The digest board includes a cleanup review grouped by rule. Untick an item or rule, protect a sender, then approve the selection. Approval and Undo queue work for the next scheduled runner; the board never connects to Gmail.
 
 Rules propose; a model can choose a keep category or veto cleanup. A model cannot authorize cleanup. Public settings start disabled, bodies off, all Inbox tabs, daily reviews, archive only and approval every run. No permanent-delete operation exists. Optional Trash and automatic rules are available only through explicit settings; Trash is removed by Gmail after 30 days, and automatic eligibility requires at least 28 clean reviewed days.
 
@@ -60,7 +60,7 @@ The historical 40-message cached label evaluation is retained as `node eval/scor
 
 `mail/scripts/` and `board/` are the canonical implementation. The template contains byte-identical runtime, rules and board files; `verify-shared.mjs` rejects drift. Config and state are examples, not personal settings. `template/check.mjs` is the repository compatibility entry point.
 
-The board retains its digest counts, trend, filters, Gmail links and appearance controls. New review controls are English. Fake IMAP and injected providers verify code paths offline; live Gmail folder semantics, deployed browser rendering and real model quality require operational verification. GitHub schedules can be delayed. The preserved twice-daily schedule means approval/undo may wait until the next wake.
+Fake IMAP and injected providers verify code paths offline; live Gmail folder semantics, deployed browser rendering and real model quality require operational verification. GitHub schedules can be delayed. The preserved twice-daily schedule means approval/undo may wait until the next wake.
 
 MIT — see [LICENSE](LICENSE).
 
