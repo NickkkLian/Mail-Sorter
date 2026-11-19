@@ -2,7 +2,7 @@
 <html lang="en" data-suite-scale="fluid">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-9Q4lbDxmkKa0OiSEdhM3shTqoTB8RwPSia5TbLdwrmM=' 'sha256-/46Bqio80s2CmyDlRf/EpQl8JTXxfme0gW3U/eVA6y4=' 'sha256-LEi8RQ8nHbZPR5XdgjAbydoPwWMV3m6LpOhS0VrGGys='; connect-src https://api.github.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-9Q4lbDxmkKa0OiSEdhM3shTqoTB8RwPSia5TbLdwrmM=' 'sha256-/46Bqio80s2CmyDlRf/EpQl8JTXxfme0gW3U/eVA6y4=' 'sha256-BHDqnTzt9/hBH5n4GvAhRS1yHFA/zOEqApGwHePNywc='; connect-src https://api.github.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'">
 <script src="assets/settings-standard/core.js"></script>
 <script>/* appearance boot — runs before any stylesheet so the stored palette and light/dark apply on the first paint */(function(){try{var d=document.documentElement,L=window.localStorage,t=L.getItem(HubSettingsContract.preferenceKey("nl-theme")),s=L.getItem(HubSettingsContract.preferenceKey("nl-scheme"));if(s===null){var o=L.getItem(HubSettingsContract.preferenceKey("theme"))||L.getItem(HubSettingsContract.preferenceKey("qm-theme"));if(o==='dark'||o==='light')s=o;}if(t==='paper'||t==='ink')d.setAttribute('data-theme',t);if(s==='dark'||s==='light')d.setAttribute('data-scheme',s);}catch(e){}})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -681,15 +681,6 @@ function saveConf(message){
 
 /* ============ settings ============ */
 function openSettings(focusToken,opener){return SuiteSettings.open(focusToken?'connection':'connection');}
-// "✓ Connected" is said only after the two files have actually been read (it used to follow every save, loaded or not)
-function connectionStatus(){
-  if(DEMO) return T('演示数据（全部虚构，未连接任何仓库）','Demo data — all fictional, nothing connected');
-  if(LOAD_ERROR) return T('✗ 加载失败：','✗ Could not load: ')+LOAD_ERROR.reason;
-  if(LOADED) return T('✓ 已连接 ','✓ Connected to ')+cfg().owner+'/'+(cfg().repo||'…');
-  if(cfg().token&&!cfg().owner) return T('令牌已保存，但这个页面没有设置仓库（owner/repo），没有东西可加载。见 README「Running your own」。','Token saved, but this page has no repository set (owner/repo), so there is nothing to load. See "Running your own" in the README.');
-  if(configured()) return T('已保存，加载中…','Saved, loading…');
-  return T('先粘贴 GitHub 令牌','Paste a GitHub token');
-}
 /* ============ load + render ============ */
 // A file that is not there (404) means "not set up yet". Anything else — a refused token, no network, GitHub failing — is an
 // error the page shows with what to do (2026-09-16: both reads swallowed every error, so an expired token
@@ -794,7 +785,6 @@ const ACTIONS={ loadAll:()=>loadAll(), toggleLang:()=>toggleLang(), showAction:(
   openSettings:(b)=>openSettings(true,b), clearFilters:()=>clearFilters() };
 document.addEventListener('click',e=>{ const b=e.target.closest('[data-act]'); if(b && Object.prototype.hasOwnProperty.call(ACTIONS,b.dataset.act)) ACTIONS[b.dataset.act](b); });
 $('q').addEventListener('input',e=>onSearch(e.target.value));
-const fmtDay=d=>d.toLocaleDateString(lang==='en'?'en-CA':'zh-CN',{month:'short',day:'numeric'});
 // render() rebuilds the chips, counts and list, so the control a keyboard user was on disappears and focus drops to <body>:
 // no focus ring, and Tab starts again from the top (found 2026-09-16 with real key presses). The wrapper puts focus back on
 // the same control (same attribute, or the same kind of control at the same position, keeping a text field's caret) or,
@@ -845,8 +835,6 @@ function renderPage(){
 // the digest stores senders as "Name <address>" (template classify.mjs); both parts are shown, as on the board before v3.1
 const senderAddress=f=>{ const m=String(f==null?'':f).match(/<([^>]*)>/); return m?m[1]:String(f==null?'':f).trim(); };
 const senderName=f=>{ const n=String(f==null?'':f).replace(/<[^>]*>/,'').trim(); return n||senderAddress(f); };
-const lastRun=m=>{ const d=new Date(m&&m.updated_at); if(!m||!m.updated_at||isNaN(d)) return null;
-  return new Intl.DateTimeFormat(lang==='en'?'en-US':'zh-CN',lang==='en'?{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}:{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(d); };
 let shownDealtItems=[];
 function renderList(){if(globalThis.Mailroom)Mailroom.renderSorted();}
 
