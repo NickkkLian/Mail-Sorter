@@ -145,7 +145,7 @@ counts stay aligned while prose, addresses and times retain normal spacing. */
   }
 }
 html[data-suite-scale="fluid"] {
-  font-size:clamp(16px,calc(100vw * 16 / 1230),calc(16px * 1920 / 1230))
+  font-size:clamp(16px,calc(calc(100 * var(--suite-vw)) * 16 / 1230),calc(16px * 1920 / 1230))
 }
 * {
   box-sizing:border-box
